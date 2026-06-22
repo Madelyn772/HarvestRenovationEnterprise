@@ -144,7 +144,13 @@ function initSupabase() {
       showAuthOnly();
       return;
     }
-    await bootActiveSession();
+    try {
+      await bootActiveSession();
+    } catch (error) {
+      console.error('post-login bootstrap failed', error);
+      setAuthMessage('Signed in, but the portal failed to load. Refresh and try again.', true);
+      showAuthOnly();
+    }
   });
 }
 
@@ -153,7 +159,13 @@ async function restoreSession() {
   const { data } = await state.supabase.auth.getSession();
   state.session = data.session;
   if (state.session) {
-    await bootActiveSession();
+    try {
+      await bootActiveSession();
+    } catch (error) {
+      console.error('session restore bootstrap failed', error);
+      showAuthOnly();
+      setAuthMessage('Session restored, but portal startup failed. Please sign in again.', true);
+    }
   } else {
     showAuthOnly();
   }
@@ -224,10 +236,30 @@ async function handleLogout() {
 async function loadProfile(force = false) {
   if (!state.session || !state.supabase) return;
   const { data, error } = await state.supabase.from('profiles').select('*').eq('id', state.session.user.id).single();
-  if (error && !force) {
-    console.error(error);
+  if (!error && data) {
+    state.profile = data;
+    return;
   }
-  state.profile = data || null;
+
+  // Fallback for projects where profile rows were created with email but mismatched ids.
+  const email = String(state.session.user?.email || '').trim().toLowerCase();
+  if (email) {
+    const fallback = await state.supabase
+      .from('profiles')
+      .select('*')
+      .ilike('email', email)
+      .limit(1)
+      .maybeSingle();
+    if (!fallback.error && fallback.data) {
+      state.profile = fallback.data;
+      return;
+    }
+  }
+
+  if (error && !force) {
+    console.error('loadProfile failed', error);
+  }
+  state.profile = null;
 }
 
 async function loadPortalSettings() {
