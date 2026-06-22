@@ -33,6 +33,7 @@ const state = {
   supabase: null,
   session: null,
   profile: null,
+  bootstrapUsersSynced: false,
   teamProfiles: [],
   pendingUsers: [],
   presenceChannel: null,
@@ -177,9 +178,52 @@ async function bootActiveSession() {
   if (!isActive()) return;
   loadStore();
   await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers(), loadAnalyticsSummary(), loadTrafficWindowSummary()]);
+  await syncBootstrapUsers();
   await startPresence();
   hydrateForms();
   renderAll();
+}
+
+function getBootstrapUsers() {
+  return (Array.isArray(config.bootstrapUsers) ? config.bootstrapUsers : [])
+    .map(item => ({
+      email: String(item?.email || '').trim().toLowerCase(),
+      role: item?.role === 'admin' ? 'admin' : 'staff',
+      autoApprove: !!item?.autoApprove
+    }))
+    .filter(item => item.email);
+}
+
+async function syncBootstrapUsers() {
+  if (!isAdmin() || state.bootstrapUsersSynced) return;
+
+  const bootstrapUsers = getBootstrapUsers().filter(item => item.autoApprove);
+  if (!bootstrapUsers.length) {
+    state.bootstrapUsersSynced = true;
+    return;
+  }
+
+  const bootstrapByEmail = new Map(bootstrapUsers.map(item => [item.email, item]));
+  const pendingMatches = state.pendingUsers.filter(item => bootstrapByEmail.has(String(item.email || '').trim().toLowerCase()));
+
+  if (!pendingMatches.length) {
+    state.bootstrapUsersSynced = true;
+    return;
+  }
+
+  for (const pendingUser of pendingMatches) {
+    const email = String(pendingUser.email || '').trim().toLowerCase();
+    const bootstrapUser = bootstrapByEmail.get(email);
+    if (!bootstrapUser) continue;
+    await safeRpc('review_user_request', {
+      p_user_id: pendingUser.id,
+      p_decision: 'approve',
+      p_role: bootstrapUser.role
+    });
+  }
+
+  state.bootstrapUsersSynced = true;
+  await Promise.all([loadPendingUsers(), loadTeamProfiles()]);
 }
 
 async function safeRpc(functionName, params = {}) {
@@ -188,10 +232,23 @@ async function safeRpc(functionName, params = {}) {
   return data;
 }
 
+function formatAuthErrorMessage(error, flow = 'login') {
+  const message = String(error?.message || error?.error_description || '').trim();
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('email not confirmed') || normalized.includes('email_not_confirmed')) {
+    return flow === 'signup'
+      ? 'Check your email and confirm your account before trying to sign in.'
+      : 'Your email is not confirmed yet. Check your inbox, confirm your account, then try signing in again.';
+  }
+
+  return message || (flow === 'signup' ? 'Unable to request access.' : 'Unable to sign in.');
+}
+
 async function handleLogin(event) {
   event.preventDefault();
   const fd = new FormData(el.loginForm);
-  const email = String(fd.get('email') || '').trim();
+  const email = String(fd.get('email') || '').trim().toLowerCase();
   const password = String(fd.get('password') || '');
   if (!email || !password) return setAuthMessage('Enter your email and password.', true);
   try {
@@ -216,7 +273,7 @@ async function handleLogin(event) {
     await bootActiveSession();
   } catch (error) {
     console.error(error);
-    setAuthMessage(error.message || 'Unable to sign in.', true);
+    setAuthMessage(formatAuthErrorMessage(error, 'login'), true);
   }
 }
 
@@ -224,21 +281,26 @@ async function handleSignup(event) {
   event.preventDefault();
   const fd = new FormData(el.signupForm);
   const full_name = String(fd.get('full_name') || '').trim();
-  const email = String(fd.get('email') || '').trim();
+  const email = String(fd.get('email') || '').trim().toLowerCase();
   const password = String(fd.get('password') || '');
   const confirm = String(fd.get('confirm_password') || '');
   if (password !== confirm) return setAuthMessage('Passwords do not match.', true);
   if (password.length < 10) return setAuthMessage('Password must be at least 10 characters.', true);
   try {
     setAuthMessage('Submitting access request…');
-    const { error } = await state.supabase.auth.signUp({ email, password, options: { data: { full_name } } });
+    const { data, error } = await state.supabase.auth.signUp({ email, password, options: { data: { full_name } } });
     if (error) throw error;
-    setAuthMessage('Request submitted. An administrator will review your access.');
+    const requiresConfirmation = !data?.session;
+    setAuthMessage(
+      requiresConfirmation
+        ? 'Request submitted. Check your email to confirm your account, then wait for an administrator to approve access.'
+        : 'Request submitted. An administrator will review your access.'
+    );
     el.signupForm.reset();
     setAuthView('login');
   } catch (error) {
     console.error(error);
-    setAuthMessage(error.message || 'Unable to request access.', true);
+    setAuthMessage(formatAuthErrorMessage(error, 'signup'), true);
   }
 }
 
@@ -411,6 +473,7 @@ function routeByAccess() {
 
 function showAuthOnly() {
   stopPresence();
+  state.bootstrapUsersSynced = false;
   el.authShell.classList.remove('hidden');
   el.pendingShell.classList.add('hidden');
   el.appShell.classList.add('hidden');
