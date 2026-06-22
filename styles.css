@@ -255,6 +255,35 @@ textarea { resize: vertical; min-height: 120px; }
   background: rgba(255,255,255,.03);
   border-radius: 22px;
 }
+.brand-block > div,
+.sidebar-user > div {
+  min-width: 0;
+}
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+#sidebarUserName {
+  font-size: .95rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.sidebar-user .role-badge {
+  flex: 0 0 auto;
+  padding: .2rem .55rem;
+  font-size: .68rem;
+}
+#sidebarUserMeta {
+  margin-top: .25rem;
+  font-size: .8rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .avatar-ring {
   width: 52px;
   height: 52px;
@@ -1250,4 +1279,100 @@ textarea:focus {
 .avatar-ring {
   background: linear-gradient(135deg, #f2ddb7, #ca9e59);
   color: #1d1308;
+}
+
+/* ===== Sidebar user card sizing ===== */
+.sidebar-user {
+  align-items: center;
+  gap: .85rem;
+}
+.sidebar-user > div:last-child {
+  min-width: 0;
+}
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+#sidebarUserName {
+  font-size: .98rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+#sidebarUserMeta {
+  font-size: .8rem;
+  line-height: 1.3;
+  margin-top: .15rem;
+  overflow-wrap: anywhere;
+}
+.role-badge {
+  font-size: .66rem;
+  padding: .22rem .5rem;
+}
+.avatar-ring {
+  flex: 0 0 auto;
+}
+
+/* ===== Mobile: compact top bar + horizontal nav ===== */
+@media (max-width: 960px) {
+  .shell { display: block; }
+  .sidebar {
+    position: static;
+    min-height: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .6rem 1rem;
+    padding: .85rem 1rem;
+  }
+  .brand-block {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .brand-block h1 {
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+  .sidebar-user {
+    flex: 1 1 100%;
+    margin: .2rem 0 0;
+    padding: .8rem;
+  }
+  .nav {
+    order: 9;
+    display: flex;
+    flex: 1 1 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: .5rem;
+    padding-bottom: .3rem;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+    padding: .6rem .9rem;
+    font-size: .9rem;
+  }
+  .sidebar-card {
+    flex: 1 1 100%;
+    order: 10;
+    margin-top: .4rem;
+  }
+  .sidebar-card.mobile-hide { display: none; }
+  .main { padding: 1rem; }
+}
+
+@media (max-width: 640px) {
+  .brand-block h1 { font-size: 1.35rem; }
+  .topbar-actions { width: 100%; }
+  .topbar-actions .secondary-btn,
+  .topbar-actions .primary-btn {
+    flex: 1 1 auto;
+    text-align: center;
+  }
 }
