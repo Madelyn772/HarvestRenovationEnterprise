@@ -1791,3 +1791,124 @@ textarea:focus-visible,
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   Latest UI refinements (append-only; this layer wins):
+   1. Softer, cleaner card shadows in the light workspace so
+      sections no longer show a heavy dark smudge behind them.
+   2. "New client info" dependency fields on the estimate form.
+   3. Optimized client record detail view.
+   4. Admin-editable priority checklist.
+   ============================================================ */
+
+/* 1. Soften the light-theme shadows (remove the harsh black halo). */
+.theme-light .main .card,
+.theme-light .main .hero-panel {
+  box-shadow: 0 6px 18px rgba(31, 26, 20, 0.06);
+}
+.theme-light .main .kpi-card,
+.theme-light .main .sticky-card {
+  box-shadow: none;
+}
+
+/* 2. Estimate "new client info" fields appear only when the
+   "client not on the list" option is chosen in the dropdown.
+   display:contents lets the inner labels keep the form grid. */
+.new-client-fields { display: contents; }
+.new-client-fields.is-hidden { display: none; }
+.new-client-fields .new-client-note { margin: 0; }
+
+/* 3. Client record detail view. */
+.client-detail { display: grid; gap: 1rem; }
+.client-detail-head {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+}
+.client-avatar {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #1d1308;
+  background: linear-gradient(135deg, #f0d09d, #c89a54);
+}
+.client-detail-id h4 { margin: 0; }
+.client-detail-id p { margin: .15rem 0 0; }
+.client-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .7rem;
+}
+.client-stat {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: .7rem .8rem;
+  background: rgba(255, 255, 255, .03);
+  text-align: center;
+}
+.client-stat span { display: block; color: var(--muted); font-size: .8rem; }
+.client-stat strong { display: block; margin-top: .25rem; font-size: 1.35rem; }
+.client-detail-rows { display: grid; gap: .5rem; }
+.client-notes {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, .03);
+}
+.client-notes h4 { margin: 0 0 .35rem; }
+.client-notes p { margin: 0; white-space: pre-wrap; }
+.theme-light .main .client-stat,
+.theme-light .main .client-notes { background: #f6f3ec; border-color: rgba(31, 26, 20, 0.08); }
+@media (max-width: 560px) {
+  .client-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 4. Interactive / admin-editable priority checklist. */
+.checklist li {
+  padding: .65rem .75rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.checklist li::before { content: none; display: none; }
+.checklist .check-line {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex: 1;
+  cursor: pointer;
+  margin: 0;
+}
+.checklist .check-line input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: #4ade80;
+  cursor: pointer;
+}
+.checklist .check-line input[type="checkbox"]:disabled { cursor: default; }
+.checklist li.done .check-line span {
+  text-decoration: line-through;
+  opacity: .55;
+}
+.checklist li.checklist-empty {
+  justify-content: center;
+  text-align: center;
+}
+.checklist .checklist-remove {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+}
+.checklist-add {
+  display: flex;
+  gap: .5rem;
+  margin-top: .85rem;
+}
+.checklist-add input { flex: 1; }

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-4" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-5" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -201,6 +201,10 @@
               </div>
             </div>
             <ul id="priorityChecklist" class="checklist"></ul>
+            <form id="checklistAddForm" class="checklist-add admin-only hidden">
+              <input name="text" placeholder="Add a priority item" aria-label="Add a priority item" />
+              <button type="submit" class="ghost-btn">Add</button>
+            </form>
           </article>
         </div>
       </section>
@@ -268,10 +272,13 @@
               <input type="hidden" name="estimateId" />
               <label><span>Template</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
               <label><span>Client</span><select name="clientId" id="estimateClientSelect"></select></label>
-              <label><span>New client name</span><input name="clientName" placeholder="Type to add a client not in the list" /></label>
-              <label><span>New client phone</span><input name="clientPhone" /></label>
-              <label><span>New client email</span><input name="clientEmail" type="email" /></label>
-              <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+              <div class="new-client-fields full is-hidden" id="estimateNewClientFields">
+                <p class="full new-client-note muted tiny">New client info — only needed when adding a client that is not on the list.</p>
+                <label><span>New client name</span><input name="clientName" placeholder="Type to add a client not in the list" /></label>
+                <label><span>New client phone</span><input name="clientPhone" /></label>
+                <label><span>New client email</span><input name="clientEmail" type="email" /></label>
+                <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+              </div>
               <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
               <label><span>Date</span><input name="date" id="estimateDate" type="date" /></label>
               <label><span>Prepared by</span><input name="user" /></label>
@@ -341,6 +348,7 @@
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Invoices</p><h3>Create invoice</h3></div></div>
             <form id="invoiceForm" class="form-grid">
+              <input type="hidden" name="invoiceId" />
               <label><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
               <label><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
               <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
@@ -448,15 +456,10 @@
       </section>
 
       <section class="view" id="teamView">
-        <div class="section-head-row"><div><p class="eyebrow">Team Directory</p><h3>People, live status, approvals, and internal readiness</h3></div></div>
-        <article class="card admin-only hidden team-pending-card">
-          <div class="card-head"><div><p class="eyebrow">Pending Approvals</p><h3>People waiting to be activated</h3></div></div>
-          <div id="teamPendingList" class="stack"></div>
-        </article>
+        <div class="section-head-row"><div><p class="eyebrow">Team Directory</p><h3>People, live status, and internal readiness</h3></div></div>
         <div class="grid two-strong">
           <article class="card team-directory-card"><div class="card-head split-head"><div><p class="eyebrow">Employees</p><h3>Active team directory and live status</h3></div><input id="employeeSearch" class="search-input" placeholder="Search employees" /></div><div id="employeePresenceSummary" class="presence-summary-grid"></div><div id="employeeList" class="stack employee-stack"></div></article>
           <div class="stack section-side-stack">
-            <article class="card admin-only hidden"><div class="card-head"><div><p class="eyebrow">Pending Approvals</p><h3>Activate new accounts</h3></div></div><div id="teamPendingList" class="stack"></div></article>
             <article class="card"><div class="card-head"><div><p class="eyebrow">Status Legend</p><h3>Who is online, active, or offline</h3></div></div><div class="stack compact-stack"><div class="legend-row"><span class="presence-pill active">Active</span><p>You on this device right now.</p></div><div class="legend-row"><span class="presence-pill online">Online</span><p>Signed in elsewhere and live in the portal.</p></div><div class="legend-row"><span class="presence-pill offline">Offline</span><p>Approved employee not currently present.</p></div></div></article>
             <article class="card"><div class="card-head"><div><p class="eyebrow">Readiness</p><h3>Company build-out roadmap</h3></div></div><div id="readinessList" class="stack"></div></article>
           </div>
@@ -544,6 +547,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-4"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-5"></script>
 </body>
 </html>

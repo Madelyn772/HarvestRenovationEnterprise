@@ -30,6 +30,7 @@ const seedStore = {
   campaigns: [],
   activity: [],
   documents: [],
+  checklist: [],
   trash: []
 };
 
@@ -163,11 +164,11 @@ function bindAppUi() {
   el.leadForm.addEventListener('submit', handleLeadSave);
   el.estimateForm.addEventListener('submit', handleEstimateSave);
   el.calculateEstimate.addEventListener('click', () => renderEstimateSummary(collectEstimateFromForm()));
-  el.printEstimate.addEventListener('click', () => printEstimate(collectEstimateFromForm()));
+  el.printEstimate.addEventListener('click', () => printEstimate(saveEstimateFromForm()));
   el.jobForm.addEventListener('submit', handleJobSave);
   el.calendarForm.addEventListener('submit', handleCalendarSave);
   el.invoiceForm.addEventListener('submit', handleInvoiceSave);
-  el.printInvoice.addEventListener('click', () => printInvoice(collectInvoiceFromForm()));
+  el.printInvoice.addEventListener('click', () => printInvoice(saveInvoiceFromForm()));
   el.noteForm.addEventListener('submit', handleNoteSave);
   el.campaignForm.addEventListener('submit', handleCampaignSave);
   el.profileForm.addEventListener('submit', handleProfileSave);
@@ -182,6 +183,13 @@ function bindAppUi() {
   });
 
   el.estimateTemplateSelect.addEventListener('change', applyEstimateTemplate);
+
+  // Show the "new client info" fields only when the estimate dropdown is set
+  // to the "client not on the list" option.
+  el.estimateClientSelect?.addEventListener('change', updateNewClientFieldsVisibility);
+
+  // Admin-editable priority checklist (add / toggle / remove).
+  document.getElementById('checklistAddForm')?.addEventListener('submit', handleChecklistAdd);
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
@@ -774,11 +782,17 @@ function normalizeStoreShape(raw) {
 }
 
 function loadStore() {
+  let raw = null;
   try {
-    const raw = JSON.parse(localStorage.getItem(storageKey()) || 'null');
+    raw = JSON.parse(localStorage.getItem(storageKey()) || 'null');
     state.store = normalizeStoreShape(raw);
   } catch {
     state.store = structuredClone(seedStore);
+  }
+  // Seed the priority checklist with starter items only the first time (when
+  // the key has never been saved), so admin edits/removals are not undone.
+  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.checklist)) {
+    state.store.checklist = defaultChecklistItems();
   }
   if (!state.store.activity.length) {
     addActivity('Portal loaded', 'System');
@@ -817,10 +831,32 @@ function populateTemplateSelect() {
 }
 
 function populateClientSelects() {
-  const options = ['<option value="">Select client</option>'].concat(state.store.clients.map(client => `<option value="${client.id}">${escapeHtml(client.name || 'Unnamed Client')}</option>`)).join('');
-  ['leadClientSelect','estimateClientSelect','jobClientSelect','calendarClientSelect','invoiceClientSelect','noteClientSelect'].forEach(id => {
-    if (el[id]) el[id].innerHTML = options;
+  const baseOptions = ['<option value="">Select client</option>'].concat(state.store.clients.map(client => `<option value="${client.id}">${escapeHtml(client.name || 'Unnamed Client')}</option>`)).join('');
+  // The estimate form supports adding a client that is not on the list. The
+  // dedicated "New client info" fields below the dropdown only show when this
+  // option is selected (handled by updateNewClientFieldsVisibility).
+  const newClientOption = '<option value="__new__">+ New client (not on the list)</option>';
+  const optionMap = {
+    leadClientSelect: baseOptions,
+    estimateClientSelect: baseOptions + newClientOption,
+    jobClientSelect: baseOptions,
+    calendarClientSelect: baseOptions,
+    invoiceClientSelect: baseOptions,
+    noteClientSelect: baseOptions
+  };
+  Object.entries(optionMap).forEach(([id, html]) => {
+    if (!el[id]) return;
+    const previous = el[id].value;
+    el[id].innerHTML = html;
+    if (previous) el[id].value = previous;
   });
+  updateNewClientFieldsVisibility();
+}
+
+function updateNewClientFieldsVisibility() {
+  const fields = document.getElementById('estimateNewClientFields');
+  if (!fields || !el.estimateClientSelect) return;
+  fields.classList.toggle('is-hidden', el.estimateClientSelect.value !== '__new__');
 }
 
 function populateEstimateSelects() {
@@ -920,8 +956,58 @@ function renderDashboard() {
   const activities = [...state.store.activity].slice(-8).reverse();
   el.activityFeed.innerHTML = activities.length ? activities.map(item => stackItem(item.meta || 'Activity', item.text, formatDate(item.date))).join('') : emptyHtml('No activity yet.');
 
-  const checklist = buildChecklist();
-  el.priorityChecklist.innerHTML = checklist.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+  renderChecklist();
+}
+
+function defaultChecklistItems() {
+  return buildChecklist().map(text => ({ id: uid('CHK'), text, done: false }));
+}
+
+function renderChecklist() {
+  if (!el.priorityChecklist) return;
+  const admin = isAdmin();
+  const items = Array.isArray(state.store.checklist) ? state.store.checklist : [];
+  el.priorityChecklist.innerHTML = items.length ? items.map(item => `
+    <li class="${item.done ? 'done' : ''}">
+      <label class="check-line">
+        <input type="checkbox" class="checklist-toggle" data-id="${escapeHtml(item.id)}" ${item.done ? 'checked' : ''} ${admin ? '' : 'disabled'} />
+        <span>${escapeHtml(item.text)}</span>
+      </label>
+      ${admin ? `<button type="button" class="icon-btn checklist-remove" data-id="${escapeHtml(item.id)}" aria-label="Remove item">×</button>` : ''}
+    </li>`).join('') : `<li class="checklist-empty muted">${admin ? 'No items yet — add the first priority below.' : 'No priority items yet.'}</li>`;
+  if (admin) {
+    el.priorityChecklist.querySelectorAll('.checklist-toggle').forEach(box => box.addEventListener('change', () => toggleChecklistItem(box.dataset.id)));
+    el.priorityChecklist.querySelectorAll('.checklist-remove').forEach(btn => btn.addEventListener('click', () => removeChecklistItem(btn.dataset.id)));
+  }
+}
+
+function toggleChecklistItem(id) {
+  if (!isAdmin()) return;
+  const item = (state.store.checklist || []).find(row => row.id === id);
+  if (!item) return;
+  item.done = !item.done;
+  saveStore('Checklist updated');
+  renderChecklist();
+}
+
+function removeChecklistItem(id) {
+  if (!isAdmin()) return;
+  state.store.checklist = (state.store.checklist || []).filter(row => row.id !== id);
+  saveStore('Checklist updated');
+  renderChecklist();
+}
+
+function handleChecklistAdd(event) {
+  event.preventDefault();
+  if (!isAdmin()) return;
+  const form = event.currentTarget;
+  const text = (form.text.value || '').trim();
+  if (!text) return;
+  if (!Array.isArray(state.store.checklist)) state.store.checklist = [];
+  state.store.checklist.push({ id: uid('CHK'), text, done: false });
+  saveStore('Checklist updated');
+  form.reset();
+  renderChecklist();
 }
 
 function buildChecklist() {
@@ -969,12 +1055,38 @@ function renderClientDetail() {
   const jobs = state.store.jobs.filter(item => item.clientId === client.id);
   const invoices = state.store.invoices.filter(item => item.clientId === client.id);
   el.clientDetailTitle.textContent = client.name || 'Client';
+  const contactBits = [client.phone, client.email].filter(Boolean).join(' • ') || 'No contact details yet';
+  const location = client.serviceArea || client.address || '—';
+  const stats = [
+    ['Leads', leads.length],
+    ['Estimates', estimates.length],
+    ['Jobs', jobs.length],
+    ['Invoices', invoices.length]
+  ];
   el.clientDetailBody.innerHTML = `
-    <div class="summary-row"><span>Contact</span><strong>${escapeHtml(client.phone || '—')} ${client.email ? '• ' + escapeHtml(client.email) : ''}</strong></div>
-    <div class="summary-row"><span>Location</span><strong>${escapeHtml(client.serviceArea || client.address || '—')}</strong></div>
-    <div class="summary-row"><span>Source / Tags</span><strong>${escapeHtml(client.source || '—')} ${client.tags ? '• ' + escapeHtml(client.tags) : ''}</strong></div>
-    <div class="summary-row"><span>Linked records</span><strong>${integer.format(leads.length)} leads • ${integer.format(estimates.length)} estimates • ${integer.format(jobs.length)} jobs • ${integer.format(invoices.length)} invoices</strong></div>
-    <div class="stack-item"><h4>Notes</h4><p>${escapeHtml(client.notes || 'No client notes yet.')}</p></div>
+    <div class="client-detail">
+      <div class="client-detail-head">
+        <div class="client-avatar">${escapeHtml(initials(client.name || 'Client'))}</div>
+        <div class="client-detail-id">
+          <h4>${escapeHtml(client.name || 'Client')}</h4>
+          <p class="muted">${escapeHtml(contactBits)}</p>
+        </div>
+      </div>
+      <div class="client-stat-grid">
+        ${stats.map(([label, value]) => `<div class="client-stat"><span>${escapeHtml(label)}</span><strong>${integer.format(value)}</strong></div>`).join('')}
+      </div>
+      <div class="client-detail-rows">
+        <div class="summary-row"><span>Phone</span><strong>${escapeHtml(client.phone || '—')}</strong></div>
+        <div class="summary-row"><span>Email</span><strong>${escapeHtml(client.email || '—')}</strong></div>
+        <div class="summary-row"><span>Location</span><strong>${escapeHtml(location)}</strong></div>
+        <div class="summary-row"><span>Source</span><strong>${escapeHtml(client.source || '—')}</strong></div>
+        <div class="summary-row"><span>Tags</span><strong>${escapeHtml(client.tags || '—')}</strong></div>
+      </div>
+      <div class="client-notes">
+        <h4>Notes</h4>
+        <p>${escapeHtml(client.notes || 'No client notes yet.')}</p>
+      </div>
+    </div>
   `;
 }
 
@@ -1216,8 +1328,9 @@ async function handleClientSave(event) {
 }
 
 function resolveFormClient(data, fields) {
-  if (data.clientId) {
-    return { clientId: data.clientId, clientName: lookupClientName(data.clientId) };
+  const selectedId = data.clientId && data.clientId !== '__new__' ? data.clientId : '';
+  if (selectedId) {
+    return { clientId: selectedId, clientName: lookupClientName(selectedId) };
   }
   const name = (fields.name || '').trim();
   if (!name) return { clientId: '', clientName: '' };
@@ -1271,8 +1384,7 @@ async function handleLeadSave(event) {
   el.leadForm.reset();
 }
 
-async function handleEstimateSave(event) {
-  event.preventDefault();
+function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
   const resolved = resolveFormClient(data, { name: data.clientName, phone: data.clientPhone, email: data.clientEmail });
   const payload = collectEstimateFromForm();
@@ -1280,15 +1392,24 @@ async function handleEstimateSave(event) {
   payload.clientName = resolved.clientName || payload.clientName;
   payload.id = payload.id || uid('EST');
   upsertArray('estimates', payload, 'id');
+  // Keep editing the same record so re-saving (or printing) updates in place.
+  el.estimateForm.estimateId.value = payload.id;
   addActivity(`Saved estimate ${payload.estimateNumber || payload.id}.`, 'Estimating');
   saveStore('Estimate saved');
   populateClientSelects();
   populateEstimateSelects();
-  if (resolved.clientId) el.estimateForm.clientId.value = resolved.clientId;
+  el.estimateForm.clientId.value = resolved.clientId || '';
   el.estimateForm.clientName.value = '';
   el.estimateForm.clientPhone.value = '';
   el.estimateForm.clientEmail.value = '';
+  updateNewClientFieldsVisibility();
   renderAll();
+  return payload;
+}
+
+async function handleEstimateSave(event) {
+  event.preventDefault();
+  saveEstimateFromForm();
   showToast('Estimate saved.', 'success');
 }
 
@@ -1316,8 +1437,7 @@ async function handleCalendarSave(event) {
   el.calendarForm.reset();
 }
 
-async function handleInvoiceSave(event) {
-  event.preventDefault();
+function saveInvoiceFromForm() {
   const data = objectFromForm(el.invoiceForm);
   const resolved = resolveFormClient(data, { name: data.clientName, phone: data.phone, email: data.email, address: data.address });
   const payload = collectInvoiceFromForm();
@@ -1325,11 +1445,19 @@ async function handleInvoiceSave(event) {
   payload.clientName = resolved.clientName || payload.clientName;
   payload.id = payload.id || uid('INV');
   upsertArray('invoices', payload, 'id');
+  // Keep editing the same record so re-saving (or printing) updates in place.
+  el.invoiceForm.invoiceId.value = payload.id;
   addActivity(`Saved invoice ${payload.invoiceNumber || payload.id}.`, 'Billing');
   saveStore('Invoice saved');
   populateClientSelects();
   if (resolved.clientId) el.invoiceForm.clientId.value = resolved.clientId;
   renderAll();
+  return payload;
+}
+
+async function handleInvoiceSave(event) {
+  event.preventDefault();
+  saveInvoiceFromForm();
   showToast('Invoice saved.', 'success');
 }
 
@@ -1508,7 +1636,7 @@ function collectEstimateFromForm() {
     estimatedCost, depositAmount,
     scope: data.scope,
     status: data.status,
-    clientName: lookupClientName(data.clientId),
+    clientName: data.clientId && data.clientId !== '__new__' ? lookupClientName(data.clientId) : (data.clientName || ''),
     value: estimatedCost
   };
 }
