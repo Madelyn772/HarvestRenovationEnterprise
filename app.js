@@ -820,6 +820,11 @@ function saveStore(message = 'Saved') {
   }
 }
 
+function todayInputValue() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function hydrateForms() {
   const fullName = state.profile?.full_name || state.session?.user?.user_metadata?.full_name || '';
   el.profileForm.full_name.value = fullName;
@@ -830,6 +835,7 @@ function hydrateForms() {
   el.companyCalendarForm.company_calendar_name.value = state.portalSettings.company_calendar_name || '';
   el.companyCalendarForm.company_calendar_embed_url.value = state.portalSettings.company_calendar_embed_url || '';
   if (el.estimateForm.user && !el.estimateForm.user.value) el.estimateForm.user.value = fullName;
+  if (el.estimateForm.date) el.estimateForm.date.max = todayInputValue();
   document.querySelectorAll('.admin-only').forEach(node => node.classList.toggle('hidden', !isAdmin()));
   populateTemplateSelect();
   populateClientSelects();
