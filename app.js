@@ -107,7 +107,7 @@ function cacheDom() {
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits',
     'trackedLeadsCount','adCplValue','companyCalendarWrap','companyCalendarBadge','teamCalendarList','upcomingFeed','employeeSearch','employeeList',
     'readinessList','employeePresenceSummary','profileForm','passwordForm','companyCalendarForm','pendingList','adminGrantAccessForm','saveStateChip','authStatusChip','calendarStatusChip',
-    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge'
+    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
@@ -182,6 +182,30 @@ function bindAppUi() {
   });
 
   el.estimateTemplateSelect.addEventListener('change', applyEstimateTemplate);
+
+  if (el.darkModeToggle) {
+    el.darkModeToggle.addEventListener('change', () => applyTheme(el.darkModeToggle.checked ? 'dark' : 'light'));
+  }
+  applyTheme(getStoredTheme());
+}
+
+const THEME_KEY = 'harvest-portal-theme';
+
+function getStoredTheme() {
+  try {
+    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
+}
+
+function applyTheme(theme) {
+  const isLight = theme !== 'dark';
+  document.documentElement.classList.toggle('theme-light', isLight);
+  try {
+    localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
+  } catch {}
+  if (el.darkModeToggle) el.darkModeToggle.checked = !isLight;
 }
 
 function initSupabase() {

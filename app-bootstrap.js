@@ -1,7 +1,7 @@
 import { portalConfig } from './config.js';
 
 const config = portalConfig || {};
-const APP_RUNTIME_MODULE = './app.js?v=20260623-2';
+const APP_RUNTIME_MODULE = './app.js?v=20260623-3';
 
 const state = {
   supabase: null,

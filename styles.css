@@ -1607,3 +1607,135 @@ textarea:disabled {
   .auth-tabs { width: 100%; }
   .auth-form h2 { font-size: 1.5rem; }
 }
+
+/* ============================================================
+   Light content theme (default). The left sidebar stays dark;
+   only the right-hand workspace (.main) is lightened. Users can
+   switch to all-dark via Settings, which removes .theme-light.
+   ============================================================ */
+.theme-light .main {
+  background: linear-gradient(180deg, #faf7f1 0%, #f1ebe0 100%);
+  color: #1f1a14;
+}
+.theme-light .main .card,
+.theme-light .main .hero-panel {
+  background: #ffffff;
+  border-color: rgba(31, 26, 20, 0.10);
+  box-shadow: 0 18px 50px rgba(31, 26, 20, 0.08);
+  color: #1f1a14;
+}
+.theme-light .main h1,
+.theme-light .main h2,
+.theme-light .main h3,
+.theme-light .main h4,
+.theme-light .main .topbar h2,
+.theme-light .main .section-head-row h3,
+.theme-light .main .card-head h3,
+.theme-light .main .hero-panel h3,
+.theme-light .main .stack-item h4,
+.theme-light .main strong {
+  color: #1f1a14;
+}
+.theme-light .main .muted,
+.theme-light .main .topbar .muted,
+.theme-light .main .hero-panel .muted,
+.theme-light .main p {
+  color: #5c5346;
+}
+.theme-light .main .eyebrow { color: #b07d2a; }
+
+/* Nested light surfaces inside the workspace cards. */
+.theme-light .main .stack-item,
+.theme-light .main .summary-row,
+.theme-light .main .summary-tile,
+.theme-light .main .invoice-row,
+.theme-light .main .metric-duo > div,
+.theme-light .main .mini-metric,
+.theme-light .main .kpi-card,
+.theme-light .main .checklist li,
+.theme-light .main .calendar-embed-shell,
+.theme-light .main .empty-state {
+  background: #f6f3ec;
+  border-color: rgba(31, 26, 20, 0.08);
+  color: #1f1a14;
+}
+.theme-light .main .summary-row span,
+.theme-light .main .metric-duo span,
+.theme-light .main .kpi-card span,
+.theme-light .main .kpi-card small {
+  color: #5c5346;
+}
+
+/* Buttons that use translucent dark fills become unreadable on light
+   cards, so give them solid light styling inside the workspace. */
+.theme-light .main .ghost-btn {
+  background: #ffffff;
+  color: #1f1a14;
+  border-color: rgba(31, 26, 20, 0.18);
+}
+.theme-light .main .secondary-btn {
+  background: #f3ece0;
+  color: #4d3920;
+  border-color: rgba(176, 125, 42, 0.30);
+}
+.theme-light .main .danger-btn {
+  background: #fdecec;
+  color: #a12525;
+  border-color: rgba(161, 37, 37, 0.28);
+}
+.theme-light .main .badge {
+  color: #8a6411;
+  background: rgba(205, 161, 90, 0.16);
+  border-color: rgba(205, 161, 90, 0.35);
+}
+
+/* Appearance toggle in Settings. */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+}
+.theme-light .main .theme-toggle {
+  background: #f6f3ec;
+  border-color: rgba(31, 26, 20, 0.10);
+}
+.theme-toggle-copy { display: grid; gap: .2rem; }
+.theme-toggle-copy strong { font-size: 1rem; }
+.theme-toggle input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(120, 110, 96, 0.45);
+  border: 1px solid var(--line);
+  flex: 0 0 auto;
+  transition: background .2s ease;
+  cursor: pointer;
+}
+.theme-toggle input[type="checkbox"]::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform .2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .35);
+}
+.theme-toggle input[type="checkbox"]:checked {
+  background: var(--gold);
+}
+.theme-toggle input[type="checkbox"]:checked::after {
+  transform: translateX(22px);
+}

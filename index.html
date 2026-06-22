@@ -4,7 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-2" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-3" />
+  <script>
+    try {
+      var savedTheme = localStorage.getItem('harvest-portal-theme');
+      document.documentElement.classList.toggle('theme-light', savedTheme !== 'dark');
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <div class="ambient ambient-a"></div>
@@ -486,6 +492,17 @@
             </form>
           </article>
         </div>
+        <article class="card">
+          <div class="card-head"><div><p class="eyebrow">Appearance</p><h3>Theme</h3></div></div>
+          <p class="muted">The main workspace uses a light theme by default so filled-in details are easier to read. Turn on dark mode to make the entire portal dark.</p>
+          <label class="theme-toggle">
+            <span class="theme-toggle-copy">
+              <strong>Dark mode</strong>
+              <small class="muted">Apply the dark theme across the whole portal</small>
+            </span>
+            <input type="checkbox" id="darkModeToggle" />
+          </label>
+        </article>
       </section>
 
       <section class="view admin-only hidden" id="adminView">
@@ -527,6 +544,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-2"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-3"></script>
 </body>
 </html>
