@@ -142,11 +142,12 @@ function initSupabase() {
   state.supabase.auth.onAuthStateChange(async (_event, session) => {
     state.session = session;
     if (!session) {
+      state.profile = null;
       showAuthOnly();
       return;
     }
     try {
-      await bootActiveSession();
+      await loadAuthenticatedApp();
     } catch (error) {
       console.error('post-login bootstrap failed', error);
       setAuthMessage('Signed in, but the portal failed to load. Refresh and try again.', true);
@@ -161,7 +162,7 @@ async function restoreSession() {
   state.session = data.session;
   if (state.session) {
     try {
-      await bootActiveSession();
+      await loadAuthenticatedApp();
     } catch (error) {
       console.error('session restore bootstrap failed', error);
       showAuthOnly();
@@ -172,12 +173,31 @@ async function restoreSession() {
   }
 }
 
-async function bootActiveSession() {
+async function loadAuthenticatedApp(forceRefresh = false) {
+  if (!state.session) {
+    showAuthOnly();
+    return;
+  }
+
   await loadProfile();
-  routeByAccess();
-  if (!isActive()) return;
+  if (!state.profile) {
+    showAuthOnly();
+    setAuthMessage('Your profile is not available yet. If you just signed up, wait a few seconds and try again.', true);
+    return;
+  }
+
+  if (state.profile.status === 'pending') {
+    showPendingOnly('Your account is pending approval', 'An administrator needs to approve your access before you can use the portal.');
+    return;
+  }
+
+  if (state.profile.status === 'denied') {
+    showPendingOnly('Your access request was not approved', 'Please contact an administrator if this should be revisited.');
+    return;
+  }
 
   loadStore();
+  showAppOnly();
   hydrateForms();
   renderAll();
 
@@ -269,6 +289,10 @@ function formatAuthErrorMessage(error, flow = 'login') {
 
 async function handleLogin(event) {
   event.preventDefault();
+  if (!state.supabase) {
+    setAuthMessage('Supabase is not initialized. Check config.js and refresh the page.', true);
+    return;
+  }
   const fd = new FormData(el.loginForm);
   const email = String(fd.get('email') || '').trim().toLowerCase();
   const password = String(fd.get('password') || '');
@@ -292,7 +316,8 @@ async function handleLogin(event) {
     }
 
     state.session = session;
-    await bootActiveSession();
+    updateChip(el.saveStateChip, 'Authenticated');
+    await loadAuthenticatedApp(true);
   } catch (error) {
     console.error(error);
     setAuthMessage(formatAuthErrorMessage(error, 'login'), true);
