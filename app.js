@@ -164,11 +164,19 @@ function bindAppUi() {
   el.leadForm.addEventListener('submit', handleLeadSave);
   el.estimateForm.addEventListener('submit', handleEstimateSave);
   el.calculateEstimate.addEventListener('click', () => renderEstimateSummary(collectEstimateFromForm()));
-  el.printEstimate.addEventListener('click', () => printEstimate(saveEstimateFromForm()));
+  el.printEstimate.addEventListener('click', () => {
+    const saved = saveEstimateFromForm();
+    printEstimate(saved);
+    showToast(`Estimate ${saved.estimateNumber || saved.id} saved & sent to print.`, 'success');
+  });
   el.jobForm.addEventListener('submit', handleJobSave);
   el.calendarForm.addEventListener('submit', handleCalendarSave);
   el.invoiceForm.addEventListener('submit', handleInvoiceSave);
-  el.printInvoice.addEventListener('click', () => printInvoice(saveInvoiceFromForm()));
+  el.printInvoice.addEventListener('click', () => {
+    const saved = saveInvoiceFromForm();
+    printInvoice(saved);
+    showToast(`Invoice ${saved.invoiceNumber || saved.id} saved & sent to print.`, 'success');
+  });
   el.noteForm.addEventListener('submit', handleNoteSave);
   el.campaignForm.addEventListener('submit', handleCampaignSave);
   el.profileForm.addEventListener('submit', handleProfileSave);
