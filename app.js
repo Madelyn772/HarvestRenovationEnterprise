@@ -109,7 +109,7 @@ function cacheDom() {
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits',
     'trackedLeadsCount','adCplValue','companyCalendarWrap','companyCalendarBadge','teamCalendarList','upcomingFeed','employeeSearch','employeeList',
     'readinessList','employeePresenceSummary','profileForm','passwordForm','companyCalendarForm','pendingList','adminGrantAccessForm','saveStateChip','authStatusChip','calendarStatusChip',
-    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle','staffViewToggle'
+    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle','staffViewToggle','exportDataBtn','importDataBtn','importDataInput'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
@@ -217,6 +217,11 @@ function bindAppUi() {
   }
   if (el.staffViewToggle) {
     el.staffViewToggle.addEventListener('change', () => setAdminViewAs(el.staffViewToggle.checked ? 'staff' : 'admin'));
+  }
+  if (el.exportDataBtn) el.exportDataBtn.addEventListener('click', exportBackup);
+  if (el.importDataBtn && el.importDataInput) {
+    el.importDataBtn.addEventListener('click', () => el.importDataInput.click());
+    el.importDataInput.addEventListener('change', handleBackupFile);
   }
   applyTheme(getStoredTheme());
 }
@@ -2200,6 +2205,65 @@ function downloadDocument(doc) {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportBackup() {
+  const backup = {
+    app: 'harvest-portal-pro-crm',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    exportedBy: currentUserName(),
+    store: state.store
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `harvest-portal-backup-${todayInputValue()}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Backup downloaded.', 'success');
+}
+
+function handleBackupFile(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(String(reader.result));
+    } catch {
+      showToast('That file is not a valid backup.', 'error');
+      input.value = '';
+      return;
+    }
+    const incoming = parsed && parsed.store && typeof parsed.store === 'object' ? parsed.store : null;
+    if (!incoming || !Array.isArray(incoming.clients)) {
+      showToast('That file does not look like a Harvest portal backup.', 'error');
+      input.value = '';
+      return;
+    }
+    const stamp = parsed.exportedAt ? formatDateTime(parsed.exportedAt) : 'an earlier date';
+    if (!window.confirm(`Restore this backup from ${stamp}? This replaces all CRM data currently in this browser.`)) {
+      input.value = '';
+      return;
+    }
+    state.store = normalizeStoreShape(incoming);
+    saveStore('Backup restored');
+    addActivity('Restored data from a backup file.', 'System');
+    renderAll();
+    input.value = '';
+    showToast('Backup restored.', 'success');
+  };
+  reader.onerror = () => {
+    showToast('Could not read that file.', 'error');
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function addActivity(text, meta) {
