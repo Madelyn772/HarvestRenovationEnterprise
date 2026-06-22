@@ -34,6 +34,7 @@ const state = {
   session: null,
   profile: null,
   bootstrapUsersSynced: false,
+  appUiBound: false,
   teamProfiles: [],
   pendingUsers: [],
   presenceChannel: null,
@@ -61,7 +62,7 @@ init();
 
 async function init() {
   cacheDom();
-  bindUi();
+  bindAuthUi();
   initSupabase();
   await restoreSession();
 }
@@ -81,7 +82,7 @@ function cacheDom() {
   ids.forEach(id => el[id] = document.getElementById(id));
 }
 
-function bindUi() {
+function bindAuthUi() {
   document.querySelectorAll('.auth-tab').forEach(btn => btn.addEventListener('click', () => setAuthView(btn.dataset.authView)));
   el.loginForm.addEventListener('submit', handleLogin);
   el.signupForm.addEventListener('submit', handleSignup);
@@ -90,6 +91,14 @@ function bindUi() {
     routeByAccess();
   });
   el.logoutPendingBtn.addEventListener('click', handleLogout);
+
+  if (state.appUiBound) return;
+  state.appUiBound = true;
+
+  bindAppUi();
+}
+
+function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
   el.openSettingsPanelBtn.addEventListener('click', () => setView('settings'));
 
@@ -196,10 +205,11 @@ async function loadAuthenticatedApp(forceRefresh = false) {
     return;
   }
 
+  bindAuthUi();
   loadStore();
   showAppOnly();
   hydrateForms();
-  renderAll();
+  renderCurrentView();
 
   try {
     await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers()]);
@@ -576,6 +586,43 @@ function setView(view) {
   const [title, subtitle] = titleMap[view] || ['Harvest Portal', ''];
   el.pageTitle.textContent = title;
   el.pageSubtitle.textContent = subtitle;
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  renderShellProfile();
+
+  const renderers = {
+    dashboard: () => renderDashboard(),
+    crm: () => {
+      renderClients();
+      renderLeads();
+      renderClientDetail();
+    },
+    estimating: () => {
+      renderEstimateSummary(collectEstimateFromForm());
+      renderEstimates();
+    },
+    operations: () => {
+      renderJobs();
+      renderCalendarItems();
+      renderInvoices();
+      renderNotes();
+    },
+    marketing: () => {
+      renderCampaigns();
+      renderLeadSourceSummary();
+    },
+    calendars: () => renderCalendars(),
+    team: () => {
+      renderEmployees();
+      renderReadiness();
+    },
+    settings: () => {},
+    admin: () => renderPendingUsers()
+  };
+
+  (renderers[state.currentView] || renderers.dashboard)();
 }
 
 function updateChip(node, text) {
