@@ -1932,3 +1932,32 @@ textarea:focus-visible,
   cursor: pointer;
 }
 
+/* Documents list: "prepared by" hover info badge next to the amount. */
+.doc-head-right {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.doc-info {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: .72rem;
+  font-weight: 800;
+  font-style: normal;
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1;
+  color: #1d1308;
+  background: linear-gradient(135deg, #f0d09d, #c89a54);
+  cursor: help;
+  user-select: none;
+}
+.doc-info:focus-visible {
+  outline: 2px solid var(--gold-2);
+  outline-offset: 2px;
+}
+

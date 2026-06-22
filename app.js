@@ -1976,7 +1976,7 @@ function buildEstimateDocHtml(estimate) {
 
 function printEstimate(estimate) {
   const html = buildEstimateDocHtml(estimate);
-  saveDocument('estimate', estimate.estimateNumber || estimate.id || autoNumber('EST'), estimate.clientName, estimate.estimatedCost, html);
+  saveDocument('estimate', estimate.estimateNumber || estimate.id || autoNumber('EST'), estimate.clientName, estimate.estimatedCost, html, estimate.user || currentUserName());
   renderDocuments();
   openPrintWindow(html);
 }
@@ -1997,7 +1997,7 @@ function buildInvoiceDocHtml(invoice) {
 
 function printInvoice(invoice) {
   const html = buildInvoiceDocHtml(invoice);
-  saveDocument('invoice', invoice.invoiceNumber || invoice.id || autoNumber('INV'), invoice.clientName, invoice.total, html);
+  saveDocument('invoice', invoice.invoiceNumber || invoice.id || autoNumber('INV'), invoice.clientName, invoice.total, html, invoice.user || currentUserName());
   renderDocuments();
   openPrintWindow(html);
 }
@@ -2117,7 +2117,7 @@ function renderTrash() {
 }
 
 // ===== Saved documents (PDF estimates & invoices) =====
-function saveDocument(type, number, clientName, total, html) {
+function saveDocument(type, number, clientName, total, html, preparedBy) {
   const title = `${type === 'invoice' ? 'Invoice' : 'Estimate'} ${number || ''}`.trim();
   const existing = state.store.documents.find(doc => doc.type === type && doc.number === number);
   const payload = {
@@ -2128,6 +2128,7 @@ function saveDocument(type, number, clientName, total, html) {
     clientName: clientName || '',
     total: num(total),
     html,
+    preparedBy: (preparedBy || existing?.preparedBy || currentUserName() || '').trim(),
     createdAt: existing?.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -2142,7 +2143,10 @@ function renderDocuments() {
     .sort((a, b) => sortDateDesc(a.updatedAt || a.createdAt, b.updatedAt || b.createdAt));
   el.documentList.innerHTML = items.length ? items.map(doc => {
     const badge = doc.type === 'invoice' ? 'Invoice' : 'Estimate';
-    return `<div class="stack-item doc-item"><div class="split-head"><div><h4>${escapeHtml(doc.title || badge)}</h4><p class="muted">${escapeHtml(badge)} • ${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.updatedAt || doc.createdAt))}</p></div><strong>${money.format(num(doc.total))}</strong></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">Open / Print</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
+    const preparedBy = doc.preparedBy ? `Prepared by ${doc.preparedBy}` : 'Prepared by —';
+    const stamp = formatDateTime(doc.createdAt || doc.updatedAt);
+    const info = escapeHtml(`${preparedBy}${stamp ? ` • ${stamp}` : ''}`);
+    return `<div class="stack-item doc-item"><div class="split-head"><div><h4>${escapeHtml(doc.title || badge)}</h4><p class="muted">${escapeHtml(badge)} • ${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.updatedAt || doc.createdAt))}</p></div><div class="doc-head-right"><span class="doc-info" tabindex="0" role="img" aria-label="${info}" title="${info}">i</span><strong>${money.format(num(doc.total))}</strong></div></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">Open / Print</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
   }).join('') : emptyHtml('No saved documents yet. Print an estimate or invoice to save it here.');
   el.documentList.querySelectorAll('.doc-open').forEach(btn => btn.addEventListener('click', () => {
     const doc = state.store.documents.find(item => item.id === btn.dataset.docId);
@@ -2332,6 +2336,10 @@ function formatDateTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
+function currentUserName() {
+  return state.profile?.full_name || state.session?.user?.user_metadata?.full_name || state.session?.user?.email || '';
 }
 
 function sortDateDesc(a, b) { return new Date(b || 0) - new Date(a || 0); }
