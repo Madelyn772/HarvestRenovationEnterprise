@@ -4,6 +4,7 @@ import { portalConfig } from './config.js';
 const config = portalConfig || {};
 const STORAGE_KEY = 'harvest-portal-pro-crm-v1';
 const DASHBOARD_VIEW_MODE_KEY = 'harvest-portal-pro-dashboard-view-mode';
+const BOOTSTRAP_STATE_KEY = '__HARVEST_PORTAL_BOOTSTRAP__';
 
 const estimateTemplates = {
   'Kitchen Remodeling': { trade: 'Kitchen Remodeling', measurementType: 'SquareFoot', rate: 28, materialPercent: 12, laborPercent: 18, finalPercent: 8, scope: 'Cabinet updates, countertops, backsplash, lighting, paint, trim, and finish coordination.' },
@@ -63,8 +64,18 @@ init();
 async function init() {
   cacheDom();
   bindAuthUi();
+  adoptBootstrapState();
   initSupabase();
   await restoreSession();
+}
+
+function adoptBootstrapState() {
+  const bootstrapState = window[BOOTSTRAP_STATE_KEY];
+  if (!bootstrapState || typeof bootstrapState !== 'object') return;
+  state.session = bootstrapState.session || null;
+  state.profile = bootstrapState.profile || null;
+  if (bootstrapState.supabase) state.supabase = bootstrapState.supabase;
+  delete window[BOOTSTRAP_STATE_KEY];
 }
 
 function cacheDom() {
@@ -141,32 +152,49 @@ function bindAppUi() {
 }
 
 function initSupabase() {
-  const publishableKey = config.supabasePublishableKey || config.supabaseAnonKey || '';
-  if (!config.supabaseUrl || !publishableKey) {
-    updateChip(el.saveStateChip, 'Missing config');
-    showToast('Supabase configuration is missing in config.js.', 'error');
-    return;
+  if (!state.supabase) {
+    const publishableKey = config.supabasePublishableKey || config.supabaseAnonKey || '';
+    if (!config.supabaseUrl || !publishableKey) {
+      updateChip(el.saveStateChip, 'Missing config');
+      showToast('Supabase configuration is missing in config.js.', 'error');
+      return;
+    }
+    state.supabase = createClient(config.supabaseUrl, publishableKey, { auth: { persistSession: true, autoRefreshToken: true } });
   }
-  state.supabase = createClient(config.supabaseUrl, publishableKey, { auth: { persistSession: true, autoRefreshToken: true } });
-  state.supabase.auth.onAuthStateChange(async (_event, session) => {
+  state.supabase.auth.onAuthStateChange((_event, session) => {
     state.session = session;
     if (!session) {
       state.profile = null;
       showAuthOnly();
       return;
     }
-    try {
-      await loadAuthenticatedApp();
-    } catch (error) {
-      console.error('post-login bootstrap failed', error);
-      setAuthMessage('Signed in, but the portal failed to load. Refresh and try again.', true);
-      showAuthOnly();
-    }
+    // Defer Supabase work out of the auth callback to avoid the GoTrue lock deadlock.
+    setTimeout(async () => {
+      try {
+        await loadAuthenticatedApp();
+      } catch (error) {
+        console.error('post-login bootstrap failed', error);
+        setAuthMessage('Signed in, but the portal failed to load. Refresh and try again.', true);
+        showAuthOnly();
+      }
+    }, 0);
   });
 }
 
 async function restoreSession() {
   if (!state.supabase) return;
+  if (state.session) {
+    try {
+      await loadAuthenticatedApp(true);
+    } catch (error) {
+      console.error('bootstrap handoff failed', error);
+      state.session = null;
+      state.profile = null;
+    }
+  }
+
+  if (state.session) return;
+
   const { data } = await state.supabase.auth.getSession();
   state.session = data.session;
   if (state.session) {

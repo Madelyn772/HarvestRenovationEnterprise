@@ -11,6 +11,8 @@ const state = {
   runtimePromise: null
 };
 
+const BOOTSTRAP_STATE_KEY = '__HARVEST_PORTAL_BOOTSTRAP__';
+
 const el = {};
 
 init();
@@ -82,7 +84,7 @@ async function initSupabase() {
     return false;
   }
 
-  state.supabase.auth.onAuthStateChange(async (_event, session) => {
+  state.supabase.auth.onAuthStateChange((_event, session) => {
     state.session = session;
     if (!session) {
       state.profile = null;
@@ -90,13 +92,17 @@ async function initSupabase() {
       return;
     }
 
-    try {
-      await routeSession(session);
-    } catch (error) {
-      console.error('session route failed', error);
-      showAuthOnly();
-      setAuthMessage('Signed in, but the portal could not finish loading. Refresh and try again.', true);
-    }
+    // supabase-js dispatches this callback while holding the auth-token lock.
+    // Awaiting any Supabase call here deadlocks, so defer the work off the callback.
+    setTimeout(async () => {
+      try {
+        await routeSession(session);
+      } catch (error) {
+        console.error('session route failed', error);
+        showAuthOnly();
+        setAuthMessage('Signed in, but the portal could not finish loading. Refresh and try again.', true);
+      }
+    }, 0);
   });
 
   return true;
@@ -159,6 +165,11 @@ async function routeSession(session, force = false) {
   updateChip(el.authStatusChip, 'Loading');
   updateChip(el.saveStateChip, 'Loading portal');
   setAuthMessage('Loading portal…');
+  window[BOOTSTRAP_STATE_KEY] = {
+    session,
+    profile: state.profile,
+    supabase: state.supabase
+  };
 
   await ensurePortalRuntime();
 }
