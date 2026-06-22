@@ -42,6 +42,7 @@ const state = {
     company_calendar_embed_url: config.companyCalendarEmbedUrl || ''
   },
   analyticsSummary: null,
+  trafficWindowSummary: null,
   store: structuredClone(seedStore),
   currentView: 'dashboard',
   selectedClientId: '',
@@ -163,7 +164,7 @@ async function bootActiveSession() {
   routeByAccess();
   if (!isActive()) return;
   loadStore();
-  await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers(), loadAnalyticsSummary()]);
+  await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers(), loadAnalyticsSummary(), loadTrafficWindowSummary()]);
   await startPresence();
   hydrateForms();
   renderAll();
@@ -267,6 +268,20 @@ async function loadAnalyticsSummary() {
     state.analyticsSummary = Array.isArray(data) ? data[0] : data;
   } catch {
     state.analyticsSummary = null;
+  }
+}
+
+async function loadTrafficWindowSummary() {
+  if (!isActive()) return;
+  try {
+    const { data, error } = await state.supabase
+      .from('portal_traffic_window_summary')
+      .select('*')
+      .single();
+    if (error) throw error;
+    state.trafficWindowSummary = data || null;
+  } catch {
+    state.trafficWindowSummary = null;
   }
 }
 
@@ -528,6 +543,16 @@ function renderDashboard() {
   const mainVisits = num(state.analyticsSummary?.main_site_visits);
   const landingVisits = num(state.analyticsSummary?.landing_page_visits);
   const trackedLeads = num(state.analyticsSummary?.tracked_leads);
+  const pageViews7d = num(state.trafficWindowSummary?.page_views_7d);
+  const pageViews30d = num(state.trafficWindowSummary?.page_views_30d);
+  const keyClicks7d = num(state.trafficWindowSummary?.key_clicks_7d);
+  const keyClicks30d = num(state.trafficWindowSummary?.key_clicks_30d);
+  const leads7d = num(state.trafficWindowSummary?.leads_7d);
+  const leads30d = num(state.trafficWindowSummary?.leads_30d);
+  const mainVisits30d = num(state.trafficWindowSummary?.main_site_visits_30d);
+  const landingVisits30d = num(state.trafficWindowSummary?.landing_page_visits_30d);
+  const leadConversion30d = Number(state.trafficWindowSummary?.lead_conversion_rate_30d || 0);
+  const conversionLabel = Number.isFinite(leadConversion30d) ? `${leadConversion30d.toFixed(2)}%` : '—';
   const onlineTeam = state.onlineUserIds.size;
   const activeHere = state.session?.user?.id ? 1 : 0;
   const offlineTeam = Math.max(0, state.teamProfiles.length - onlineTeam);
@@ -537,10 +562,10 @@ function renderDashboard() {
     ['Estimate Value', money.format(estimateValue), 'Draft + sent proposals'],
     ['Scheduled Revenue', money.format(scheduledRevenue), 'Project value in operations'],
     ['Close Rate', `${closeRate}%`, 'Won leads ÷ total leads'],
-    ['Main Site Visits', mainVisits ? integer.format(mainVisits) : '—', 'Tracked from the public website'],
-    ['Tracked Leads', trackedLeads ? integer.format(trackedLeads) : '—', 'Estimate + landing submissions'],
+    ['Main Site Visits', mainVisits ? integer.format(mainVisits) : '—', mainVisits30d ? `Last 30d: ${integer.format(mainVisits30d)}` : 'Tracked from the public website'],
+    ['Tracked Leads', trackedLeads ? integer.format(trackedLeads) : '—', leads30d ? `Last 30d: ${integer.format(leads30d)}` : 'Estimate + landing submissions'],
     ['Team Online', integer.format(onlineTeam), activeHere ? `You active • ${integer.format(offlineTeam)} offline` : `${integer.format(offlineTeam)} offline`],
-    ['Landing Visits', landingVisits ? integer.format(landingVisits) : '—', 'Only needed if you use ad landing pages']
+    ['Landing Visits', landingVisits ? integer.format(landingVisits) : '—', landingVisits30d ? `Last 30d: ${integer.format(landingVisits30d)}` : 'Only needed if you use ad landing pages']
   ];
   el.dashboardKpis.innerHTML = kpis.map(([label, value, meta]) => `<div class="kpi-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(meta)}</small></div>`).join('');
 
@@ -554,6 +579,12 @@ function renderDashboard() {
     ['Main website visits', mainVisits ? integer.format(mainVisits) : 'Install tracker'],
     ['Landing page visits', landingVisits ? integer.format(landingVisits) : 'Install tracker'],
     ['Public tracked leads', trackedLeads ? integer.format(trackedLeads) : 'Install tracker'],
+    ['Website page views (7d)', pageViews7d ? integer.format(pageViews7d) : '—'],
+    ['Website page views (30d)', pageViews30d ? integer.format(pageViews30d) : '—'],
+    ['Key clicks (7d)', keyClicks7d ? integer.format(keyClicks7d) : '—'],
+    ['Key clicks (30d)', keyClicks30d ? integer.format(keyClicks30d) : '—'],
+    ['Tracked leads (7d)', leads7d ? integer.format(leads7d) : '—'],
+    ['30d lead conversion', conversionLabel],
     ['Calculated cost per lead', computeCplLabel()],
   ].map(([label, value]) => `<div class="summary-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
   el.analyticsSummary.innerHTML = analyticsRows;
