@@ -1376,3 +1376,167 @@ textarea:focus {
     text-align: center;
   }
 }
+
+/* ============================================================
+   Readability layer — light, high-contrast write surfaces.
+   Appended last so it wins the cascade.
+   ============================================================ */
+
+/* Form fields: white background with dark text everywhere. */
+input,
+select,
+textarea {
+  background: #ffffff;
+  color: #14110d;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+}
+input::placeholder,
+textarea::placeholder { color: #6b7280; opacity: 1; }
+select option { color: #14110d; background: #ffffff; }
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(205, 161, 90, 0.18);
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #eef0f2;
+  color: #4b5563;
+}
+
+/* Invoice line rows sit on the light fields too. */
+.invoice-row input { background: #ffffff; color: #14110d; }
+
+/* Estimate "tracking" preview — light, client-ready panel. */
+.estimate-summary {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 18px;
+  padding: 1rem 1.15rem;
+  color: #14110d;
+}
+.estimate-summary .summary-tile,
+.estimate-summary .summary-row {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+.estimate-summary .summary-tile span,
+.estimate-summary .summary-row span { color: #4b5563; }
+.estimate-summary .summary-tile strong,
+.estimate-summary .summary-row strong { color: #14110d; }
+.estimate-summary .stack-item {
+  background: #f6f7f8;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  color: #14110d;
+}
+.estimate-summary .stack-item h4 { color: #14110d; }
+.estimate-summary .stack-item p { color: #374151; }
+
+/* Client detail panel readability. */
+.detail-body:not(.empty-state) {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 1rem 1.15rem;
+  color: #14110d;
+}
+.detail-body:not(.empty-state) .summary-row span { color: #4b5563; }
+.detail-body:not(.empty-state) .summary-row strong { color: #14110d; }
+.detail-body:not(.empty-state) .stack-item { color: #14110d; }
+.detail-body:not(.empty-state) .stack-item h4 { color: #14110d; }
+.detail-body:not(.empty-state) .stack-item p { color: #374151; }
+
+/* Team directory — legible cards. */
+.employee-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #14110d;
+}
+.employee-card h4 { color: #14110d; }
+.employee-card .muted,
+.employee-card .employee-meta-row span,
+.employee-card .employee-joined { color: #4b5563; }
+.employee-card .role-badge {
+  background: rgba(205, 161, 90, 0.22);
+  color: #5a4316;
+  border: 1px solid rgba(205, 161, 90, 0.4);
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-left: .4rem;
+}
+.employee-admin-controls {
+  margin-top: .85rem;
+  padding-top: .85rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .7rem;
+}
+.employee-admin-controls .inline-field {
+  display: grid;
+  gap: .3rem;
+  min-width: 130px;
+}
+.employee-admin-controls .inline-field span {
+  font-size: .74rem;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.employee-admin-controls .form-actions {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+.employee-admin-controls .tiny { width: 100%; margin: 0; color: #6b7280; }
+
+/* Danger ghost / delete buttons. */
+.danger-ghost,
+.ghost-btn.danger-ghost {
+  color: #b91c1c;
+  border: 1px solid rgba(185, 28, 28, 0.35);
+  background: rgba(185, 28, 28, 0.06);
+}
+.danger-ghost:hover,
+.ghost-btn.danger-ghost:hover {
+  background: rgba(185, 28, 28, 0.12);
+  color: #991b1b;
+}
+
+/* Document & trash filter chips. */
+.doc-filter-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.chip-btn {
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: .4rem .85rem;
+  font-size: .82rem;
+}
+.chip-btn.active {
+  background: var(--gold);
+  color: #1d1308;
+  border-color: var(--gold);
+}
+
+/* Document & trash list items. */
+.doc-item,
+.trash-item {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #14110d;
+}
+.doc-item h4,
+.trash-item h4 { color: #14110d; }
+.doc-item .muted,
+.trash-item .muted { color: #4b5563; }
+.doc-item strong { color: #14110d; }
+
+.client-row { display: grid; gap: .5rem; }
+.client-row .client-select { width: 100%; text-align: left; }

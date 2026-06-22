@@ -5,6 +5,7 @@ const config = portalConfig || {};
 const STORAGE_KEY = 'harvest-portal-pro-crm-v1';
 const DASHBOARD_VIEW_MODE_KEY = 'harvest-portal-pro-dashboard-view-mode';
 const BOOTSTRAP_STATE_KEY = '__HARVEST_PORTAL_BOOTSTRAP__';
+const TRASH_RETENTION_DAYS = 30;
 
 const estimateTemplates = {
   'Kitchen Remodeling': { trade: 'Kitchen Remodeling', measurementType: 'SquareFoot', rate: 28, materialPercent: 12, laborPercent: 18, finalPercent: 8, scope: 'Cabinet updates, countertops, backsplash, lighting, paint, trim, and finish coordination.' },
@@ -27,7 +28,22 @@ const seedStore = {
   notes: [],
   invoices: [],
   campaigns: [],
-  activity: []
+  activity: [],
+  documents: [],
+  trash: []
+};
+
+// Human-readable labels for each deletable collection, used by the Trash view.
+const collectionLabels = {
+  clients: 'Client',
+  leads: 'Lead',
+  estimates: 'Estimate',
+  jobs: 'Project',
+  calendar: 'Calendar item',
+  notes: 'Note',
+  invoices: 'Invoice',
+  campaigns: 'KPI row',
+  documents: 'Document'
 };
 
 const state = {
@@ -37,6 +53,7 @@ const state = {
   bootstrapUsersSynced: false,
   appUiBound: false,
   teamProfiles: [],
+  allProfiles: [],
   pendingUsers: [],
   presenceChannel: null,
   onlineUserIds: new Set(),
@@ -51,7 +68,8 @@ const state = {
   selectedClientId: '',
   filters: {
     clientSearch: '',
-    employeeSearch: ''
+    employeeSearch: '',
+    documentType: 'all'
   }
 };
 
@@ -88,7 +106,8 @@ function cacheDom() {
     'invoiceClientSelect','relatedEstimate','invoiceNumber','invoiceDate','invoiceItems','addInvoiceRow','printInvoice','noteForm','noteClientSelect',
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits',
     'trackedLeadsCount','adCplValue','companyCalendarWrap','companyCalendarBadge','teamCalendarList','upcomingFeed','employeeSearch','employeeList',
-    'readinessList','employeePresenceSummary','profileForm','passwordForm','companyCalendarForm','pendingList','adminGrantAccessForm','saveStateChip','authStatusChip','calendarStatusChip'
+    'readinessList','employeePresenceSummary','profileForm','passwordForm','companyCalendarForm','pendingList','adminGrantAccessForm','saveStateChip','authStatusChip','calendarStatusChip',
+    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
@@ -125,6 +144,20 @@ function bindAppUi() {
 
   el.clientSearch.addEventListener('input', e => { state.filters.clientSearch = e.target.value.toLowerCase(); renderClients(); renderLeads(); });
   el.employeeSearch.addEventListener('input', e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); });
+
+  document.querySelectorAll('[data-doc-filter]').forEach(btn => btn.addEventListener('click', () => {
+    state.filters.documentType = btn.dataset.docFilter;
+    document.querySelectorAll('[data-doc-filter]').forEach(node => node.classList.toggle('active', node === btn));
+    renderDocuments();
+  }));
+
+  // Delegated soft-delete for every list item that exposes a delete control.
+  document.addEventListener('click', event => {
+    const btn = event.target.closest('.delete-record');
+    if (!btn) return;
+    event.preventDefault();
+    softDelete(btn.dataset.collection, btn.dataset.id);
+  });
 
   el.clientForm.addEventListener('submit', handleClientSave);
   el.leadForm.addEventListener('submit', handleLeadSave);
@@ -235,12 +268,14 @@ async function loadAuthenticatedApp(forceRefresh = false) {
 
   bindAuthUi();
   loadStore();
+  purgeExpiredTrash();
   showAppOnly();
   hydrateForms();
   renderCurrentView();
 
   try {
     await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers()]);
+    await loadAllProfiles();
     await syncBootstrapUsers();
     hydrateForms();
     renderAll();
@@ -445,6 +480,20 @@ async function loadTeamProfiles() {
   }
 }
 
+async function loadAllProfiles() {
+  if (!isAdmin()) {
+    state.allProfiles = [];
+    return;
+  }
+  try {
+    const { data, error } = await state.supabase.from('profiles').select('*').order('full_name');
+    if (!error) state.allProfiles = data || [];
+  } catch (error) {
+    console.warn('all profiles unavailable', error);
+    state.allProfiles = [];
+  }
+}
+
 async function loadPendingUsers() {
   if (!isAdmin()) return;
   try {
@@ -605,11 +654,13 @@ function setView(view) {
     crm: ['CRM & Leads', 'Manage client records, lead intake, and opportunity flow.'],
     estimating: ['Estimating', 'Create proposal-ready estimates and PDF exports.'],
     operations: ['Operations', 'Run projects, schedule visits, manage invoices, and keep notes organized.'],
+    documents: ['Documents', 'Saved PDF estimates and invoices, ready to reopen, print, or download.'],
     marketing: ['Marketing KPI', 'Track traffic, ad spend, campaign performance, and lead sources.'],
     calendars: ['Calendars', 'Monitor the company calendar and team availability.'],
     team: ['Team', 'View the employee directory and internal build-out roadmap.'],
     settings: ['Settings', 'Manage your employee profile, password, and shared calendar settings.'],
-    admin: ['Admin', 'Approve access requests and create active employees.']
+    admin: ['Admin', 'Approve access requests and create active employees.'],
+    trash: ['Trash', 'Restore recently deleted items or remove them permanently.']
   };
   const [title, subtitle] = titleMap[view] || ['Harvest Portal', ''];
   el.pageTitle.textContent = title;
@@ -637,6 +688,7 @@ function renderCurrentView() {
       renderInvoices();
       renderNotes();
     },
+    documents: () => renderDocuments(),
     marketing: () => {
       renderCampaigns();
       renderLeadSourceSummary();
@@ -644,10 +696,12 @@ function renderCurrentView() {
     calendars: () => renderCalendars(),
     team: () => {
       renderEmployees();
+      renderTeamPending();
       renderReadiness();
     },
     settings: () => {},
-    admin: () => renderPendingUsers()
+    admin: () => renderPendingUsers(),
+    trash: () => renderTrash()
   };
 
   (renderers[state.currentView] || renderers.dashboard)();
@@ -697,6 +751,7 @@ function loadStore() {
   if (!state.store.activity.length) {
     addActivity('Portal loaded', 'System');
   }
+  purgeExpiredTrash();
 }
 
 function saveStore(message = 'Saved') {
@@ -756,7 +811,10 @@ function renderAll() {
   renderLeadSourceSummary();
   renderCalendars();
   renderEmployees();
+  renderTeamPending();
   renderPendingUsers();
+  renderDocuments();
+  renderTrash();
   renderReadiness();
 }
 
@@ -849,7 +907,7 @@ function renderClients() {
   const clients = [...state.store.clients].filter(item => [item.name,item.phone,item.email,item.tags,item.source].join(' ').toLowerCase().includes(query)).sort((a,b) => (a.name||'').localeCompare(b.name||''));
   el.clientList.innerHTML = clients.length ? clients.map(client => {
     const linkedLeads = state.store.leads.filter(item => item.clientId === client.id).length;
-    return `<button class="stack-item link-card client-select" data-client-id="${client.id}"><h4>${escapeHtml(client.name || 'Unnamed Client')}</h4><p>${escapeHtml(client.phone || 'No phone')} • ${escapeHtml(client.email || 'No email')}</p><p class="muted">${escapeHtml(client.source || 'No source')} • ${linkedLeads} linked leads</p></button>`;
+    return `<div class="stack-item client-row"><button class="link-card client-select" data-client-id="${client.id}"><h4>${escapeHtml(client.name || 'Unnamed Client')}</h4><p>${escapeHtml(client.phone || 'No phone')} • ${escapeHtml(client.email || 'No email')}</p><p class="muted">${escapeHtml(client.source || 'No source')} • ${linkedLeads} linked leads</p></button><div class="form-actions">${deleteBtn('clients', client.id)}</div></div>`;
   }).join('') : emptyHtml('No clients saved yet.');
   el.clientList.querySelectorAll('.client-select').forEach(btn => btn.addEventListener('click', () => { state.selectedClientId = btn.dataset.clientId; renderClientDetail(); }));
 }
@@ -859,7 +917,7 @@ function renderLeads() {
   const leads = [...state.store.leads].filter(item => [item.clientName,item.phone,item.email,item.service,item.status,item.area].join(' ').toLowerCase().includes(query)).sort((a,b) => sortDateDesc(a.preferredDate, b.preferredDate));
   el.leadTable.innerHTML = leads.length ? leads.map(lead => {
     const statusColor = lead.status === 'Won' ? 'var(--green)' : lead.status === 'Lost' ? 'var(--red)' : 'var(--gold-2)';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(lead.clientName || 'Unnamed Lead')}</h4><p>${escapeHtml(lead.service || 'General')} • ${escapeHtml(lead.area || '')}</p></div><strong style="color:${statusColor}">${escapeHtml(lead.status || 'New Lead')}</strong></div><p class="muted">${escapeHtml(lead.phone || '')} ${lead.email ? '• ' + escapeHtml(lead.email) : ''}</p><p>${escapeHtml(lead.notes || '')}</p></div>`;
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(lead.clientName || 'Unnamed Lead')}</h4><p>${escapeHtml(lead.service || 'General')} • ${escapeHtml(lead.area || '')}</p></div><strong style="color:${statusColor}">${escapeHtml(lead.status || 'New Lead')}</strong></div><p class="muted">${escapeHtml(lead.phone || '')} ${lead.email ? '• ' + escapeHtml(lead.email) : ''}</p><p>${escapeHtml(lead.notes || '')}</p><div class="form-actions">${deleteBtn('leads', lead.id)}</div></div>`;
   }).join('') : emptyHtml('No leads captured yet.');
 }
 
@@ -887,7 +945,7 @@ function renderClientDetail() {
 
 function renderEstimates() {
   const items = [...state.store.estimates].sort((a,b) => sortDateDesc(a.date, b.date));
-  el.estimateList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')} • Deposit ${money.format(num(item.depositAmount))}</p><div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button></div></div>`).join('') : emptyHtml('No estimates saved yet.');
+  el.estimateList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')} • Deposit ${money.format(num(item.depositAmount))}</p><div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button>${deleteBtn('estimates', item.id)}</div></div>`).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-print').forEach(btn => btn.addEventListener('click', () => {
     const estimate = state.store.estimates.find(item => item.id === btn.dataset.estimateId);
@@ -897,19 +955,18 @@ function renderEstimates() {
 
 function renderJobs() {
   const items = [...state.store.jobs].sort((a,b) => sortDateAsc(a.startDate, b.startDate));
-  el.jobBoard.innerHTML = items.length ? items.map(item => stackItem(`${item.client || 'Client'} · ${item.service || 'Project'}`, `${item.status || 'Scheduled'} • ${money.format(num(item.value))}`, `${formatDate(item.startDate)}${item.notes ? ' • ' + escapeHtml(item.notes) : ''}`)).join('') : emptyHtml('No projects created yet.');
+  el.jobBoard.innerHTML = items.length ? items.map(item => deletableStackItem('jobs', item.id, `${item.client || 'Client'} · ${item.service || 'Project'}`, `${item.status || 'Scheduled'} • ${money.format(num(item.value))}`, `${formatDate(item.startDate)}${item.notes ? ' • ' + escapeHtml(item.notes) : ''}`)).join('') : emptyHtml('No projects created yet.');
 }
 
 function renderCalendarItems() {
   const items = [...state.store.calendar].sort((a,b) => sortDateAsc(a.date, b.date));
-  const html = items.length ? items.map(item => stackItem(item.title || 'Calendar item', `${item.type || 'Event'} • ${formatDate(item.date)}`, `${item.client || ''}${item.notes ? ' • ' + escapeHtml(item.notes) : ''}`)).join('') : emptyHtml('No internal calendar items yet.');
-  el.calendarList.innerHTML = html;
-  el.upcomingFeed.innerHTML = html;
+  el.calendarList.innerHTML = items.length ? items.map(item => deletableStackItem('calendar', item.id, item.title || 'Calendar item', `${item.type || 'Event'} • ${formatDate(item.date)}`, `${item.client || ''}${item.notes ? ' • ' + escapeHtml(item.notes) : ''}`)).join('') : emptyHtml('No internal calendar items yet.');
+  el.upcomingFeed.innerHTML = items.length ? items.map(item => stackItem(item.title || 'Calendar item', `${item.type || 'Event'} • ${formatDate(item.date)}`, `${item.client || ''}${item.notes ? ' • ' + escapeHtml(item.notes) : ''}`)).join('') : emptyHtml('No internal calendar items yet.');
 }
 
 function renderInvoices() {
   const items = [...state.store.invoices].sort((a,b) => sortDateDesc(a.date, b.date));
-  el.invoiceList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.total))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button></div></div>`).join('') : emptyHtml('No invoices yet.');
+  el.invoiceList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.total))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button>${deleteBtn('invoices', item.id)}</div></div>`).join('') : emptyHtml('No invoices yet.');
   el.invoiceList.querySelectorAll('.invoice-print').forEach(btn => btn.addEventListener('click', () => {
     const invoice = state.store.invoices.find(item => item.id === btn.dataset.invoiceId);
     if (invoice) printInvoice(invoice);
@@ -918,14 +975,14 @@ function renderInvoices() {
 
 function renderNotes() {
   const items = [...state.store.notes].reverse();
-  el.noteList.innerHTML = items.length ? items.map(item => stackItem(item.title || 'Note', `${item.category || 'General'}${item.link ? ' • ' + escapeHtml(item.link) : ''}`, item.body || '')).join('') : emptyHtml('No notes saved yet.');
+  el.noteList.innerHTML = items.length ? items.map(item => deletableStackItem('notes', item.id, item.title || 'Note', `${item.category || 'General'}${item.link ? ' • ' + escapeHtml(item.link) : ''}`, item.body || '')).join('') : emptyHtml('No notes saved yet.');
 }
 
 function renderCampaigns() {
   const items = [...state.store.campaigns].sort((a,b) => sortDateDesc(a.date, b.date));
   el.campaignList.innerHTML = items.length ? items.map(item => {
     const cpl = num(item.leads) ? money.format(num(item.spend) / Math.max(1, num(item.leads))) : '—';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.campaign)}</h4><p>${escapeHtml(item.channel)} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.spend))}</strong></div><p class="muted">${integer.format(num(item.impressions))} impressions • ${integer.format(num(item.clicks))} clicks • ${integer.format(num(item.leads))} leads • CPL ${escapeHtml(cpl)}</p></div>`;
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.campaign)}</h4><p>${escapeHtml(item.channel)} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.spend))}</strong></div><p class="muted">${integer.format(num(item.impressions))} impressions • ${integer.format(num(item.clicks))} clicks • ${integer.format(num(item.leads))} leads • CPL ${escapeHtml(cpl)}</p><div class="form-actions">${deleteBtn('campaigns', item.id)}</div></div>`;
   }).join('') : emptyHtml('No campaign KPI rows saved yet.');
 
   el.mainWebsiteVisits.textContent = state.analyticsSummary?.main_site_visits ? integer.format(num(state.analyticsSummary.main_site_visits)) : '—';
@@ -964,8 +1021,10 @@ function renderCalendars() {
 }
 
 function renderEmployees() {
+  const admin = isAdmin();
   const query = state.filters.employeeSearch;
-  const employees = state.teamProfiles.filter(item => [item.full_name,item.email,item.phone,item.role].join(' ').toLowerCase().includes(query));
+  const source = admin && state.allProfiles.length ? state.allProfiles : state.teamProfiles;
+  const employees = source.filter(item => [item.full_name,item.email,item.phone,item.role,item.status].join(' ').toLowerCase().includes(query));
   const activeId = String(state.session?.user?.id || '');
   const onlineCount = state.teamProfiles.filter(profile => isUserOnline(profile)).length;
   const activeCount = activeId ? 1 : 0;
@@ -979,20 +1038,36 @@ function renderEmployees() {
   }
   el.employeeList.innerHTML = employees.length ? employees.map(profile => {
     const currentUser = String(profile.id || '') === activeId;
-    const online = isUserOnline(profile);
-    const statusKey = currentUser ? 'active' : (online ? 'online' : 'offline');
-    const statusLabel = currentUser ? 'Active on this device' : (online ? 'Online now' : 'Offline');
+    const deactivated = profile.status && profile.status !== 'active';
+    const online = !deactivated && isUserOnline(profile);
+    const statusKey = deactivated ? 'offline' : (currentUser ? 'active' : (online ? 'online' : 'offline'));
+    const statusLabel = deactivated
+      ? (profile.status === 'pending' ? 'Pending approval' : (profile.status === 'denied' ? 'Denied' : 'Deactivated'))
+      : (currentUser ? 'Active on this device' : (online ? 'Online now' : 'Offline'));
     const fullName = escapeHtml(profile.full_name || profile.email || 'Team Member');
     const email = escapeHtml(profile.email || '');
     const phone = escapeHtml(profile.phone || 'No phone on file');
     const role = escapeHtml(profile.role || 'staff');
     const calendar = escapeHtml(profile.calendar_label || 'No calendar label');
+    const joined = profile.created_at ? `Joined ${escapeHtml(formatDateTime(profile.created_at))}` : '';
+    let adminControls = '';
+    if (admin) {
+      const roleSelect = `<label class="inline-field"><span>Role</span><select class="role-select" data-user-id="${profile.id}"><option value="staff"${role === 'staff' ? ' selected' : ''}>Staff</option><option value="admin"${role === 'admin' ? ' selected' : ''}>Admin</option></select></label>`;
+      const saveRole = `<button type="button" class="ghost-btn role-save" data-user-id="${profile.id}">Save role</button>`;
+      const statusBtn = (profile.status === 'active')
+        ? `<button type="button" class="danger-btn user-deactivate" data-user-id="${profile.id}">Deactivate</button>`
+        : (profile.status === 'pending'
+          ? `<button type="button" class="primary-btn user-activate" data-user-id="${profile.id}">Approve</button>`
+          : `<button type="button" class="primary-btn user-activate" data-user-id="${profile.id}">Reactivate</button>`);
+      const selfNote = currentUser ? '<p class="muted tiny">This is your account.</p>' : '';
+      adminControls = `<div class="employee-admin-controls">${roleSelect}<div class="form-actions">${saveRole}${currentUser ? '' : statusBtn}</div>${selfNote}</div>`;
+    }
     return `
       <div class="employee-card ${statusKey}">
         <div class="employee-head">
           <div>
-            <h4>${fullName}</h4>
-            <p class="muted">${role} • ${email}</p>
+            <h4>${fullName} <span class="role-badge">${role}</span></h4>
+            <p class="muted">${email}</p>
           </div>
           <span class="presence-pill ${statusKey}">${statusLabel}</span>
         </div>
@@ -1000,9 +1075,69 @@ function renderEmployees() {
           <span>${phone}</span>
           <span>${calendar}</span>
         </div>
+        ${joined ? `<p class="muted tiny employee-joined">${joined}</p>` : ''}
+        ${adminControls}
       </div>
     `;
-  }).join('') : emptyHtml('No active employees match your search.');
+  }).join('') : emptyHtml('No employees match your search.');
+
+  el.employeeList.querySelectorAll('.role-save').forEach(btn => btn.addEventListener('click', () => {
+    const select = el.employeeList.querySelector(`.role-select[data-user-id="${btn.dataset.userId}"]`);
+    if (select) handleSetUserRole(btn.dataset.userId, select.value);
+  }));
+  el.employeeList.querySelectorAll('.user-deactivate').forEach(btn => btn.addEventListener('click', () => handleSetUserStatus(btn.dataset.userId, 'inactive')));
+  el.employeeList.querySelectorAll('.user-activate').forEach(btn => btn.addEventListener('click', () => handleSetUserStatus(btn.dataset.userId, 'active')));
+}
+
+function renderTeamPending() {
+  if (!el.teamPendingList) return;
+  if (!isAdmin()) {
+    el.teamPendingList.innerHTML = emptyHtml('Admin access required.');
+    return;
+  }
+  el.teamPendingList.innerHTML = state.pendingUsers.length ? state.pendingUsers.map(user => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(user.full_name || user.email)}</h4><p class="muted">${escapeHtml(user.email || '')}</p></div><span class="badge">Pending</span></div><div class="form-actions"><button class="primary-btn pending-approve" data-user-id="${user.id}">Approve</button><button class="danger-btn pending-deny" data-user-id="${user.id}">Deny</button></div></div>`).join('') : emptyHtml('No pending access requests.');
+  el.teamPendingList.querySelectorAll('.pending-approve').forEach(btn => btn.addEventListener('click', () => reviewPending(btn.dataset.userId, 'approve')));
+  el.teamPendingList.querySelectorAll('.pending-deny').forEach(btn => btn.addEventListener('click', () => reviewPending(btn.dataset.userId, 'deny')));
+}
+
+async function handleSetUserRole(userId, role) {
+  if (!isAdmin()) return;
+  const normalizedRole = role === 'admin' ? 'admin' : 'staff';
+  try {
+    await safeRpc('set_user_role', { p_user_id: userId, p_role: normalizedRole });
+    await Promise.all([loadTeamProfiles(), loadAllProfiles()]);
+    renderEmployees();
+    showToast(`Role updated to ${normalizedRole}.`, 'success');
+  } catch (error) {
+    console.error(error);
+    showToast(missingFunctionMessage(error, 'set_user_role') || error.message || 'Unable to update role.', 'error');
+  }
+}
+
+async function handleSetUserStatus(userId, status) {
+  if (!isAdmin()) return;
+  if (status === 'inactive' && String(userId) === String(state.session?.user?.id || '')) {
+    showToast('You cannot deactivate your own account.', 'error');
+    return;
+  }
+  try {
+    await safeRpc('set_user_status', { p_user_id: userId, p_status: status });
+    await Promise.all([loadTeamProfiles(), loadAllProfiles(), loadPendingUsers()]);
+    renderEmployees();
+    renderTeamPending();
+    showToast(status === 'active' ? 'User activated.' : 'User deactivated.', 'success');
+  } catch (error) {
+    console.error(error);
+    showToast(missingFunctionMessage(error, 'set_user_status') || error.message || 'Unable to update status.', 'error');
+  }
+}
+
+function missingFunctionMessage(error, fnName) {
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('could not find') || message.includes('does not exist') || message.includes('not found') || error?.code === 'PGRST202') {
+    return `Database function "${fnName}" is not installed yet. Run the latest supabase/portal-core-bootstrap.sql to enable this control.`;
+  }
+  return '';
 }
 
 function renderPendingUsers() {
@@ -1184,7 +1319,7 @@ async function handleCompanyCalendarSave(event) {
 async function reviewPending(userId, decision) {
   try {
     await safeRpc('review_user_request', { p_user_id: userId, p_decision: decision, p_role: 'staff' });
-    await Promise.all([loadPendingUsers(), loadTeamProfiles()]);
+    await Promise.all([loadPendingUsers(), loadTeamProfiles(), loadAllProfiles()]);
     renderAll();
     showToast(`User ${decision === 'approve' ? 'approved' : 'denied'}.`, 'success');
   } catch (error) {
@@ -1369,8 +1504,8 @@ function clearFormForButton(id) {
   if (form === el.estimateForm) applyEstimateTemplate();
 }
 
-function printEstimate(estimate) {
-  const html = `
+function buildEstimateDocHtml(estimate) {
+  return `
     <html><head><title>Estimate ${escapeHtml(estimate.estimateNumber || '')}</title><style>body{font-family:Inter,Arial,sans-serif;padding:32px;color:#0f172a}h1,h2{margin:0 0 10px}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{border:1px solid #dbe2ea;padding:10px;text-align:left}.total{font-size:22px;font-weight:700} .muted{color:#475569}</style></head><body>
     <h1>Harvest Renovation</h1><p class="muted">Estimate ${escapeHtml(estimate.estimateNumber || '')} • ${escapeHtml(formatDate(estimate.date))}</p>
     <h2>${escapeHtml(estimate.clientName || 'Client')}</h2>
@@ -1386,12 +1521,18 @@ function printEstimate(estimate) {
     <p class="total">Estimate Total: ${money.format(num(estimate.estimatedCost))}</p>
     <p><strong>Deposit Due:</strong> ${money.format(num(estimate.depositAmount))}</p>
     <script>window.onload=()=>window.print()</script></body></html>`;
+}
+
+function printEstimate(estimate) {
+  const html = buildEstimateDocHtml(estimate);
+  saveDocument('estimate', estimate.estimateNumber || estimate.id || autoNumber('EST'), estimate.clientName, estimate.estimatedCost, html);
+  renderDocuments();
   openPrintWindow(html);
 }
 
-function printInvoice(invoice) {
+function buildInvoiceDocHtml(invoice) {
   const rows = (invoice.items || []).map(item => `<tr><td>${escapeHtml(item.description || '')}</td><td>${money.format(num(item.amount))}</td></tr>`).join('');
-  const html = `
+  return `
     <html><head><title>Invoice ${escapeHtml(invoice.invoiceNumber || '')}</title><style>body{font-family:Inter,Arial,sans-serif;padding:32px;color:#0f172a}h1,h2{margin:0 0 10px}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{border:1px solid #dbe2ea;padding:10px;text-align:left}.total{font-size:22px;font-weight:700} .muted{color:#475569}</style></head><body>
     <h1>Harvest Renovation</h1><p class="muted">Invoice ${escapeHtml(invoice.invoiceNumber || '')} • ${escapeHtml(formatDate(invoice.date))}</p>
     <h2>${escapeHtml(invoice.clientName || 'Client')}</h2>
@@ -1399,6 +1540,12 @@ function printInvoice(invoice) {
     <table><tr><th>Description</th><th>Amount</th></tr>${rows}</table>
     <p class="total">Invoice Total: ${money.format(num(invoice.total))}</p>
     <script>window.onload=()=>window.print()</script></body></html>`;
+}
+
+function printInvoice(invoice) {
+  const html = buildInvoiceDocHtml(invoice);
+  saveDocument('invoice', invoice.invoiceNumber || invoice.id || autoNumber('INV'), invoice.clientName, invoice.total, html);
+  renderDocuments();
   openPrintWindow(html);
 }
 
@@ -1415,6 +1562,157 @@ function upsertArray(key, payload, idKey = 'id') {
   const index = list.findIndex(item => item[idKey] === payload[idKey]);
   if (index >= 0) list[index] = { ...list[index], ...payload };
   else list.unshift(payload);
+}
+
+// ===== Soft delete + Trash =====
+function describeRecord(collection, record) {
+  switch (collection) {
+    case 'clients': return record.name || 'Client';
+    case 'leads': return record.clientName || 'Lead';
+    case 'estimates': return `${record.estimateNumber || record.id} · ${record.clientName || record.user || 'Estimate'}`;
+    case 'jobs': return `${record.client || 'Project'} · ${record.service || ''}`.trim();
+    case 'calendar': return record.title || 'Calendar item';
+    case 'notes': return record.title || 'Note';
+    case 'invoices': return `${record.invoiceNumber || record.id} · ${record.clientName || 'Invoice'}`;
+    case 'campaigns': return `${record.campaign || 'KPI row'} · ${record.channel || ''}`.trim();
+    case 'documents': return `${record.title || record.number || 'Document'}`;
+    default: return 'Item';
+  }
+}
+
+function softDelete(collection, id) {
+  const list = state.store[collection];
+  if (!Array.isArray(list)) return;
+  const index = list.findIndex(item => item.id === id);
+  if (index < 0) return;
+  const [record] = list.splice(index, 1);
+  state.store.trash.unshift({
+    trashId: uid('TRSH'),
+    collection,
+    label: describeRecord(collection, record),
+    record,
+    deletedAt: new Date().toISOString(),
+    deletedBy: state.profile?.full_name || state.session?.user?.email || 'User'
+  });
+  addActivity(`Moved ${collectionLabels[collection] || 'item'} "${describeRecord(collection, record)}" to Trash.`, 'Trash');
+  saveStore('Moved to Trash');
+  renderAll();
+  showToast('Moved to Trash.', 'success');
+}
+
+function restoreTrashItem(trashId) {
+  const index = state.store.trash.findIndex(item => item.trashId === trashId);
+  if (index < 0) return;
+  const entry = state.store.trash[index];
+  if (Array.isArray(state.store[entry.collection])) {
+    state.store[entry.collection].unshift(entry.record);
+  }
+  state.store.trash.splice(index, 1);
+  addActivity(`Restored ${collectionLabels[entry.collection] || 'item'} "${entry.label}" from Trash.`, 'Trash');
+  saveStore('Restored');
+  populateClientSelects();
+  populateEstimateSelects();
+  renderAll();
+  showToast('Item restored.', 'success');
+}
+
+function permanentDeleteTrashItem(trashId) {
+  if (!isAdmin()) {
+    showToast('Only an administrator can permanently delete items.', 'error');
+    return;
+  }
+  const index = state.store.trash.findIndex(item => item.trashId === trashId);
+  if (index < 0) return;
+  const [entry] = state.store.trash.splice(index, 1);
+  addActivity(`Permanently deleted ${collectionLabels[entry.collection] || 'item'} "${entry.label}".`, 'Trash');
+  saveStore('Permanently deleted');
+  renderTrash();
+  showToast('Permanently deleted.', 'success');
+}
+
+function purgeExpiredTrash() {
+  if (!Array.isArray(state.store.trash) || !state.store.trash.length) return;
+  const cutoff = Date.now() - TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const before = state.store.trash.length;
+  state.store.trash = state.store.trash.filter(entry => new Date(entry.deletedAt || 0).getTime() >= cutoff);
+  if (state.store.trash.length !== before) saveStore('Trash cleaned');
+}
+
+function trashDaysLeft(deletedAt) {
+  const elapsed = Date.now() - new Date(deletedAt || 0).getTime();
+  const left = TRASH_RETENTION_DAYS - Math.floor(elapsed / (24 * 60 * 60 * 1000));
+  return Math.max(0, left);
+}
+
+function renderTrash() {
+  const admin = isAdmin();
+  if (el.trashPolicyNote) {
+    el.trashPolicyNote.textContent = admin
+      ? 'Deleted items are kept for 30 days, then removed automatically. Restore items to bring them back, or permanently delete them now.'
+      : 'Deleted items are kept for 30 days, then removed automatically. You can restore items. Only an administrator can permanently delete before the 30-day window.';
+  }
+  const items = [...state.store.trash].sort((a, b) => sortDateDesc(a.deletedAt, b.deletedAt));
+  el.trashList.innerHTML = items.length ? items.map(entry => {
+    const daysLeft = trashDaysLeft(entry.deletedAt);
+    const permanent = admin
+      ? `<button class="danger-btn trash-purge" data-trash-id="${entry.trashId}">Delete forever</button>`
+      : '';
+    return `<div class="stack-item trash-item"><div class="split-head"><div><h4>${escapeHtml(entry.label)}</h4><p class="muted">${escapeHtml(collectionLabels[entry.collection] || 'Item')} • Deleted ${escapeHtml(formatDate(entry.deletedAt))} by ${escapeHtml(entry.deletedBy || 'User')}</p></div><span class="badge">${daysLeft} day${daysLeft === 1 ? '' : 's'} left</span></div><div class="form-actions"><button class="primary-btn trash-restore" data-trash-id="${entry.trashId}">Restore</button>${permanent}</div></div>`;
+  }).join('') : emptyHtml('Trash is empty.');
+  el.trashList.querySelectorAll('.trash-restore').forEach(btn => btn.addEventListener('click', () => restoreTrashItem(btn.dataset.trashId)));
+  el.trashList.querySelectorAll('.trash-purge').forEach(btn => btn.addEventListener('click', () => permanentDeleteTrashItem(btn.dataset.trashId)));
+}
+
+// ===== Saved documents (PDF estimates & invoices) =====
+function saveDocument(type, number, clientName, total, html) {
+  const title = `${type === 'invoice' ? 'Invoice' : 'Estimate'} ${number || ''}`.trim();
+  const existing = state.store.documents.find(doc => doc.type === type && doc.number === number);
+  const payload = {
+    id: existing?.id || uid('DOC'),
+    type,
+    number: number || '',
+    title,
+    clientName: clientName || '',
+    total: num(total),
+    html,
+    createdAt: existing?.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  upsertArray('documents', payload, 'id');
+  saveStore('Document saved');
+}
+
+function renderDocuments() {
+  const filter = state.filters.documentType || 'all';
+  const items = [...state.store.documents]
+    .filter(doc => filter === 'all' || doc.type === filter)
+    .sort((a, b) => sortDateDesc(a.updatedAt || a.createdAt, b.updatedAt || b.createdAt));
+  el.documentList.innerHTML = items.length ? items.map(doc => {
+    const badge = doc.type === 'invoice' ? 'Invoice' : 'Estimate';
+    return `<div class="stack-item doc-item"><div class="split-head"><div><h4>${escapeHtml(doc.title || badge)}</h4><p class="muted">${escapeHtml(badge)} • ${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.updatedAt || doc.createdAt))}</p></div><strong>${money.format(num(doc.total))}</strong></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">Open / Print</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
+  }).join('') : emptyHtml('No saved documents yet. Print an estimate or invoice to save it here.');
+  el.documentList.querySelectorAll('.doc-open').forEach(btn => btn.addEventListener('click', () => {
+    const doc = state.store.documents.find(item => item.id === btn.dataset.docId);
+    if (doc) openPrintWindow(doc.html);
+  }));
+  el.documentList.querySelectorAll('.doc-download').forEach(btn => btn.addEventListener('click', () => {
+    const doc = state.store.documents.find(item => item.id === btn.dataset.docId);
+    if (doc) downloadDocument(doc);
+  }));
+  el.documentList.querySelectorAll('.doc-delete').forEach(btn => btn.addEventListener('click', () => softDelete('documents', btn.dataset.docId)));
+}
+
+function downloadDocument(doc) {
+  const blob = new Blob([doc.html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const safeName = String(doc.title || 'document').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '');
+  link.href = url;
+  link.download = `${safeName || 'document'}.html`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function addActivity(text, meta) {
@@ -1462,6 +1760,13 @@ function formatDate(value) {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
 }
 
+function formatDateTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
 function sortDateDesc(a, b) { return new Date(b || 0) - new Date(a || 0); }
 function sortDateAsc(a, b) { return new Date(a || 0) - new Date(b || 0); }
 function escapeHtml(value) {
@@ -1474,3 +1779,9 @@ function escapeHtml(value) {
 }
 function emptyHtml(text) { return `<div class="empty-state">${escapeHtml(text)}</div>`; }
 function stackItem(title, meta, body) { return `<div class="stack-item"><h4>${escapeHtml(title || '')}</h4><p class="muted">${meta || ''}</p><p>${body || ''}</p></div>`; }
+function deleteBtn(collection, id) {
+  return `<button type="button" class="ghost-btn danger-ghost delete-record" data-collection="${escapeHtml(collection)}" data-id="${escapeHtml(id)}">Delete</button>`;
+}
+function deletableStackItem(collection, id, title, meta, body) {
+  return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(title || '')}</h4><p class="muted">${meta || ''}</p></div></div><p>${body || ''}</p><div class="form-actions">${deleteBtn(collection, id)}</div></div>`;
+}

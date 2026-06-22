@@ -268,6 +268,81 @@ begin
 end;
 $$;
 
+create or replace function public.set_user_role(
+  p_user_id uuid,
+  p_role text
+)
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_profile public.profiles;
+  normalized_role text;
+begin
+  if not public.is_admin_user() then
+    raise exception 'Only admins can change user roles';
+  end if;
+
+  normalized_role := case when lower(trim(coalesce(p_role, ''))) = 'admin' then 'admin' else 'staff' end;
+
+  update public.profiles
+  set role = normalized_role,
+      updated_at = timezone('utc', now())
+  where id = p_user_id
+  returning * into updated_profile;
+
+  if updated_profile.id is null then
+    raise exception 'User profile not found';
+  end if;
+
+  return updated_profile;
+end;
+$$;
+
+create or replace function public.set_user_status(
+  p_user_id uuid,
+  p_status text
+)
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_profile public.profiles;
+  normalized_status text;
+begin
+  if not public.is_admin_user() then
+    raise exception 'Only admins can change user status';
+  end if;
+
+  normalized_status := lower(trim(coalesce(p_status, '')));
+  if normalized_status not in ('active', 'inactive', 'pending', 'denied') then
+    raise exception 'Status must be active, inactive, pending, or denied';
+  end if;
+
+  if p_user_id = auth.uid() and normalized_status <> 'active' then
+    raise exception 'Admins cannot deactivate their own account';
+  end if;
+
+  update public.profiles
+  set status = normalized_status,
+      approved_by = case when normalized_status = 'active' then auth.uid() else approved_by end,
+      approved_at = case when normalized_status = 'active' then timezone('utc', now()) else approved_at end,
+      updated_at = timezone('utc', now())
+  where id = p_user_id
+  returning * into updated_profile;
+
+  if updated_profile.id is null then
+    raise exception 'User profile not found';
+  end if;
+
+  return updated_profile;
+end;
+$$;
+
 insert into public.portal_settings (id, company_calendar_name, company_calendar_embed_url)
 values (1, 'Harvest Renovation Company Calendar', null)
 on conflict (id) do nothing;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260622-4" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-1" />
 </head>
 <body>
   <div class="ambient ambient-a"></div>
@@ -93,11 +93,13 @@
         <button class="nav-btn" data-view="crm">CRM & Leads</button>
         <button class="nav-btn" data-view="estimating">Estimating</button>
         <button class="nav-btn" data-view="operations">Operations</button>
+        <button class="nav-btn" data-view="documents">Documents</button>
         <button class="nav-btn" data-view="marketing">Marketing KPI</button>
         <button class="nav-btn" data-view="calendars">Calendars</button>
         <button class="nav-btn" data-view="team">Team</button>
         <button class="nav-btn" data-view="settings">Settings</button>
         <button class="nav-btn admin-only hidden" data-view="admin">Admin</button>
+        <button class="nav-btn" data-view="trash">Trash</button>
       </nav>
 
       <div class="sidebar-card compact mobile-hide">
@@ -368,6 +370,22 @@
         </div>
       </section>
 
+      <section class="view" id="documentsView">
+        <div class="section-head-row"><div><p class="eyebrow">Document Vault</p><h3>Saved PDF estimates and invoices</h3></div></div>
+        <article class="card">
+          <div class="card-head split-head">
+            <div><p class="eyebrow">Saved Documents</p><h3>Generated estimate &amp; invoice PDFs</h3></div>
+            <div class="doc-filter-row">
+              <button class="chip-btn active" data-doc-filter="all">All</button>
+              <button class="chip-btn" data-doc-filter="estimate">Estimates</button>
+              <button class="chip-btn" data-doc-filter="invoice">Invoices</button>
+            </div>
+          </div>
+          <p class="muted tiny">Documents are saved automatically whenever you print/export an estimate or invoice. Open to view or print to PDF, download an offline copy, or move to Trash.</p>
+          <div id="documentList" class="stack doc-stack"></div>
+        </article>
+      </section>
+
       <section class="view" id="marketingView">
         <div class="section-head-row"><div><p class="eyebrow">Marketing Intelligence</p><h3>Track ad performance, website traffic, landing page visibility, and lead sources</h3></div></div>
         <div class="grid two">
@@ -420,9 +438,14 @@
 
       <section class="view" id="teamView">
         <div class="section-head-row"><div><p class="eyebrow">Team Directory</p><h3>People, live status, approvals, and internal readiness</h3></div></div>
+        <article class="card admin-only hidden team-pending-card">
+          <div class="card-head"><div><p class="eyebrow">Pending Approvals</p><h3>People waiting to be activated</h3></div></div>
+          <div id="teamPendingList" class="stack"></div>
+        </article>
         <div class="grid two-strong">
           <article class="card team-directory-card"><div class="card-head split-head"><div><p class="eyebrow">Employees</p><h3>Active team directory and live status</h3></div><input id="employeeSearch" class="search-input" placeholder="Search employees" /></div><div id="employeePresenceSummary" class="presence-summary-grid"></div><div id="employeeList" class="stack employee-stack"></div></article>
           <div class="stack section-side-stack">
+            <article class="card admin-only hidden"><div class="card-head"><div><p class="eyebrow">Pending Approvals</p><h3>Activate new accounts</h3></div></div><div id="teamPendingList" class="stack"></div></article>
             <article class="card"><div class="card-head"><div><p class="eyebrow">Status Legend</p><h3>Who is online, active, or offline</h3></div></div><div class="stack compact-stack"><div class="legend-row"><span class="presence-pill active">Active</span><p>You on this device right now.</p></div><div class="legend-row"><span class="presence-pill online">Online</span><p>Signed in elsewhere and live in the portal.</p></div><div class="legend-row"><span class="presence-pill offline">Offline</span><p>Approved employee not currently present.</p></div></div></article>
             <article class="card"><div class="card-head"><div><p class="eyebrow">Readiness</p><h3>Company build-out roadmap</h3></div></div><div id="readinessList" class="stack"></div></article>
           </div>
@@ -476,6 +499,18 @@
           </article>
         </div>
       </section>
+
+      <section class="view" id="trashView">
+        <div class="section-head-row"><div><p class="eyebrow">Trash</p><h3>Recently deleted items</h3></div></div>
+        <article class="card">
+          <div class="card-head split-head">
+            <div><p class="eyebrow">Recycle Bin</p><h3>Restore or remove deleted records</h3></div>
+            <span class="badge" id="trashRetentionBadge">Auto-clears after 30 days</span>
+          </div>
+          <p class="muted tiny" id="trashPolicyNote">Deleted items are kept for 30 days, then removed automatically. Staff can restore items. Only an administrator can permanently delete before the 30-day window.</p>
+          <div id="trashList" class="stack trash-stack"></div>
+        </article>
+      </section>
     </main>
   </div>
 
@@ -487,6 +522,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260622-2"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-1"></script>
 </body>
 </html>
