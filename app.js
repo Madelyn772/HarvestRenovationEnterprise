@@ -1801,7 +1801,7 @@ function buildBrandedDocHtml(opts) {
     .brand{display:flex;align-items:center;gap:14px}
     .brand .bname{font-weight:800;font-size:20px;letter-spacing:.3px;color:#f4e9d4}
     .brand .btag{font-size:11px;color:#caa05a;letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
-    .brand-logo{height:74px;width:auto;display:block;background:#fff;border-radius:12px;padding:7px 11px}
+    .brand-logo{height:84px;width:auto;display:block}
     .brand-fallback{align-items:center;gap:14px}
     .brand-fallback .bname{font-weight:800;font-size:20px;color:#f4e9d4}
     .title{text-align:right;line-height:1.02}
