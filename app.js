@@ -196,8 +196,15 @@ async function handleLogin(event) {
   if (!email || !password) return setAuthMessage('Enter your email and password.', true);
   try {
     setAuthMessage('Signing in…');
-    const { error } = await state.supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+
+    // Some browser environments can delay or miss auth-state callbacks.
+    // Use the returned session immediately so login never stalls on "Signing in…".
+    if (data?.session) {
+      state.session = data.session;
+      await bootActiveSession();
+    }
   } catch (error) {
     console.error(error);
     setAuthMessage(error.message || 'Unable to sign in.', true);
