@@ -907,9 +907,10 @@ function renderClients() {
   const clients = [...state.store.clients].filter(item => [item.name,item.phone,item.email,item.tags,item.source].join(' ').toLowerCase().includes(query)).sort((a,b) => (a.name||'').localeCompare(b.name||''));
   el.clientList.innerHTML = clients.length ? clients.map(client => {
     const linkedLeads = state.store.leads.filter(item => item.clientId === client.id).length;
-    return `<div class="stack-item client-row"><button class="link-card client-select" data-client-id="${client.id}"><h4>${escapeHtml(client.name || 'Unnamed Client')}</h4><p>${escapeHtml(client.phone || 'No phone')} • ${escapeHtml(client.email || 'No email')}</p><p class="muted">${escapeHtml(client.source || 'No source')} • ${linkedLeads} linked leads</p></button><div class="form-actions">${deleteBtn('clients', client.id)}</div></div>`;
+    return `<div class="stack-item client-row"><button class="link-card client-select" data-client-id="${client.id}"><h4>${escapeHtml(client.name || 'Unnamed Client')}</h4><p>${escapeHtml(client.phone || 'No phone')} • ${escapeHtml(client.email || 'No email')}</p><p class="muted">${escapeHtml(client.source || 'No source')} • ${linkedLeads} linked leads</p></button><div class="form-actions"><button type="button" class="ghost-btn client-edit" data-client-id="${client.id}">Edit</button>${deleteBtn('clients', client.id)}</div></div>`;
   }).join('') : emptyHtml('No clients saved yet.');
   el.clientList.querySelectorAll('.client-select').forEach(btn => btn.addEventListener('click', () => { state.selectedClientId = btn.dataset.clientId; renderClientDetail(); }));
+  el.clientList.querySelectorAll('.client-edit').forEach(btn => btn.addEventListener('click', () => loadClientIntoForm(btn.dataset.clientId)));
 }
 
 function renderLeads() {
@@ -1177,6 +1178,50 @@ async function handleClientSave(event) {
   el.clientForm.reset();
 }
 
+function resolveFormClient(data, fields) {
+  if (data.clientId) {
+    return { clientId: data.clientId, clientName: lookupClientName(data.clientId) };
+  }
+  const name = (fields.name || '').trim();
+  if (!name) return { clientId: '', clientName: '' };
+  if (data.saveAsClient) {
+    const existing = state.store.clients.find(c => (c.name || '').trim().toLowerCase() === name.toLowerCase());
+    if (existing) return { clientId: existing.id, clientName: existing.name };
+    const id = uid('CL');
+    upsertArray('clients', {
+      id,
+      name,
+      phone: fields.phone || '',
+      email: fields.email || '',
+      serviceArea: '',
+      address: fields.address || '',
+      source: 'Created from estimate/invoice',
+      tags: '',
+      notes: ''
+    }, 'id');
+    addActivity(`Saved client ${name}.`, 'CRM');
+    return { clientId: id, clientName: name };
+  }
+  return { clientId: '', clientName: name };
+}
+
+function loadClientIntoForm(id) {
+  const client = state.store.clients.find(c => c.id === id);
+  if (!client) return;
+  el.clientForm.clientId.value = client.id;
+  el.clientForm.name.value = client.name || '';
+  el.clientForm.phone.value = client.phone || '';
+  el.clientForm.email.value = client.email || '';
+  el.clientForm.serviceArea.value = client.serviceArea || '';
+  el.clientForm.address.value = client.address || '';
+  el.clientForm.source.value = client.source || '';
+  el.clientForm.tags.value = client.tags || '';
+  el.clientForm.notes.value = client.notes || '';
+  setView('crm');
+  el.clientForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('Editing client. Update the fields and Save Client.', 'info');
+}
+
 async function handleLeadSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.leadForm);
@@ -1191,12 +1236,21 @@ async function handleLeadSave(event) {
 
 async function handleEstimateSave(event) {
   event.preventDefault();
+  const data = objectFromForm(el.estimateForm);
+  const resolved = resolveFormClient(data, { name: data.clientName, phone: data.clientPhone, email: data.clientEmail });
   const payload = collectEstimateFromForm();
+  payload.clientId = resolved.clientId;
+  payload.clientName = resolved.clientName || payload.clientName;
   payload.id = payload.id || uid('EST');
   upsertArray('estimates', payload, 'id');
   addActivity(`Saved estimate ${payload.estimateNumber || payload.id}.`, 'Estimating');
   saveStore('Estimate saved');
+  populateClientSelects();
   populateEstimateSelects();
+  if (resolved.clientId) el.estimateForm.clientId.value = resolved.clientId;
+  el.estimateForm.clientName.value = '';
+  el.estimateForm.clientPhone.value = '';
+  el.estimateForm.clientEmail.value = '';
   renderAll();
   showToast('Estimate saved.', 'success');
 }
@@ -1227,11 +1281,17 @@ async function handleCalendarSave(event) {
 
 async function handleInvoiceSave(event) {
   event.preventDefault();
+  const data = objectFromForm(el.invoiceForm);
+  const resolved = resolveFormClient(data, { name: data.clientName, phone: data.phone, email: data.email, address: data.address });
   const payload = collectInvoiceFromForm();
+  payload.clientId = resolved.clientId;
+  payload.clientName = resolved.clientName || payload.clientName;
   payload.id = payload.id || uid('INV');
   upsertArray('invoices', payload, 'id');
   addActivity(`Saved invoice ${payload.invoiceNumber || payload.id}.`, 'Billing');
   saveStore('Invoice saved');
+  populateClientSelects();
+  if (resolved.clientId) el.invoiceForm.clientId.value = resolved.clientId;
   renderAll();
   showToast('Invoice saved.', 'success');
 }

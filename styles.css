@@ -1540,3 +1540,70 @@ textarea:disabled {
 
 .client-row { display: grid; gap: .5rem; }
 .client-row .client-select { width: 100%; text-align: left; }
+.client-row .form-actions { display: flex; gap: .5rem; }
+
+/* Inline checkbox rows inside forms (e.g. "save as new client"). */
+.form-grid label.inline-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: .55rem;
+  cursor: pointer;
+}
+.form-grid label.inline-check input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  accent-color: var(--gold);
+}
+.form-grid label.inline-check span {
+  font-size: .9rem;
+  color: var(--muted);
+}
+
+/* ============================================================
+   Mobile login screen — compact, form-first layout.
+   ============================================================ */
+@media (max-width: 760px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    place-items: stretch;
+    align-content: start;
+    gap: 1rem;
+    padding: 1.25rem 1rem 2.5rem;
+  }
+  .auth-card,
+  .auth-brand-card,
+  .auth-card:not(.auth-brand-card) {
+    width: 100%;
+    border-radius: 22px;
+  }
+  .auth-brand-card {
+    text-align: center;
+    padding: 1.5rem 1.25rem;
+  }
+  .auth-brand-card .brand-mark.xl {
+    margin: 0 auto .75rem;
+    width: 58px;
+    height: 58px;
+    font-size: 1.2rem;
+  }
+  .auth-brand-card .eyebrow { margin-bottom: .65rem; }
+  .auth-hero-title {
+    font-size: 1.7rem !important;
+    max-width: none;
+    margin: 0 0 .6rem;
+  }
+  .auth-hero-copy {
+    font-size: .96rem;
+    line-height: 1.6;
+    margin-bottom: 0;
+    max-width: none;
+  }
+  /* Hide marketing feature cards on small screens to bring the form up. */
+  .auth-points { display: none; }
+  .auth-card:not(.auth-brand-card) { padding: 1.5rem 1.25rem; }
+  .auth-tabs { width: 100%; }
+  .auth-form h2 { font-size: 1.5rem; }
+}

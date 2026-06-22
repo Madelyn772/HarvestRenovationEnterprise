@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-1" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-2" />
 </head>
 <body>
   <div class="ambient ambient-a"></div>
@@ -262,6 +262,10 @@
               <input type="hidden" name="estimateId" />
               <label><span>Template</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
               <label><span>Client</span><select name="clientId" id="estimateClientSelect"></select></label>
+              <label><span>New client name</span><input name="clientName" placeholder="Type to add a client not in the list" /></label>
+              <label><span>New client phone</span><input name="clientPhone" /></label>
+              <label><span>New client email</span><input name="clientEmail" type="email" /></label>
+              <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
               <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
               <label><span>Date</span><input name="date" id="estimateDate" type="date" /></label>
               <label><span>Prepared by</span><input name="user" /></label>
@@ -340,6 +344,7 @@
               <label><span>Phone</span><input name="phone" /></label>
               <label><span>Email</span><input name="email" type="email" /></label>
               <label class="full"><span>Address</span><input name="address" /></label>
+              <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
               <div class="invoice-items-shell full">
                 <div class="split-head"><strong>Invoice Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">Add Row</button></div>
                 <div id="invoiceItems" class="stack compact-stack"></div>
@@ -522,6 +527,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-1"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-2"></script>
 </body>
 </html>
