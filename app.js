@@ -166,6 +166,7 @@ function bindAppUi() {
   el.calculateEstimate.addEventListener('click', () => renderEstimateSummary(collectEstimateFromForm()));
   el.printEstimate.addEventListener('click', () => {
     const saved = saveEstimateFromForm();
+    if (!saved) return;
     printEstimate(saved);
     showToast(`Estimate ${saved.estimateNumber || saved.id} saved & sent to print.`, 'success');
   });
@@ -174,6 +175,7 @@ function bindAppUi() {
   el.invoiceForm.addEventListener('submit', handleInvoiceSave);
   el.printInvoice.addEventListener('click', () => {
     const saved = saveInvoiceFromForm();
+    if (!saved) return;
     printInvoice(saved);
     showToast(`Invoice ${saved.invoiceNumber || saved.id} saved & sent to print.`, 'success');
   });
@@ -195,9 +197,6 @@ function bindAppUi() {
   // Show the "new client info" fields only when the estimate dropdown is set
   // to the "client not on the list" option.
   el.estimateClientSelect?.addEventListener('change', updateNewClientFieldsVisibility);
-
-  // Admin-editable priority checklist (add / toggle / remove).
-  document.getElementById('checklistAddForm')?.addEventListener('submit', handleChecklistAdd);
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
@@ -797,11 +796,11 @@ function loadStore() {
   } catch {
     state.store = structuredClone(seedStore);
   }
-  // Seed the priority checklist with starter items only the first time (when
-  // the key has never been saved), so admin edits/removals are not undone.
-  if (!raw || typeof raw !== 'object' || !Array.isArray(raw.checklist)) {
-    state.store.checklist = defaultChecklistItems();
-  }
+  // The priority checklist is standardized for every user. Rebuild it from the
+  // shared list on load, preserving each user's completion (checked) state.
+  const previousDone = {};
+  if (raw && Array.isArray(raw.checklist)) raw.checklist.forEach(item => { if (item && item.id) previousDone[item.id] = !!item.done; });
+  state.store.checklist = defaultChecklistItems().map(item => ({ ...item, done: !!previousDone[item.id] }));
   if (!state.store.activity.length) {
     addActivity('Portal loaded', 'System');
   }
@@ -967,66 +966,39 @@ function renderDashboard() {
   renderChecklist();
 }
 
+// Standardized priority checklist — identical for every user.
+const PRIORITY_CHECKLIST = [
+  'Log every new lead in the CRM the same day it comes in.',
+  'Send estimates within 48 hours of the site visit.',
+  'Collect the 30% deposit before ordering materials or scheduling crews.',
+  'Keep each active job\u2019s status and notes current for the whole team.',
+  'Follow up on every outstanding invoice until it is paid in full.',
+  'Review the KPI dashboard and ad spend before the start of each week.'
+];
+
 function defaultChecklistItems() {
-  return buildChecklist().map(text => ({ id: uid('CHK'), text, done: false }));
+  return PRIORITY_CHECKLIST.map((text, i) => ({ id: `CHK${i + 1}`, text, done: false }));
 }
 
 function renderChecklist() {
   if (!el.priorityChecklist) return;
-  const admin = isAdmin();
   const items = Array.isArray(state.store.checklist) ? state.store.checklist : [];
   el.priorityChecklist.innerHTML = items.length ? items.map(item => `
     <li class="${item.done ? 'done' : ''}">
       <label class="check-line">
-        <input type="checkbox" class="checklist-toggle" data-id="${escapeHtml(item.id)}" ${item.done ? 'checked' : ''} ${admin ? '' : 'disabled'} />
+        <input type="checkbox" class="checklist-toggle" data-id="${escapeHtml(item.id)}" ${item.done ? 'checked' : ''} />
         <span>${escapeHtml(item.text)}</span>
       </label>
-      ${admin ? `<button type="button" class="icon-btn checklist-remove" data-id="${escapeHtml(item.id)}" aria-label="Remove item">×</button>` : ''}
-    </li>`).join('') : `<li class="checklist-empty muted">${admin ? 'No items yet — add the first priority below.' : 'No priority items yet.'}</li>`;
-  if (admin) {
-    el.priorityChecklist.querySelectorAll('.checklist-toggle').forEach(box => box.addEventListener('change', () => toggleChecklistItem(box.dataset.id)));
-    el.priorityChecklist.querySelectorAll('.checklist-remove').forEach(btn => btn.addEventListener('click', () => removeChecklistItem(btn.dataset.id)));
-  }
+    </li>`).join('') : `<li class="checklist-empty muted">No priority items yet.</li>`;
+  el.priorityChecklist.querySelectorAll('.checklist-toggle').forEach(box => box.addEventListener('change', () => toggleChecklistItem(box.dataset.id)));
 }
 
 function toggleChecklistItem(id) {
-  if (!isAdmin()) return;
   const item = (state.store.checklist || []).find(row => row.id === id);
   if (!item) return;
   item.done = !item.done;
   saveStore('Checklist updated');
   renderChecklist();
-}
-
-function removeChecklistItem(id) {
-  if (!isAdmin()) return;
-  state.store.checklist = (state.store.checklist || []).filter(row => row.id !== id);
-  saveStore('Checklist updated');
-  renderChecklist();
-}
-
-function handleChecklistAdd(event) {
-  event.preventDefault();
-  if (!isAdmin()) return;
-  const form = event.currentTarget;
-  const text = (form.text.value || '').trim();
-  if (!text) return;
-  if (!Array.isArray(state.store.checklist)) state.store.checklist = [];
-  state.store.checklist.push({ id: uid('CHK'), text, done: false });
-  saveStore('Checklist updated');
-  form.reset();
-  renderChecklist();
-}
-
-function buildChecklist() {
-  const items = [];
-  if (!state.store.clients.length) items.push('Add your first client record so estimates and invoices can be linked cleanly.');
-  if (!state.store.leads.length) items.push('Capture new leads here instead of text messages or loose notes.');
-  if (!state.portalSettings.company_calendar_embed_url) items.push('Configure the shared company calendar embed in settings.');
-  if (!state.store.campaigns.length) items.push('Start entering ad spend so the portal can calculate campaign efficiency.');
-  if (!state.analyticsSummary) items.push('Install the optional website tracker to count visits from the main website and landing pages.');
-  items.push('Use PDF export from estimates and invoices for professional customer-facing paperwork.');
-  return items.slice(0, 6);
 }
 
 function renderClients() {
@@ -1392,8 +1364,19 @@ async function handleLeadSave(event) {
   el.leadForm.reset();
 }
 
+function isDuplicateNumber(collection, field, number, currentId) {
+  const target = String(number || '').trim().toLowerCase();
+  if (!target) return false;
+  return (state.store[collection] || []).some(row => row.id !== currentId && String(row[field] || '').trim().toLowerCase() === target);
+}
+
 function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
+  const typedNumber = (data.estimateNumber || '').trim();
+  if (typedNumber && isDuplicateNumber('estimates', 'estimateNumber', typedNumber, data.estimateId || '')) {
+    showToast('That estimate number is already in use. Please enter a unique estimate number to continue.', 'error');
+    return null;
+  }
   const resolved = resolveFormClient(data, { name: data.clientName, phone: data.clientPhone, email: data.clientEmail });
   const payload = collectEstimateFromForm();
   payload.clientId = resolved.clientId;
@@ -1417,8 +1400,7 @@ function saveEstimateFromForm() {
 
 async function handleEstimateSave(event) {
   event.preventDefault();
-  saveEstimateFromForm();
-  showToast('Estimate saved.', 'success');
+  if (saveEstimateFromForm()) showToast('Estimate saved.', 'success');
 }
 
 async function handleJobSave(event) {
@@ -1447,6 +1429,11 @@ async function handleCalendarSave(event) {
 
 function saveInvoiceFromForm() {
   const data = objectFromForm(el.invoiceForm);
+  const typedNumber = (data.invoiceNumber || '').trim();
+  if (typedNumber && isDuplicateNumber('invoices', 'invoiceNumber', typedNumber, data.invoiceId || '')) {
+    showToast('That invoice number is already in use. Please enter a unique invoice number to continue.', 'error');
+    return null;
+  }
   const resolved = resolveFormClient(data, { name: data.clientName, phone: data.phone, email: data.email, address: data.address });
   const payload = collectInvoiceFromForm();
   payload.clientId = resolved.clientId;
@@ -1465,8 +1452,7 @@ function saveInvoiceFromForm() {
 
 async function handleInvoiceSave(event) {
   event.preventDefault();
-  saveInvoiceFromForm();
-  showToast('Invoice saved.', 'success');
+  if (saveInvoiceFromForm()) showToast('Invoice saved.', 'success');
 }
 
 async function handleNoteSave(event) {

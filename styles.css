@@ -1912,3 +1912,8 @@ textarea:focus-visible,
   margin-top: .85rem;
 }
 .checklist-add input { flex: 1; }
+
+/* Priority checklist text must stay readable in both themes. */
+.checklist .check-line span { color: var(--text); }
+.theme-light .main .checklist .check-line span,
+.theme-light .main .checklist li.checklist-empty { color: #1f1a14; }
