@@ -199,12 +199,21 @@ async function handleLogin(event) {
     const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
 
-    // Some browser environments can delay or miss auth-state callbacks.
-    // Use the returned session immediately so login never stalls on "Signing in…".
-    if (data?.session) {
-      state.session = data.session;
-      await bootActiveSession();
+    // Some browser environments can delay/miss auth-state callbacks or return
+    // a partial sign-in payload. Force-read current session and boot immediately.
+    let session = data?.session || null;
+    if (!session) {
+      const { data: sessionData, error: sessionError } = await state.supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      session = sessionData?.session || null;
     }
+
+    if (!session) {
+      throw new Error('Sign-in succeeded but no active session was returned.');
+    }
+
+    state.session = session;
+    await bootActiveSession();
   } catch (error) {
     console.error(error);
     setAuthMessage(error.message || 'Unable to sign in.', true);
