@@ -102,7 +102,7 @@ function cacheDom() {
   const ids = [
     'authShell','pendingShell','appShell','authMessage','loginForm','signupForm','pendingTitle','pendingBody','refreshProfileBtn','logoutPendingBtn',
     'sidebarUserName','sidebarUserMeta','sidebarRole','sidebarInitials','pageTitle','pageSubtitle','toastStack','openSettingsPanelBtn','logoutBtn',
-    'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','clientForm','leadForm','clientList','leadTable',
+    'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','checklistAddForm','clientForm','leadForm','clientList','leadTable',
     'clientDetailTitle','clientDetailBody','clientSearch','estimateForm','estimateTemplateSelect','estimateClientSelect','estimateNumber','estimateDate',
     'estimateSummary','estimateList','calculateEstimate','printEstimate','jobForm','leadClientSelect','jobClientSelect','calendarForm','calendarClientSelect','invoiceForm',
     'invoiceClientSelect','relatedEstimate','invoiceNumber','invoiceDate','invoiceItems','addInvoiceRow','printInvoice','noteForm','noteClientSelect',
@@ -186,6 +186,7 @@ function bindAppUi() {
   el.passwordForm.addEventListener('submit', handlePasswordSave);
   el.companyCalendarForm.addEventListener('submit', handleCompanyCalendarSave);
   el.adminGrantAccessForm.addEventListener('submit', handleAdminGrantAccess);
+  if (el.checklistAddForm) el.checklistAddForm.addEventListener('submit', handleChecklistAdd);
   el.addInvoiceRow.addEventListener('click', () => addInvoiceRow());
 
   ['clearClientForm','clearLeadForm','clearEstimateForm','clearJobForm','clearCalendarForm','clearInvoiceForm','clearNoteForm'].forEach(id => {
@@ -844,11 +845,12 @@ function loadStore() {
   } catch {
     state.store = structuredClone(seedStore);
   }
-  // The priority checklist is standardized for every user. Rebuild it from the
-  // shared list on load, preserving each user's completion (checked) state.
-  const previousDone = {};
-  if (raw && Array.isArray(raw.checklist)) raw.checklist.forEach(item => { if (item && item.id) previousDone[item.id] = !!item.done; });
-  state.store.checklist = defaultChecklistItems().map(item => ({ ...item, done: !!previousDone[item.id] }));
+  // Priority checklist: seed the default items (shown with green checks) the
+  // first time. Once it exists, keep the admin's saved list (their adds,
+  // deletes, and toggles persist).
+  if (!Array.isArray(state.store.checklist) || !state.store.checklist.length) {
+    state.store.checklist = defaultChecklistItems();
+  }
   if (!state.store.activity.length) {
     addActivity('Portal loaded', 'System');
   }
@@ -1021,7 +1023,8 @@ function renderDashboard() {
   renderChecklist();
 }
 
-// Standardized priority checklist — identical for every user.
+// Default priority checklist — seeded with green checks. Admins can toggle,
+// delete, or add to it; everyone else sees it read-only.
 const PRIORITY_CHECKLIST = [
   'Log every new lead in the CRM the same day it comes in.',
   'Send estimates within 48 hours of the site visit.',
@@ -1032,26 +1035,53 @@ const PRIORITY_CHECKLIST = [
 ];
 
 function defaultChecklistItems() {
-  return PRIORITY_CHECKLIST.map((text, i) => ({ id: `CHK${i + 1}`, text, done: false }));
+  return PRIORITY_CHECKLIST.map((text, i) => ({ id: `CHK${i + 1}`, text, done: true }));
 }
 
 function renderChecklist() {
   if (!el.priorityChecklist) return;
+  const admin = isAdmin();
   const items = Array.isArray(state.store.checklist) ? state.store.checklist : [];
   el.priorityChecklist.innerHTML = items.length ? items.map(item => `
     <li class="${item.done ? 'done' : ''}">
       <label class="check-line">
-        <input type="checkbox" class="checklist-toggle" data-id="${escapeHtml(item.id)}" ${item.done ? 'checked' : ''} />
+        <input type="checkbox" class="checklist-toggle" data-id="${escapeHtml(item.id)}" ${item.done ? 'checked' : ''} ${admin ? '' : 'disabled'} />
         <span>${escapeHtml(item.text)}</span>
       </label>
+      ${admin ? `<button type="button" class="ghost-btn checklist-remove" data-id="${escapeHtml(item.id)}" aria-label="Remove item" title="Remove item">×</button>` : ''}
     </li>`).join('') : `<li class="checklist-empty muted">No priority items yet.</li>`;
-  el.priorityChecklist.querySelectorAll('.checklist-toggle').forEach(box => box.addEventListener('change', () => toggleChecklistItem(box.dataset.id)));
+  if (admin) {
+    el.priorityChecklist.querySelectorAll('.checklist-toggle').forEach(box => box.addEventListener('change', () => toggleChecklistItem(box.dataset.id)));
+    el.priorityChecklist.querySelectorAll('.checklist-remove').forEach(btn => btn.addEventListener('click', () => removeChecklistItem(btn.dataset.id)));
+  }
+  if (el.checklistAddForm) el.checklistAddForm.classList.toggle('hidden', !admin);
 }
 
 function toggleChecklistItem(id) {
+  if (!isAdmin()) return;
   const item = (state.store.checklist || []).find(row => row.id === id);
   if (!item) return;
   item.done = !item.done;
+  saveStore('Checklist updated');
+  renderChecklist();
+}
+
+function removeChecklistItem(id) {
+  if (!isAdmin()) return;
+  state.store.checklist = (state.store.checklist || []).filter(row => row.id !== id);
+  saveStore('Checklist updated');
+  renderChecklist();
+}
+
+function handleChecklistAdd(event) {
+  event.preventDefault();
+  if (!isAdmin()) return;
+  const input = el.checklistAddForm?.querySelector('input[name="text"]');
+  const text = (input?.value || '').trim();
+  if (!text) return;
+  if (!Array.isArray(state.store.checklist)) state.store.checklist = [];
+  state.store.checklist.push({ id: uid('CHK'), text, done: false });
+  if (input) input.value = '';
   saveStore('Checklist updated');
   renderChecklist();
 }

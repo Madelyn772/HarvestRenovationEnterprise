@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-14" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-15" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -201,6 +201,10 @@
               </div>
             </div>
             <ul id="priorityChecklist" class="checklist"></ul>
+            <form id="checklistAddForm" class="checklist-add hidden">
+              <input type="text" name="text" placeholder="Add a priority item…" maxlength="160" />
+              <button type="submit" class="secondary-btn">Add</button>
+            </form>
           </article>
         </div>
       </section>
@@ -557,6 +561,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-14"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-15"></script>
 </body>
 </html>
