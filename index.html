@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-5" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-6" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -279,6 +279,7 @@
                 <label><span>New client email</span><input name="clientEmail" type="email" /></label>
                 <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
               </div>
+              <label class="full"><span>Project / billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
               <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
               <label><span>Date</span><input name="date" id="estimateDate" type="date" /></label>
               <label><span>Prepared by</span><input name="user" /></label>
@@ -294,6 +295,7 @@
               <label><span>Deposit %</span><input name="depositPercent" type="number" step="0.01" value="30" /></label>
               <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
               <label class="full"><span>Scope of work</span><textarea name="scope" rows="5"></textarea></label>
+              <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
               <div class="form-actions full">
                 <button type="button" class="secondary-btn" id="calculateEstimate">Calculate</button>
                 <button type="submit" class="primary-btn">Save Estimate</button>
@@ -547,6 +549,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-5"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-6"></script>
 </body>
 </html>
