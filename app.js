@@ -196,7 +196,11 @@ function bindAppUi() {
 
   // Show the "new client info" fields only when the estimate dropdown is set
   // to the "client not on the list" option.
-  el.estimateClientSelect?.addEventListener('change', updateNewClientFieldsVisibility);
+  el.estimateClientSelect?.addEventListener('change', e => {
+    const client = e.target.value && e.target.value !== '__new__' ? findClient(e.target.value) : null;
+    if (client) autofillClientFields(el.estimateForm, client, { billingEmail: 'email', billingAddress: 'address' });
+    updateNewClientFieldsVisibility();
+  });
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
@@ -825,6 +829,7 @@ function hydrateForms() {
   el.profileForm.calendar_label.value = state.profile?.calendar_label || '';
   el.companyCalendarForm.company_calendar_name.value = state.portalSettings.company_calendar_name || '';
   el.companyCalendarForm.company_calendar_embed_url.value = state.portalSettings.company_calendar_embed_url || '';
+  if (el.estimateForm.user && !el.estimateForm.user.value) el.estimateForm.user.value = fullName;
   document.querySelectorAll('.admin-only').forEach(node => node.classList.toggle('hidden', !isAdmin()));
   populateTemplateSelect();
   populateClientSelects();
@@ -1372,6 +1377,7 @@ function isDuplicateNumber(collection, field, number, currentId) {
 
 function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
+  if (el.estimateForm.reportValidity && !el.estimateForm.reportValidity()) return null;
   const typedNumber = (data.estimateNumber || '').trim();
   if (typedNumber && isDuplicateNumber('estimates', 'estimateNumber', typedNumber, data.estimateId || '')) {
     showToast('That estimate number is already in use. Please enter a unique estimate number to continue.', 'error');
@@ -1633,7 +1639,7 @@ function collectEstimateFromForm() {
     comments: data.comments || '',
     billingName: linkedClient ? (linkedClient.name || '') : (data.clientName || ''),
     billingPhone: linkedClient ? (linkedClient.phone || '') : (data.clientPhone || ''),
-    billingEmail: linkedClient ? (linkedClient.email || '') : (data.clientEmail || ''),
+    billingEmail: data.billingEmail || (linkedClient ? (linkedClient.email || '') : (data.clientEmail || '')),
     billingAddress: data.billingAddress || (linkedClient ? (linkedClient.address || '') : ''),
     status: data.status,
     clientName: data.clientId && data.clientId !== '__new__' ? lookupClientName(data.clientId) : (data.clientName || ''),
@@ -1676,6 +1682,7 @@ function loadEstimateIntoForm(id) {
   el.estimateForm.scope.value = item.scope || '';
   if (el.estimateForm.comments) el.estimateForm.comments.value = item.comments || '';
   if (el.estimateForm.billingAddress) el.estimateForm.billingAddress.value = item.billingAddress || '';
+  if (el.estimateForm.billingEmail) el.estimateForm.billingEmail.value = item.billingEmail || '';
   renderEstimateSummary(item);
   setView('estimating');
 }
@@ -1728,7 +1735,10 @@ function clearFormForButton(id) {
     el.invoiceItems.innerHTML = '';
     addInvoiceRow();
   }
-  if (form === el.estimateForm) applyEstimateTemplate();
+  if (form === el.estimateForm) {
+    applyEstimateTemplate();
+    el.estimateForm.user.value = state.profile?.full_name || state.session?.user?.user_metadata?.full_name || '';
+  }
 }
 
 const BRAND = {
@@ -1837,7 +1847,7 @@ function buildBrandedDocHtml(opts) {
     .box .val{font-size:12px;color:#2c2419;white-space:pre-wrap}
     .sigline{border-bottom:1px solid #b9a888;margin-top:26px}
     .verse{background:#0f0c08;color:#caa05a;text-align:center;font-size:12px;letter-spacing:.02em;padding:12px 20px;margin-top:18px}
-    @media print{.bar{display:none}body{background:#fff}.sheet{margin:0;width:auto;box-shadow:none}@page{size:letter;margin:12mm}}
+    @media print{.bar{display:none}body{background:#fff}.sheet{margin:0 auto;width:auto;box-shadow:none}@page{margin:0}}
   </style></head>
   <body>
     <div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
