@@ -506,6 +506,8 @@ function showPendingOnly(title, body) {
   el.authShell.classList.add('hidden');
   el.pendingShell.classList.remove('hidden');
   el.appShell.classList.add('hidden');
+  el.authMessage.classList.add('hidden');
+  el.authMessage.textContent = '';
   el.pendingTitle.textContent = title;
   el.pendingBody.textContent = body;
   updateChip(el.authStatusChip, 'Pending');
@@ -515,6 +517,8 @@ function showAppOnly() {
   el.authShell.classList.add('hidden');
   el.pendingShell.classList.add('hidden');
   el.appShell.classList.remove('hidden');
+  el.authMessage.classList.add('hidden');
+  el.authMessage.textContent = '';
   updateChip(el.authStatusChip, 'Authenticated');
 }
 
