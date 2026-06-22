@@ -176,12 +176,34 @@ async function bootActiveSession() {
   await loadProfile();
   routeByAccess();
   if (!isActive()) return;
+
   loadStore();
-  await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers(), loadAnalyticsSummary(), loadTrafficWindowSummary()]);
-  await syncBootstrapUsers();
-  await startPresence();
   hydrateForms();
   renderAll();
+
+  try {
+    await Promise.all([loadPortalSettings(), loadTeamProfiles(), loadPendingUsers()]);
+    await syncBootstrapUsers();
+    hydrateForms();
+    renderAll();
+  } catch (error) {
+    console.warn('core portal bootstrap incomplete', error);
+  }
+
+  Promise.allSettled([loadAnalyticsSummary(), loadTrafficWindowSummary()])
+    .then(() => {
+      renderDashboard();
+      renderCampaigns();
+    });
+
+  startPresence()
+    .then(() => {
+      renderDashboard();
+      renderEmployees();
+    })
+    .catch(error => {
+      console.warn('presence unavailable', error);
+    });
 }
 
 function getBootstrapUsers() {
