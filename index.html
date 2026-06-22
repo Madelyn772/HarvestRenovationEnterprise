@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-12" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-13" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -505,6 +505,17 @@
             <input type="checkbox" id="darkModeToggle" />
           </label>
         </article>
+        <article class="card real-admin-only hidden">
+          <div class="card-head"><div><p class="eyebrow">Access View</p><h3>Admin / staff view</h3></div></div>
+          <p class="muted">Preview the portal the way your staff see it. Switching to staff view hides admin-only tools and the Admin tab. Your role does not change — switch back any time.</p>
+          <label class="theme-toggle">
+            <span class="theme-toggle-copy">
+              <strong>View as staff</strong>
+              <small class="muted">Hide admin controls and use the staff workspace</small>
+            </span>
+            <input type="checkbox" id="staffViewToggle" />
+          </label>
+        </article>
       </section>
 
       <section class="view admin-only hidden" id="adminView">
@@ -546,6 +557,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-12"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-13"></script>
 </body>
 </html>

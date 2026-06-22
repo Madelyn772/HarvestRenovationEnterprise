@@ -64,6 +64,7 @@ const state = {
   },
   analyticsSummary: null,
   trafficWindowSummary: null,
+  adminViewAs: 'admin',
   store: structuredClone(seedStore),
   currentView: 'dashboard',
   selectedClientId: '',
@@ -108,7 +109,7 @@ function cacheDom() {
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits',
     'trackedLeadsCount','adCplValue','companyCalendarWrap','companyCalendarBadge','teamCalendarList','upcomingFeed','employeeSearch','employeeList',
     'readinessList','employeePresenceSummary','profileForm','passwordForm','companyCalendarForm','pendingList','adminGrantAccessForm','saveStateChip','authStatusChip','calendarStatusChip',
-    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle'
+    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle','staffViewToggle'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
@@ -212,6 +213,9 @@ function bindAppUi() {
 
   if (el.darkModeToggle) {
     el.darkModeToggle.addEventListener('change', () => applyTheme(el.darkModeToggle.checked ? 'dark' : 'light'));
+  }
+  if (el.staffViewToggle) {
+    el.staffViewToggle.addEventListener('change', () => setAdminViewAs(el.staffViewToggle.checked ? 'staff' : 'admin'));
   }
   applyTheme(getStoredTheme());
 }
@@ -321,6 +325,7 @@ async function loadAuthenticatedApp(forceRefresh = false) {
   loadStore();
   purgeExpiredTrash();
   showAppOnly();
+  state.adminViewAs = getStoredAdminView();
   hydrateForms();
   renderCurrentView();
 
@@ -361,7 +366,7 @@ function getBootstrapUsers() {
 }
 
 async function syncBootstrapUsers() {
-  if (!isAdmin() || state.bootstrapUsersSynced) return;
+  if (!isRealAdmin() || state.bootstrapUsersSynced) return;
 
   const bootstrapUsers = getBootstrapUsers().filter(item => item.autoApprove);
   if (!bootstrapUsers.length) {
@@ -532,7 +537,7 @@ async function loadTeamProfiles() {
 }
 
 async function loadAllProfiles() {
-  if (!isAdmin()) {
+  if (!isRealAdmin()) {
     state.allProfiles = [];
     return;
   }
@@ -546,7 +551,7 @@ async function loadAllProfiles() {
 }
 
 async function loadPendingUsers() {
-  if (!isAdmin()) return;
+  if (!isRealAdmin()) return;
   try {
     const data = await safeRpc('list_pending_profiles');
     state.pendingUsers = data || [];
@@ -774,8 +779,47 @@ function isActive() {
   return state.profile?.status === 'active';
 }
 
-function isAdmin() {
+// True when the signed-in account actually has the admin role, regardless of
+// the admin's chosen "view as staff" preview mode.
+function isRealAdmin() {
   return isActive() && state.profile?.role === 'admin';
+}
+
+function isAdmin() {
+  return isRealAdmin() && state.adminViewAs !== 'staff';
+}
+
+const ADMIN_VIEW_KEY = 'harvest-portal-admin-view';
+
+function getStoredAdminView() {
+  try {
+    return localStorage.getItem(ADMIN_VIEW_KEY) === 'staff' ? 'staff' : 'admin';
+  } catch {
+    return 'admin';
+  }
+}
+
+function setAdminViewAs(mode) {
+  const next = mode === 'staff' ? 'staff' : 'admin';
+  state.adminViewAs = next;
+  try {
+    localStorage.setItem(ADMIN_VIEW_KEY, next);
+  } catch {}
+  applyAdminViewMode();
+  hydrateForms();
+  renderAll();
+  showToast(next === 'staff' ? 'Now viewing the portal as staff.' : 'Admin view restored.', 'success');
+}
+
+// Reflect the current admin/staff view in the UI: show admin-only tools only in
+// admin view, keep the admin's own "view as staff" control visible to real
+// admins, and move off the Admin tab if it just became hidden.
+function applyAdminViewMode() {
+  const admin = isAdmin();
+  document.querySelectorAll('.admin-only').forEach(node => node.classList.toggle('hidden', !admin));
+  document.querySelectorAll('.real-admin-only').forEach(node => node.classList.toggle('hidden', !isRealAdmin()));
+  if (el.staffViewToggle) el.staffViewToggle.checked = state.adminViewAs === 'staff';
+  if (!admin && state.currentView === 'admin') setView('dashboard');
 }
 
 function storageKey() {
@@ -836,7 +880,7 @@ function hydrateForms() {
   el.companyCalendarForm.company_calendar_embed_url.value = state.portalSettings.company_calendar_embed_url || '';
   if (el.estimateForm.user && !el.estimateForm.user.value) el.estimateForm.user.value = fullName;
   if (el.estimateForm.date) el.estimateForm.date.max = todayInputValue();
-  document.querySelectorAll('.admin-only').forEach(node => node.classList.toggle('hidden', !isAdmin()));
+  applyAdminViewMode();
   populateTemplateSelect();
   populateClientSelects();
   populateEstimateSelects();
