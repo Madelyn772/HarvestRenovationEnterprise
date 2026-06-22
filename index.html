@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harvest Renovation Enterprise Portal</title>
-  <link rel="stylesheet" href="./styles.css?v=20260623-3" />
+  <link rel="stylesheet" href="./styles.css?v=20260623-4" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -96,16 +96,16 @@
 
       <nav class="nav">
         <button class="nav-btn active" data-view="dashboard">Executive Dashboard</button>
-        <button class="nav-btn" data-view="crm">CRM & Leads</button>
-        <button class="nav-btn" data-view="estimating">Estimating</button>
-        <button class="nav-btn" data-view="operations">Operations</button>
-        <button class="nav-btn" data-view="documents">Documents</button>
+        <button class="nav-btn" data-view="crm">CRM &amp; Leads<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="estimating">Estimating<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="operations">Operations<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="documents">Documents<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="marketing">Marketing KPI</button>
         <button class="nav-btn" data-view="calendars">Calendars</button>
         <button class="nav-btn" data-view="team">Team</button>
         <button class="nav-btn" data-view="settings">Settings</button>
-        <button class="nav-btn admin-only hidden" data-view="admin">Admin</button>
-        <button class="nav-btn" data-view="trash">Trash</button>
+        <button class="nav-btn admin-only hidden" data-view="admin">Admin<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="trash">Trash<span class="nav-count hidden"></span></button>
       </nav>
 
       <div class="sidebar-card compact mobile-hide">
@@ -544,6 +544,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-3"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260623-4"></script>
 </body>
 </html>

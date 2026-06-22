@@ -102,7 +102,7 @@ function cacheDom() {
     'sidebarUserName','sidebarUserMeta','sidebarRole','sidebarInitials','pageTitle','pageSubtitle','toastStack','openSettingsPanelBtn','logoutBtn',
     'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','clientForm','leadForm','clientList','leadTable',
     'clientDetailTitle','clientDetailBody','clientSearch','estimateForm','estimateTemplateSelect','estimateClientSelect','estimateNumber','estimateDate',
-    'estimateSummary','estimateList','calculateEstimate','printEstimate','jobForm','jobClientSelect','calendarForm','calendarClientSelect','invoiceForm',
+    'estimateSummary','estimateList','calculateEstimate','printEstimate','jobForm','leadClientSelect','jobClientSelect','calendarForm','calendarClientSelect','invoiceForm',
     'invoiceClientSelect','relatedEstimate','invoiceNumber','invoiceDate','invoiceItems','addInvoiceRow','printInvoice','noteForm','noteClientSelect',
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits',
     'trackedLeadsCount','adCplValue','companyCalendarWrap','companyCalendarBadge','teamCalendarList','upcomingFeed','employeeSearch','employeeList',
@@ -142,8 +142,8 @@ function bindAppUi() {
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
 
-  el.clientSearch.addEventListener('input', e => { state.filters.clientSearch = e.target.value.toLowerCase(); renderClients(); renderLeads(); });
-  el.employeeSearch.addEventListener('input', e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); });
+  el.clientSearch.addEventListener('input', debounce(e => { state.filters.clientSearch = e.target.value.toLowerCase(); renderClients(); renderLeads(); }));
+  el.employeeSearch.addEventListener('input', debounce(e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); }));
 
   document.querySelectorAll('[data-doc-filter]').forEach(btn => btn.addEventListener('click', () => {
     state.filters.documentType = btn.dataset.docFilter;
@@ -182,6 +182,14 @@ function bindAppUi() {
   });
 
   el.estimateTemplateSelect.addEventListener('change', applyEstimateTemplate);
+
+  // Autofill linked-client details when a saved client is chosen in a form.
+  el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
+  el.jobClientSelect?.addEventListener('change', e => autofillClientFields(el.jobForm, findClient(e.target.value), { client: 'name' }));
+  el.calendarClientSelect?.addEventListener('change', e => autofillClientFields(el.calendarForm, findClient(e.target.value), { client: 'name' }));
+  el.noteClientSelect?.addEventListener('change', e => autofillClientFields(el.noteForm, findClient(e.target.value), { title: 'name' }));
+  el.invoiceClientSelect?.addEventListener('change', e => autofillClientFields(el.invoiceForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', address: 'address' }));
+  el.relatedEstimate?.addEventListener('change', e => { if (e.target.value) fillInvoiceFromEstimate(e.target.value); });
 
   if (el.darkModeToggle) {
     el.darkModeToggle.addEventListener('change', () => applyTheme(el.darkModeToggle.checked ? 'dark' : 'light'));
@@ -839,6 +847,7 @@ function renderAll() {
   renderPendingUsers();
   renderDocuments();
   renderTrash();
+  renderNavCounts();
   renderReadiness();
 }
 
@@ -942,8 +951,9 @@ function renderLeads() {
   const leads = [...state.store.leads].filter(item => [item.clientName,item.phone,item.email,item.service,item.status,item.area].join(' ').toLowerCase().includes(query)).sort((a,b) => sortDateDesc(a.preferredDate, b.preferredDate));
   el.leadTable.innerHTML = leads.length ? leads.map(lead => {
     const statusColor = lead.status === 'Won' ? 'var(--green)' : lead.status === 'Lost' ? 'var(--red)' : 'var(--gold-2)';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(lead.clientName || 'Unnamed Lead')}</h4><p>${escapeHtml(lead.service || 'General')} • ${escapeHtml(lead.area || '')}</p></div><strong style="color:${statusColor}">${escapeHtml(lead.status || 'New Lead')}</strong></div><p class="muted">${escapeHtml(lead.phone || '')} ${lead.email ? '• ' + escapeHtml(lead.email) : ''}</p><p>${escapeHtml(lead.notes || '')}</p><div class="form-actions">${deleteBtn('leads', lead.id)}</div></div>`;
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(lead.clientName || 'Unnamed Lead')}</h4><p>${escapeHtml(lead.service || 'General')} • ${escapeHtml(lead.area || '')}</p></div><strong style="color:${statusColor}">${escapeHtml(lead.status || 'New Lead')}</strong></div><p class="muted">${escapeHtml(lead.phone || '')} ${lead.email ? '• ' + escapeHtml(lead.email) : ''}</p><p>${escapeHtml(lead.notes || '')}</p><div class="form-actions"><button type="button" class="ghost-btn lead-to-estimate" data-lead-id="${lead.id}">→ Estimate</button>${deleteBtn('leads', lead.id)}</div></div>`;
   }).join('') : emptyHtml('No leads captured yet.');
+  el.leadTable.querySelectorAll('.lead-to-estimate').forEach(btn => btn.addEventListener('click', () => convertLeadToEstimate(btn.dataset.leadId)));
 }
 
 function renderClientDetail() {
@@ -970,8 +980,10 @@ function renderClientDetail() {
 
 function renderEstimates() {
   const items = [...state.store.estimates].sort((a,b) => sortDateDesc(a.date, b.date));
-  el.estimateList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')} • Deposit ${money.format(num(item.depositAmount))}</p><div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button>${deleteBtn('estimates', item.id)}</div></div>`).join('') : emptyHtml('No estimates saved yet.');
+  el.estimateList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')} • Deposit ${money.format(num(item.depositAmount))}</p><div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">→ Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${deleteBtn('estimates', item.id)}</div></div>`).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
+  el.estimateList.querySelectorAll('.estimate-invoice').forEach(btn => btn.addEventListener('click', () => fillInvoiceFromEstimate(btn.dataset.estimateId, { switchView: true })));
+  el.estimateList.querySelectorAll('.estimate-email').forEach(btn => btn.addEventListener('click', () => emailEstimate(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-print').forEach(btn => btn.addEventListener('click', () => {
     const estimate = state.store.estimates.find(item => item.id === btn.dataset.estimateId);
     if (estimate) printEstimate(estimate);
@@ -991,11 +1003,12 @@ function renderCalendarItems() {
 
 function renderInvoices() {
   const items = [...state.store.invoices].sort((a,b) => sortDateDesc(a.date, b.date));
-  el.invoiceList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.total))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button>${deleteBtn('invoices', item.id)}</div></div>`).join('') : emptyHtml('No invoices yet.');
+  el.invoiceList.innerHTML = items.length ? items.map(item => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.total))}</strong></div><p class="muted">${escapeHtml(item.status || 'Draft')}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${deleteBtn('invoices', item.id)}</div></div>`).join('') : emptyHtml('No invoices yet.');
   el.invoiceList.querySelectorAll('.invoice-print').forEach(btn => btn.addEventListener('click', () => {
     const invoice = state.store.invoices.find(item => item.id === btn.dataset.invoiceId);
     if (invoice) printInvoice(invoice);
   }));
+  el.invoiceList.querySelectorAll('.invoice-email').forEach(btn => btn.addEventListener('click', () => emailInvoice(btn.dataset.invoiceId)));
 }
 
 function renderNotes() {
@@ -1809,8 +1822,122 @@ function objectFromForm(form) {
   return Object.fromEntries([...fd.entries()]);
 }
 
+function debounce(fn, wait = 180) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
 function lookupClientName(clientId) {
   return state.store.clients.find(item => item.id === clientId)?.name || '';
+}
+
+function findClient(clientId) {
+  return state.store.clients.find(item => item.id === clientId) || null;
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+// Fill mapped form fields from a saved client record. mapping = { formField: clientProp }.
+function autofillClientFields(form, client, mapping) {
+  if (!form || !client) return;
+  Object.entries(mapping).forEach(([field, prop]) => {
+    const input = form.elements[field];
+    if (input) input.value = client[prop] || '';
+  });
+}
+
+// Draft an invoice from an estimate: fill client + drop in a line item for the estimate total.
+function fillInvoiceFromEstimate(estimateId, { switchView = false } = {}) {
+  const estimate = state.store.estimates.find(item => item.id === estimateId);
+  if (!estimate) return;
+  const client = estimate.clientId ? findClient(estimate.clientId) : null;
+  if (switchView) {
+    el.invoiceForm.reset();
+    el.invoiceItems.innerHTML = '';
+    populateClientSelects();
+    populateEstimateSelects();
+  }
+  el.invoiceForm.clientId.value = estimate.clientId || '';
+  el.invoiceForm.relatedEstimate.value = estimate.id;
+  el.invoiceForm.clientName.value = estimate.clientName || estimate.user || '';
+  el.invoiceForm.phone.value = client?.phone || '';
+  el.invoiceForm.email.value = client?.email || '';
+  el.invoiceForm.address.value = client?.address || '';
+  if (!el.invoiceForm.date.value) el.invoiceForm.date.value = todayISO();
+  if (switchView) {
+    addInvoiceRow({ description: `${estimate.trade || 'Project'} — ${estimate.scope || 'Project work'}`, amount: num(estimate.estimatedCost).toFixed(2) });
+    setView('operations');
+    el.invoiceForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Invoice drafted from the estimate. Review and save.', 'success');
+  }
+}
+
+// Load a lead's details into the estimate builder.
+function convertLeadToEstimate(leadId) {
+  const lead = state.store.leads.find(item => item.id === leadId);
+  if (!lead) return;
+  el.estimateForm.reset();
+  el.estimateForm.estimateId.value = '';
+  populateClientSelects();
+  el.estimateForm.clientId.value = lead.clientId || '';
+  el.estimateForm.clientName.value = lead.clientId ? '' : (lead.clientName || '');
+  el.estimateForm.user.value = state.profile?.full_name || '';
+  el.estimateForm.trade.value = lead.service || '';
+  el.estimateForm.scope.value = lead.notes || '';
+  if (el.estimateTemplateSelect && estimateTemplates[lead.service]) {
+    el.estimateTemplateSelect.value = lead.service;
+    applyEstimateTemplate();
+  }
+  setView('estimating');
+  el.estimateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  renderEstimateSummary(collectEstimateFromForm());
+  showToast('Lead loaded into the estimate builder.', 'success');
+}
+
+function buildMailto(to, subject, body) {
+  return `mailto:${encodeURIComponent(to || '')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function emailEstimate(estimateId) {
+  const record = state.store.estimates.find(item => item.id === estimateId);
+  if (!record) return;
+  const client = record.clientId ? findClient(record.clientId) : null;
+  const name = record.clientName || record.user || 'there';
+  const signoff = state.profile?.full_name || 'Harvest Renovation';
+  const body = `Hi ${name},\n\nHere is your estimate from Harvest Renovation.\nEstimate ${record.estimateNumber || ''}: ${money.format(num(record.estimatedCost))}\nDeposit: ${money.format(num(record.depositAmount))}\nTrade: ${record.trade || ''}\nScope: ${record.scope || 'Project scope to be confirmed.'}\n\nThank you,\n${signoff}`;
+  window.location.href = buildMailto(client?.email || '', `Harvest Renovation Estimate ${record.estimateNumber || ''}`.trim(), body);
+}
+
+function emailInvoice(invoiceId) {
+  const invoice = state.store.invoices.find(item => item.id === invoiceId);
+  if (!invoice) return;
+  const signoff = state.profile?.full_name || 'Harvest Renovation';
+  const body = `Hi ${invoice.clientName || 'there'},\n\nAttached is invoice ${invoice.invoiceNumber || ''} from Harvest Renovation for ${money.format(num(invoice.total))}.\n\nThank you,\n${signoff}`;
+  window.location.href = buildMailto(invoice.email || '', `Harvest Renovation Invoice ${invoice.invoiceNumber || ''}`.trim(), body);
+}
+
+function renderNavCounts() {
+  const openLeads = state.store.leads.filter(item => !['Won', 'Lost'].includes(item.status)).length;
+  const activeJobs = state.store.jobs.filter(item => item.status !== 'Completed').length;
+  const counts = {
+    crm: openLeads,
+    estimating: state.store.estimates.length,
+    operations: activeJobs,
+    documents: state.store.documents.length,
+    trash: state.store.trash.length,
+    admin: isAdmin() ? state.pendingUsers.length : 0
+  };
+  Object.entries(counts).forEach(([view, count]) => {
+    const node = document.querySelector(`.nav-btn[data-view="${view}"] .nav-count`);
+    if (!node) return;
+    node.textContent = String(count);
+    node.classList.toggle('hidden', count <= 0);
+  });
 }
 
 function computeCplLabel() {
