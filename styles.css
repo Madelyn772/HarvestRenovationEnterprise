@@ -2112,4 +2112,15 @@ textarea:focus-visible,
   .totals-item strong { font-size: 15px; }
 }
 
+/* Light theme: the scorecard card is white, so force readable dark cell text
+   (numbers, week labels, and the "—" placeholders). Dark theme keeps its light
+   text on the dark card. */
+.theme-light .main .scorecard-table td,
+.theme-light .main .scorecard-table td strong {
+  color: #2c2419;
+}
+.theme-light .main .totals-item strong {
+  color: #2c2419;
+}
+
 
