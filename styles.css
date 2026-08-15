@@ -1902,9 +1902,14 @@ textarea:focus-visible,
 }
 .checklist .checklist-remove {
   flex: 0 0 auto;
+  align-self: center;
   width: 28px;
   height: 28px;
+  padding: 0;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .checklist-add {
   display: flex;
@@ -1960,4 +1965,53 @@ textarea:focus-visible,
   outline: 2px solid var(--gold-2);
   outline-offset: 2px;
 }
+
+/* "Uploaded" tag on legacy documents added via the upload form. */
+.doc-source-tag {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: .4rem;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #1d1308;
+  background: linear-gradient(135deg, #f0d09d, #c89a54);
+}
+
+/* ── Status pills for estimate/invoice lists ── */
+.status-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  margin-right: 6px;
+}
+
+/* Send buttons — make them stand out */
+#sendEstimate, #sendInvoice {
+  background: var(--gold, #caa05a);
+  color: #181410;
+  border: 1px solid var(--gold, #caa05a);
+  font-weight: 600;
+}
+#sendEstimate:hover, #sendInvoice:hover {
+  opacity: 0.9;
+}
+
+/* Client phone field on the estimate form — match existing form styling */
+#estimateClientPhone {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
 

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260623-17" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-2" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -105,6 +105,7 @@
         <button class="nav-btn active" data-view="dashboard">Executive Dashboard</button>
         <button class="nav-btn" data-view="crm">CRM &amp; Leads<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="estimating">Estimating<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="invoicing">Invoicing<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="operations">Operations<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="documents">Documents<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="marketing">Marketing KPI</button>
@@ -146,7 +147,7 @@
           <h2 id="pageTitle">Executive Dashboard</h2>
           <p class="muted" id="pageSubtitle">A practical operations center for CRM, estimating, scheduling, team visibility, and website performance.</p>
         </div>
-        <div class="topbar-actions">
+        <div class="topbar-actions" id="topbarActions">
           <a class="secondary-btn" href="https://harvest-renovation.vercel.app/" target="_blank" rel="noreferrer">Open Main Website</a>
           <button class="primary-btn" data-view-trigger="estimating">Create Estimate</button>
         </div>
@@ -287,6 +288,7 @@
               </div>
               <label class="full"><span>Project / billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
               <label class="full"><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
+              <label class="full"><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS delivery (optional)" /></label>
               <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
               <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
               <label><span>Prepared by</span><input name="user" /></label>
@@ -306,6 +308,7 @@
               <div class="form-actions full">
                 <button type="button" class="secondary-btn" id="calculateEstimate">Calculate</button>
                 <button type="submit" class="primary-btn">Save Estimate</button>
+                <button type="button" class="primary-btn" id="sendEstimate">Send</button>
                 <button type="button" class="ghost-btn" id="printEstimate">Print / PDF</button>
                 <button type="button" class="ghost-btn" id="clearEstimateForm">Clear</button>
               </div>
@@ -315,17 +318,54 @@
             <div class="card-head"><div><p class="eyebrow">Estimate Summary</p><h3>Client-ready preview</h3></div></div>
             <div id="estimateSummary" class="estimate-summary"></div>
             <div class="signature-prep">
-              <p class="eyebrow">DocuSign Ready</p>
-              <h4>Future signature workflow</h4>
-              <p class="muted">This portal is structured so estimates can be exported to PDF today and handed into a DocuSign send flow later without redesigning the estimate data model.</p>
+              <p class="eyebrow">Documenso Ready</p>
+              <h4>E-Signature Workflow</h4>
+              <p class="muted">Click “Send” to email this estimate to the client for legally binding e-signature via Documenso. They get a signing link, sign on their phone or computer, and the estimate is auto-marked “Approved” when they finish. Free, unlimited, court-admissible.</p>
             </div>
           </article>
         </div>
         <article class="card"><div class="card-head"><div><p class="eyebrow">Saved Estimates</p><h3>Proposal library</h3></div></div><div id="estimateList" class="stack"></div></article>
       </section>
 
+      <!-- ── Invoicing view (pulled out of Operations) ── -->
+      <section class="view" id="invoicingView">
+        <div class="section-head-row"><div><p class="eyebrow">Invoicing</p><h3>Create, send, and track invoices</h3></div></div>
+        <div class="grid two">
+          <article class="card">
+            <div class="card-head"><div><p class="eyebrow">Invoices</p><h3>Create invoice</h3></div></div>
+            <form id="invoiceForm" class="form-grid">
+              <input type="hidden" name="invoiceId" />
+              <label><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
+              <label><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
+              <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
+              <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
+              <label><span>Client name</span><input name="clientName" /></label>
+              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Paid</option></select></label>
+              <label><span>Phone</span><input name="phone" /></label>
+              <label><span>Email</span><input name="email" type="email" /></label>
+              <label class="full"><span>Address</span><input name="address" /></label>
+              <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+              <div class="invoice-items-shell full">
+                <div class="split-head"><strong>Invoice Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">Add Row</button></div>
+                <div id="invoiceItems" class="stack compact-stack"></div>
+              </div>
+              <div class="form-actions full">
+                <button type="submit" class="primary-btn">Save Invoice</button>
+                <button type="button" class="primary-btn" id="sendInvoice">Send</button>
+                <button type="button" class="ghost-btn" id="printInvoice">Print / PDF</button>
+                <button type="button" class="ghost-btn" id="clearInvoiceForm">Clear</button>
+              </div>
+            </form>
+          </article>
+          <article class="card">
+            <div class="card-head"><div><p class="eyebrow">Invoice Library</p><h3>Saved invoices</h3></div></div>
+            <div id="invoiceList" class="stack"></div>
+          </article>
+        </div>
+      </section>
+
       <section class="view" id="operationsView">
-        <div class="section-head-row"><div><p class="eyebrow">Operations</p><h3>Projects, calendar events, invoices, and client documents</h3></div></div>
+        <div class="section-head-row"><div><p class="eyebrow">Operations</p><h3>Projects, calendar events, and client documents</h3></div></div>
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Projects</p><h3>Track work in progress</h3></div></div>
@@ -355,31 +395,6 @@
         </div>
         <div class="grid two">
           <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Invoices</p><h3>Create invoice</h3></div></div>
-            <form id="invoiceForm" class="form-grid">
-              <input type="hidden" name="invoiceId" />
-              <label><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
-              <label><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
-              <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
-              <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
-              <label><span>Client name</span><input name="clientName" /></label>
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Paid</option></select></label>
-              <label><span>Phone</span><input name="phone" /></label>
-              <label><span>Email</span><input name="email" type="email" /></label>
-              <label class="full"><span>Address</span><input name="address" /></label>
-              <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
-              <div class="invoice-items-shell full">
-                <div class="split-head"><strong>Invoice Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">Add Row</button></div>
-                <div id="invoiceItems" class="stack compact-stack"></div>
-              </div>
-              <div class="form-actions full">
-                <button type="submit" class="primary-btn">Save Invoice</button>
-                <button type="button" class="ghost-btn" id="printInvoice">Print / PDF</button>
-                <button type="button" class="ghost-btn" id="clearInvoiceForm">Clear</button>
-              </div>
-            </form>
-          </article>
-          <article class="card">
             <div class="card-head"><div><p class="eyebrow">Documents & Notes</p><h3>Store internal references</h3></div></div>
             <form id="noteForm" class="form-grid">
               <label><span>Linked client</span><select name="clientId" id="noteClientSelect"></select></label>
@@ -394,7 +409,7 @@
         <div class="grid three">
           <article class="card"><div class="card-head"><div><p class="eyebrow">Project Board</p><h3>Active work</h3></div></div><div id="jobBoard" class="stack"></div></article>
           <article class="card"><div class="card-head"><div><p class="eyebrow">Calendar Queue</p><h3>Upcoming items</h3></div></div><div id="calendarList" class="stack"></div></article>
-          <article class="card"><div class="card-head"><div><p class="eyebrow">Invoices & Notes</p><h3>Reference library</h3></div></div><div id="invoiceList" class="stack"></div><div class="divider"></div><div id="noteList" class="stack"></div></article>
+          <article class="card"><div class="card-head"><div><p class="eyebrow">Notes</p><h3>Reference library</h3></div></div><div id="noteList" class="stack"></div></article>
         </div>
       </section>
 
@@ -402,14 +417,44 @@
         <div class="section-head-row"><div><p class="eyebrow">Document Vault</p><h3>Saved PDF estimates and invoices</h3></div></div>
         <article class="card">
           <div class="card-head split-head">
-            <div><p class="eyebrow">Saved Documents</p><h3>Generated estimate &amp; invoice PDFs</h3></div>
+            <div><p class="eyebrow">Upload</p><h3>Add a past estimate or invoice</h3></div>
+            <button type="button" class="primary-btn" id="toggleUploadBtn" aria-expanded="false" aria-controls="uploadPanel">Upload document</button>
+          </div>
+          <div id="uploadPanel" class="hidden">
+            <p class="muted tiny">Upload a PDF or photo of a document you already have. Files are stored in this browser, so keep each one small (2&nbsp;MB max). The number you enter is also reserved so it can&rsquo;t be reused.</p>
+            <form id="uploadDocForm" class="form-grid">
+              <label><span>Type</span><select name="type"><option value="estimate">Estimate</option><option value="invoice">Invoice</option><option value="other">Other</option></select></label>
+              <label><span>Document number</span><input name="number" placeholder="e.g. EST123456" /></label>
+              <label><span>Client name</span><input name="clientName" /></label>
+              <label><span>Date</span><input name="date" type="date" /></label>
+              <label><span>Amount (optional)</span><input name="total" type="number" step="0.01" min="0" /></label>
+              <label class="full"><span>File (PDF, JPG, or PNG &mdash; 2&nbsp;MB max)</span><input name="file" id="uploadDocFile" type="file" accept="application/pdf,image/png,image/jpeg" /></label>
+              <div class="form-actions full"><button type="submit" class="primary-btn">Upload document</button><button type="button" class="ghost-btn" id="clearUploadDocForm">Clear</button></div>
+            </form>
+          </div>
+        </article>
+        <article class="card hidden" id="reservedNumberCard">
+          <div class="card-head"><div><p class="eyebrow">Number Registry</p><h3>Reserved estimate &amp; invoice numbers</h3></div></div>
+          <p class="muted tiny">Numbers from uploaded documents are reserved here automatically so they can&rsquo;t be reused. You can also add another legacy number by hand.</p>
+          <form id="reservedNumberForm" class="form-grid">
+            <label><span>Type</span><select name="type"><option value="estimate">Estimate</option><option value="invoice">Invoice</option></select></label>
+            <label><span>Number</span><input name="number" required /></label>
+            <label class="full"><span>Note (optional)</span><input name="note" placeholder="e.g. 2023 paper invoice for the Smiths" /></label>
+            <div class="form-actions full"><button type="submit" class="primary-btn">Add number</button></div>
+          </form>
+          <div class="divider"></div>
+          <div id="reservedNumberList" class="stack"></div>
+        </article>
+        <article class="card">
+          <div class="card-head split-head">
+            <div><p class="eyebrow">Saved Documents</p><h3>Generated &amp; uploaded estimate &amp; invoice files</h3></div>
             <div class="doc-filter-row">
               <button class="chip-btn active" data-doc-filter="all">All</button>
               <button class="chip-btn" data-doc-filter="estimate">Estimates</button>
               <button class="chip-btn" data-doc-filter="invoice">Invoices</button>
             </div>
           </div>
-          <p class="muted tiny">Documents are saved automatically whenever you print/export an estimate or invoice. Open to view or print to PDF, download an offline copy, or move to Trash.</p>
+          <p class="muted tiny">Generated documents are saved automatically whenever you print/export an estimate or invoice. Uploaded documents appear here too. Open to view or print to PDF, download an offline copy, or move to Trash.</p>
           <div id="documentList" class="stack doc-stack"></div>
         </article>
       </section>
@@ -576,6 +621,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260623-17"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-2"></script>
 </body>
 </html>
