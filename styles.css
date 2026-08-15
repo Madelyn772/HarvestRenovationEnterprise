@@ -2270,4 +2270,41 @@ textarea:focus-visible,
   .decline-reason-label { min-width: 130px; }
 }
 
+/* ── KPIs "How to read this page" info box (self-contained light panel so it
+   stays readable in both themes) ── */
+.kpi-info-box {
+  margin-bottom: 1rem;
+  border: 1px solid #e5ddcd;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fbf8f1;
+}
+.kpi-info-box summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b5d46;
+  background: #f2e9d6;
+  list-style: none;
+}
+.kpi-info-box summary::-webkit-details-marker { display: none; }
+.kpi-info-box summary::before { content: '▸ '; }
+.kpi-info-box[open] summary::before { content: '▾ '; }
+.kpi-info-box summary:hover { color: #2c2419; }
+.kpi-info-content {
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.kpi-info-box .kpi-info-content h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #9a7530;
+  margin: 12px 0 4px;
+}
+.kpi-info-box .kpi-info-content h4:first-child { margin-top: 0; }
+.kpi-info-content p { margin: 2px 0; color: #2c2419; }
+.kpi-info-content strong { color: #1f1a14; }
+
 

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-12" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-13" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -461,6 +461,42 @@
 
       <section class="view" id="marketingView">
         <div class="section-head-row"><div><p class="eyebrow">Marketing Intelligence</p><h3>Track ad performance, website traffic, landing page visibility, and lead sources</h3></div></div>
+        <details class="kpi-info-box">
+          <summary>How to read this page — click to expand</summary>
+          <div class="kpi-info-content">
+            <h4>Business Scorecard</h4>
+            <p>Auto-calculated weekly snapshot of the whole business. You don't enter anything here — it pulls from your CRM (leads), Estimating (estimates, jobs won/lost, revenue sold), and Invoicing (revenue collected, cash on hand).</p>
+            <p><strong>Leads</strong> = clients added in CRM that week</p>
+            <p><strong>Estimates</strong> = estimates created that week</p>
+            <p><strong>Jobs Won</strong> = estimates marked "Approved" that week</p>
+            <p><strong>Jobs Lost</strong> = estimates marked "Declined" that week</p>
+            <p><strong>Close Rate</strong> = Jobs Won ÷ (Jobs Won + Jobs Lost)</p>
+            <p><strong>Revenue Sold</strong> = dollar value of approved estimates that week</p>
+            <p><strong>Revenue Collected</strong> = dollar value of invoices marked "Paid" that week</p>
+            <p><strong>Cash on Hand</strong> = total of all paid invoices (cumulative)</p>
+            <p><strong>Avg Job Value</strong> = Revenue Sold ÷ Jobs Won</p>
+
+            <h4>Jobs Won Trend</h4>
+            <p>Line chart of jobs won (approved estimates) over time. Use the View toggle to switch between weekly, monthly, quarterly, and yearly to see whether you're growing.</p>
+
+            <h4>Decline Reasons</h4>
+            <p>Shows why you're losing jobs. When you mark an estimate "Declined," you pick a reason. This chart groups all decline reasons for the selected period so you can spot patterns.</p>
+
+            <h4>Ad KPI Entry (Campaign Tracker)</h4>
+            <p>Manual entry — one row per ad campaign per week. Enter what you spent and what you got back.</p>
+            <p><strong>Spend</strong> = how much you spent on the ad</p>
+            <p><strong>Revenue Closed</strong> = revenue from jobs that ad produced</p>
+            <p><strong>CPL (Cost Per Lead)</strong> = Spend ÷ Leads (auto-calculated)</p>
+            <p><strong>ROAS (Return on Ad Spend)</strong> = Revenue Closed ÷ Spend (auto-calculated, shown as a ratio like "40x" meaning $40 returned for every $1 spent)</p>
+            <p>ROAS guide: 5x+ = great, 2-5x = okay, 1-2x = barely profitable, below 1x = losing money</p>
+
+            <h4>Web Tracking</h4>
+            <p>Shows website visits and tracked leads from the public website tracker. Counts start when the tracker is installed on the live site.</p>
+
+            <h4>Lead Source Mix</h4>
+            <p>Shows where your leads came from (Google, referral, repeat, etc.) — pulled automatically from the CRM's lead source field.</p>
+          </div>
+        </details>
         <!-- ── Business Scorecard (auto-calculated, no manual entry) ── -->
         <article class="card">
           <div class="card-head">
@@ -684,6 +720,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-12"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-13"></script>
 </body>
 </html>
