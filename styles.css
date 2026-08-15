@@ -2055,13 +2055,29 @@ textarea:focus-visible,
 .scorecard-table .center {
   text-align: center;
 }
+.scorecard-period label {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+.scorecard-period label span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e9d8b6;
+}
 .scorecard-period select {
   padding: 6px 10px;
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid #caa05a;
   border-radius: 6px;
   font-size: 13px;
-  background: var(--card, #fff);
-  color: var(--text, #2c2c2c);
+  background: #ffffff;
+  color: #1f1a14;
+}
+.scorecard-period select option {
+  background: #ffffff;
+  color: #1f1a14;
 }
 .scorecard-totals {
   margin-top: 1rem;
