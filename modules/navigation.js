@@ -164,7 +164,7 @@ export function setView(view) {
     invoicing: ['Invoicing', 'Create, send, and track invoices with e-signature.'],
     operations: ['Operations', 'Run projects, schedule visits, and keep notes organized.'],
     documents: ['Documents', 'Saved PDF estimates and invoices, ready to reopen, print, or download.'],
-    marketing: ['Marketing KPI', 'Track traffic, ad spend, campaign performance, and lead sources.'],
+    marketing: ['KPIs', 'Track traffic, ad spend, campaign performance, and lead sources.'],
     calendars: ['Calendars', 'Monitor the company calendar and team availability.'],
     team: ['Team', 'View the employee directory and internal build-out roadmap.'],
     settings: ['Settings', 'Manage your employee profile, password, and shared calendar settings.'],
