@@ -123,6 +123,46 @@ export function renderScorecard() {
   }
 }
 
+// ── Decline Reasons summary — grouped counts of declined estimates in the
+//    same period as the scorecard, sorted most-common first, with bars. ──
+export function renderDeclineReasons() {
+  if (!el.declineReasonSummary) return;
+  const weeks = parseInt(el.scorecardPeriod?.value || 8, 10);
+  const now = new Date();
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+  end.setDate(now.getDate() + (6 - now.getDay()));
+  const start = new Date(end);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(end.getDate() - (weeks * 7 - 1));
+
+  const declined = state.store.estimates.filter(e => {
+    if (e.status !== 'Declined') return false;
+    if (!e.date) return true; // include undated declines
+    const d = new Date(e.date);
+    if (Number.isNaN(d.getTime())) return true;
+    return d >= start && d <= end;
+  });
+
+  if (!declined.length) {
+    el.declineReasonSummary.innerHTML = emptyHtml('No declined estimates in this period.');
+    return;
+  }
+
+  const counts = new Map();
+  declined.forEach(e => {
+    const reason = (e.declineReason && String(e.declineReason).trim()) || 'Unspecified';
+    counts.set(reason, (counts.get(reason) || 0) + 1);
+  });
+  const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const max = rows[0][1] || 1;
+
+  el.declineReasonSummary.innerHTML = rows.map(([reason, count]) => {
+    const pct = Math.round((count / max) * 100);
+    return `<div class="decline-reason-row"><span class="decline-reason-label">${escapeHtml(reason)}</span><div class="decline-reason-track"><div class="decline-reason-bar" style="width:${pct}%"></div></div><strong class="decline-reason-count">${count}</strong></div>`;
+  }).join('');
+}
+
 export function renderCampaigns() {
   const items = [...state.store.campaigns].sort((a,b) => sortDateDesc(a.date, b.date));
   el.campaignList.innerHTML = items.length ? items.map(item => {

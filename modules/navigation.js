@@ -5,7 +5,7 @@ import { renderDashboard, handleChecklistAdd } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate } from './operations.js';
-import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard } from './marketing.js';
+import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons } from './marketing.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
 import { renderEmployees, renderTeamPending, renderReadiness } from './team.js';
 import { renderPendingUsers, handleAdminGrantAccess } from './admin.js';
@@ -78,7 +78,7 @@ export function bindAppUi() {
   });
   el.noteForm.addEventListener('submit', handleNoteSave);
   el.campaignForm.addEventListener('submit', handleCampaignSave);
-  if (el.scorecardPeriod) el.scorecardPeriod.addEventListener('change', renderScorecard);
+  if (el.scorecardPeriod) el.scorecardPeriod.addEventListener('change', () => { renderScorecard(); renderDeclineReasons(); });
   el.profileForm.addEventListener('submit', handleProfileSave);
   el.passwordForm.addEventListener('submit', handlePasswordSave);
   el.companyCalendarForm.addEventListener('submit', handleCompanyCalendarSave);
@@ -206,6 +206,7 @@ export function renderCurrentView() {
     },
     marketing: () => {
       renderScorecard();
+      renderDeclineReasons();
       renderCampaigns();
       renderLeadSourceSummary();
     },
@@ -324,6 +325,7 @@ export function renderAll() {
   renderNotes();
   renderCampaigns();
   renderScorecard();
+  renderDeclineReasons();
   renderLeadSourceSummary();
   renderCalendars();
   renderEmployees();

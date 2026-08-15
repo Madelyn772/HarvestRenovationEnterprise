@@ -2229,4 +2229,36 @@ textarea:focus-visible,
   margin-top: 1.1rem;
 }
 
+/* ── Decline Reasons summary bars ── */
+.decline-reason-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+}
+.decline-reason-label {
+  min-width: 200px;
+  font-size: 13px;
+}
+.decline-reason-track {
+  flex: 1;
+  min-width: 40px;
+}
+.decline-reason-bar {
+  height: 20px;
+  background: #c62828;
+  border-radius: 4px;
+  min-width: 4px;
+}
+.decline-reason-count {
+  font-weight: 700;
+  font-size: 14px;
+  color: #c62828;
+  min-width: 1.5rem;
+  text-align: right;
+}
+@media (max-width: 768px) {
+  .decline-reason-label { min-width: 130px; }
+}
+
 
