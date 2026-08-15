@@ -2123,4 +2123,12 @@ textarea:focus-visible,
   color: #2c2419;
 }
 
+/* Empty-cell em-dash placeholders: subtle gold, matching the "Period" label
+   (kept lighter than the real numbers so absent data reads as muted). Applies
+   in both themes; overrides the dark cell text in light theme. */
+.scorecard-table .kpi-empty,
+.totals-item .kpi-empty {
+  color: #e9d8b6;
+}
+
 

@@ -10,6 +10,8 @@ export function renderScorecard() {
   const weeks = parseInt(el.scorecardPeriod?.value || 8, 10);
   const now = new Date();
   const weekRows = [];
+  // "—" placeholder for empty cells, tinted like the "Period" label (subtle gold).
+  const dash = '<span class="kpi-empty">—</span>';
 
   // Build the last N weeks (each week runs Sunday → Saturday; the newest
   // bucket is the current, in-progress week so today's activity is included).
@@ -49,7 +51,7 @@ export function renderScorecard() {
     }).length;
 
     const totalDecided = jobsWon + jobsLost;
-    const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : '—';
+    const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : dash;
 
     const revenueSold = state.store.estimates
       .filter(e => {
@@ -81,15 +83,15 @@ export function renderScorecard() {
     const weekLabel = row.weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return `<tr>
       <td><strong>${weekLabel}</strong></td>
-      <td>${row.leads || '—'}</td>
-      <td>${row.estimatesScheduled || '—'}</td>
-      <td>${row.jobsWon ? '<span class="kpi-good">' + row.jobsWon + '</span>' : '—'}</td>
-      <td>${row.jobsLost ? '<span class="kpi-bad">' + row.jobsLost + '</span>' : '—'}</td>
+      <td>${row.leads || dash}</td>
+      <td>${row.estimatesScheduled || dash}</td>
+      <td>${row.jobsWon ? '<span class="kpi-good">' + row.jobsWon + '</span>' : dash}</td>
+      <td>${row.jobsLost ? '<span class="kpi-bad">' + row.jobsLost + '</span>' : dash}</td>
       <td>${row.closeRate}</td>
-      <td>${row.revenueSold ? money.format(row.revenueSold) : '—'}</td>
-      <td>${row.revenueCollected ? money.format(row.revenueCollected) : '—'}</td>
-      <td>${row.cashOnHand ? money.format(row.cashOnHand) : '—'}</td>
-      <td>${row.avgJobValue ? money.format(row.avgJobValue) : '—'}</td>
+      <td>${row.revenueSold ? money.format(row.revenueSold) : dash}</td>
+      <td>${row.revenueCollected ? money.format(row.revenueCollected) : dash}</td>
+      <td>${row.cashOnHand ? money.format(row.cashOnHand) : dash}</td>
+      <td>${row.avgJobValue ? money.format(row.avgJobValue) : dash}</td>
     </tr>`;
   }).join('');
 
@@ -104,7 +106,7 @@ export function renderScorecard() {
 
   const totalCloseRate = (totals.jobsWon + totals.jobsLost) > 0
     ? Math.round((totals.jobsWon / (totals.jobsWon + totals.jobsLost)) * 100) + '%'
-    : '—';
+    : dash;
 
   if (el.scorecardTotals) {
     el.scorecardTotals.innerHTML = `
