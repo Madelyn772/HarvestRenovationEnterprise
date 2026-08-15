@@ -147,7 +147,11 @@ export function renderEstimates() {
       : status === 'Declined'
       ? `<button class="ghost-btn estimate-reopen" data-estimate-id="${item.id}">Reopen</button>`
       : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${statusBadge || escapeHtml(status)} • Deposit ${money.format(num(item.depositAmount))}</p><div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
+    const declineText = status === 'Declined' && item.declineReason
+      ? (item.declineReason === 'Other' && item.declineReasonOther ? item.declineReasonOther : item.declineReason)
+      : '';
+    const declineLine = declineText ? `<p class="decline-reason">Declined — ${escapeHtml(declineText)}</p>` : '';
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${statusBadge || escapeHtml(status)} • Deposit ${money.format(num(item.depositAmount))}</p>${declineLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-invoice').forEach(btn => btn.addEventListener('click', () => fillInvoiceFromEstimate(btn.dataset.estimateId, { switchView: true })));

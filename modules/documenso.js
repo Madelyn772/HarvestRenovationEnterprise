@@ -1,5 +1,5 @@
 import { state, config, autoNumber, currentUserName } from './state.js';
-import { el, showToast, openPrintWindow } from './dom.js';
+import { el, showToast, openPrintWindow, escapeHtml } from './dom.js';
 import { saveStore } from './store.js';
 import { buildEstimateDocHtml, buildInvoiceDocHtml } from './pdf.js';
 import { saveDocument, renderDocuments } from './documents.js';
@@ -151,10 +151,96 @@ function manualInvoiceFallback(invoice) {
 }
 
 // ── Status update helpers (used by the estimate/invoice list buttons) ──
+const DECLINE_REASONS = [
+  'Too expensive / went with cheaper bid',
+  'Went with another contractor',
+  'Decided not to do the project',
+  'Timing — postponed / not ready',
+  'No response / went silent',
+  'Financing fell through',
+  'Other'
+];
+
+// Small modal asking for a decline reason. Optional but encouraged: skipping or
+// closing resolves with 'Unspecified'. Calls onDone(reason, otherText).
+function promptDeclineReason(onDone) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const optionsHtml = DECLINE_REASONS.map((r, i) => `
+    <label class="decline-opt">
+      <input type="radio" name="declineReason" value="${escapeHtml(r)}"${i === 0 ? ' checked' : ''} />
+      <span>${escapeHtml(r)}</span>
+    </label>`).join('');
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Decline reason">
+      <div class="modal-head">
+        <h3>Why was this estimate declined?</h3>
+        <button type="button" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <div class="decline-options">${optionsHtml}</div>
+      <label class="decline-other-wrap is-hidden"><span>Tell us more</span><input type="text" class="decline-other" placeholder="Add a short note (optional)" /></label>
+      <div class="modal-actions">
+        <button type="button" class="ghost-btn decline-skip">Skip</button>
+        <button type="button" class="danger-btn decline-confirm">Mark Declined</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const otherWrap = overlay.querySelector('.decline-other-wrap');
+  const otherInput = overlay.querySelector('.decline-other');
+  const selected = () => overlay.querySelector('input[name="declineReason"]:checked')?.value || 'Unspecified';
+  const syncOther = () => {
+    const isOther = selected() === 'Other';
+    otherWrap.classList.toggle('is-hidden', !isOther);
+    if (isOther) otherInput.focus();
+  };
+  overlay.querySelectorAll('input[name="declineReason"]').forEach(r => r.addEventListener('change', syncOther));
+
+  let done = false;
+  const finish = (reason, other) => {
+    if (done) return;
+    done = true;
+    document.removeEventListener('keydown', onKey);
+    overlay.remove();
+    onDone(reason, other);
+  };
+  function onKey(e) { if (e.key === 'Escape') finish('Unspecified', ''); }
+  document.addEventListener('keydown', onKey);
+  overlay.querySelector('.decline-confirm').addEventListener('click', () => {
+    const reason = selected();
+    finish(reason, reason === 'Other' ? (otherInput.value || '').trim() : '');
+  });
+  overlay.querySelector('.decline-skip').addEventListener('click', () => finish('Unspecified', ''));
+  overlay.querySelector('.modal-close').addEventListener('click', () => finish('Unspecified', ''));
+  overlay.addEventListener('click', e => { if (e.target === overlay) finish('Unspecified', ''); });
+}
+
 export function updateEstimateStatus(estimateId, newStatus) {
   const estimate = state.store.estimates.find(item => item.id === estimateId);
   if (!estimate) return;
+
+  // Declining asks for a reason first (optional). The status only changes once
+  // the modal resolves (via confirm, skip, close, or Escape → 'Unspecified').
+  if (newStatus === 'Declined') {
+    promptDeclineReason((reason, otherText) => {
+      estimate.status = 'Declined';
+      estimate.declineReason = reason || 'Unspecified';
+      estimate.declineReasonOther = reason === 'Other' ? (otherText || '') : '';
+      saveStore('Estimate marked as Declined');
+      renderEstimates();
+      renderDashboard();
+      const shown = reason === 'Other' && otherText ? otherText : reason;
+      showToast(`Estimate ${estimate.estimateNumber || estimate.id} declined${shown && shown !== 'Unspecified' ? ' — ' + shown : ''}.`, 'success');
+    });
+    return;
+  }
+
   estimate.status = newStatus;
+  // Reopening (or any non-declined status) clears the decline reason.
+  if (newStatus !== 'Declined') {
+    delete estimate.declineReason;
+    delete estimate.declineReasonOther;
+  }
   saveStore(`Estimate marked as ${newStatus}`);
   renderEstimates();
   renderDashboard();

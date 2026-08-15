@@ -2131,4 +2131,102 @@ textarea:focus-visible,
   color: #e9d8b6;
 }
 
+/* ── Decline reason line on estimate cards ── */
+.decline-reason {
+  color: #c62828;
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin: 0.15rem 0 0;
+}
+
+/* ── Generic modal (decline reason prompt) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(10, 8, 6, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-card {
+  background: #17130e;
+  color: #f4e9d4;
+  border: 1px solid #caa05a;
+  border-radius: 14px;
+  width: 460px;
+  max-width: 96vw;
+  padding: 1.2rem 1.3rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+.modal-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #f4e9d4;
+}
+.modal-close {
+  background: transparent;
+  border: 0;
+  color: #e9d8b6;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.2rem;
+}
+.decline-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.decline-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.decline-opt:hover {
+  background: rgba(202, 160, 90, 0.12);
+}
+.decline-opt input {
+  accent-color: #caa05a;
+}
+.decline-other-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.6rem;
+}
+.decline-other-wrap.is-hidden {
+  display: none;
+}
+.decline-other-wrap span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #e9d8b6;
+}
+.decline-other {
+  padding: 8px 10px;
+  border: 1px solid #caa05a;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #1f1a14;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
 
