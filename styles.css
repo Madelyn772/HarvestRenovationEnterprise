@@ -2307,4 +2307,54 @@ textarea:focus-visible,
 .kpi-info-content p { margin: 2px 0; color: #2c2419; }
 .kpi-info-content strong { color: #1f1a14; }
 
+/* ============================================================================
+   Professional cleanup (FINAL override — must stay last):
+   softer shadows, subtler ambient glow, slightly lighter dark background,
+   and a tighter border radius. Focused on the dark theme; the light theme is
+   unchanged except for the intentionally reduced card shadow (step 8).
+   NOTE: earlier layers redefine these tokens, so the changes live here at the
+   end where the cascade makes them win.
+   ========================================================================== */
+:root {
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+}
+
+/* Subtler ambient glow circles */
+.ambient-a { background: rgba(205, 161, 90, 0.12); }
+.ambient-b { background: rgba(130, 95, 48, 0.08); }
+
+/* Dark theme only (no .theme-light on <html>): lighter, flatter surfaces */
+html:not(.theme-light) {
+  --bg: #14110d;
+  --panel: rgba(28, 24, 19, 0.92);
+  --panel-2: rgba(35, 30, 23, 0.94);
+}
+html:not(.theme-light) body {
+  background:
+    radial-gradient(circle at top right, rgba(200, 154, 84, 0.08), transparent 30%),
+    linear-gradient(180deg, #14110d 0%, #17130f 55%, #100d0a 100%);
+}
+html:not(.theme-light) .auth-card,
+html:not(.theme-light) .pending-card,
+html:not(.theme-light) .card,
+html:not(.theme-light) .hero-panel,
+html:not(.theme-light) .sidebar,
+html:not(.theme-light) .sidebar-card,
+html:not(.theme-light) .sidebar-user {
+  background: linear-gradient(180deg, rgba(30, 26, 20, 0.96), rgba(20, 17, 13, 0.94));
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+html:not(.theme-light) .sidebar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Light theme: softer card shadow too */
+.theme-light .main .card,
+.theme-light .main .hero-panel {
+  box-shadow: 0 1px 4px rgba(31, 26, 20, 0.06);
+}
+
 
