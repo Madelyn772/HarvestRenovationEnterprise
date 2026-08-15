@@ -167,7 +167,8 @@ export function renderCampaigns() {
   const items = [...state.store.campaigns].sort((a,b) => sortDateDesc(a.date, b.date));
   el.campaignList.innerHTML = items.length ? items.map(item => {
     const cpl = num(item.leads) ? money.format(num(item.spend) / Math.max(1, num(item.leads))) : '—';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.campaign)}</h4><p>${escapeHtml(item.channel)} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.spend))}</strong></div><p class="muted">${integer.format(num(item.impressions))} impressions • ${integer.format(num(item.clicks))} clicks • ${integer.format(num(item.leads))} leads • CPL ${escapeHtml(cpl)}</p><div class="form-actions">${deleteBtn('campaigns', item.id)}</div></div>`;
+    const roas = num(item.spend) ? (num(item.revenue) / num(item.spend)).toFixed(1) + 'x' : '—';
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.campaign)}</h4><p>${escapeHtml(item.channel)} • ${formatDate(item.date)}</p></div><strong>${money.format(num(item.spend))}</strong></div><p class="muted">${integer.format(num(item.impressions))} impressions • ${integer.format(num(item.clicks))} clicks • ${integer.format(num(item.leads))} leads • CPL ${escapeHtml(cpl)} • ROAS ${escapeHtml(roas)}</p><div class="form-actions">${deleteBtn('campaigns', item.id)}</div></div>`;
   }).join('') : emptyHtml('No campaign KPI rows saved yet.');
 
   el.mainWebsiteVisits.textContent = state.analyticsSummary?.main_site_visits ? integer.format(num(state.analyticsSummary.main_site_visits)) : '—';
