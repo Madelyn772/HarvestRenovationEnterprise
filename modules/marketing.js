@@ -163,6 +163,131 @@ export function renderDeclineReasons() {
   }).join('');
 }
 
+// ── Jobs Won Trend — vanilla-canvas line chart of approved estimates over
+//    time, grouped by week / month / quarter / year. ──
+export function renderJobsWonChart() {
+  const canvas = el.jobsWonChart;
+  if (!canvas || !canvas.getContext) return;
+  const period = el.chartPeriod?.value || 'month';
+  const now = new Date();
+  const buckets = [];
+
+  if (period === 'week') {
+    for (let i = 11; i >= 0; i--) {
+      const end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      end.setDate(now.getDate() + (6 - now.getDay()) - i * 7);
+      const start = new Date(end);
+      start.setHours(0, 0, 0, 0);
+      start.setDate(end.getDate() - 6);
+      buckets.push({ start, end, label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) });
+    }
+  } else if (period === 'quarter') {
+    const idx = now.getFullYear() * 4 + Math.floor(now.getMonth() / 3);
+    for (let i = 7; i >= 0; i--) {
+      const q = ((idx - i) % 4 + 4) % 4;
+      const y = Math.floor((idx - i) / 4);
+      buckets.push({
+        start: new Date(y, q * 3, 1, 0, 0, 0, 0),
+        end: new Date(y, q * 3 + 3, 0, 23, 59, 59, 999),
+        label: `Q${q + 1} '${String(y).slice(2)}`
+      });
+    }
+  } else if (period === 'year') {
+    for (let i = 4; i >= 0; i--) {
+      const y = now.getFullYear() - i;
+      buckets.push({ start: new Date(y, 0, 1, 0, 0, 0, 0), end: new Date(y, 11, 31, 23, 59, 59, 999), label: String(y) });
+    }
+  } else {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        start: new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0),
+        end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999),
+        label: d.toLocaleDateString('en-US', { month: 'short' })
+      });
+    }
+  }
+
+  // Count approved estimates per bucket (by approval/estimate date).
+  const approved = state.store.estimates
+    .filter(e => e.status === 'Approved')
+    .map(e => new Date(e.signedAt || e.date || ''));
+  buckets.forEach(b => {
+    b.count = approved.filter(d => !Number.isNaN(d.getTime()) && d >= b.start && d <= b.end).length;
+  });
+
+  // High-DPI canvas setup; fall back to the attribute size when hidden.
+  const cssW = canvas.clientWidth || 600;
+  const cssH = canvas.clientHeight || 250;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const isLight = document.documentElement.classList.contains('theme-light');
+  const textColor = isLight ? '#2c2419' : '#e9d8b6';
+  const axisColor = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
+  const gold = '#B8860B';
+
+  const padL = 30, padR = 14, padT = 22, padB = 26;
+  const plotW = cssW - padL - padR;
+  const plotH = cssH - padT - padB;
+  const baseY = padT + plotH;
+  const maxCount = Math.max(1, ...buckets.map(b => b.count));
+
+  ctx.font = '11px Inter, Arial, sans-serif';
+  ctx.textBaseline = 'middle';
+
+  // Y gridlines + labels
+  const yTicks = maxCount <= 4 ? Array.from({ length: maxCount + 1 }, (_, i) => i) : [0, Math.round(maxCount / 2), maxCount];
+  ctx.textAlign = 'right';
+  yTicks.forEach(t => {
+    const y = baseY - (t / maxCount) * plotH;
+    ctx.strokeStyle = axisColor;
+    ctx.globalAlpha = t === 0 ? 1 : 0.5;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(cssW - padR, y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = textColor;
+    ctx.fillText(String(t), padL - 6, y);
+  });
+
+  const n = buckets.length;
+  const stepX = n > 1 ? plotW / (n - 1) : 0;
+  const pts = buckets.map((b, i) => ({ x: padL + i * stepX, y: baseY - (b.count / maxCount) * plotH, b }));
+
+  // X labels (thin them out when crowded)
+  const showEvery = n > 8 ? 2 : 1;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = textColor;
+  pts.forEach((p, i) => {
+    if (i % showEvery === 0 || i === n - 1) ctx.fillText(p.b.label, p.x, baseY + 12);
+  });
+
+  // Trend line
+  ctx.strokeStyle = gold;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach((p, i) => { i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); });
+  ctx.stroke();
+
+  // Dots + counts above them
+  ctx.fillStyle = gold;
+  pts.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  pts.forEach(p => { if (p.b.count) ctx.fillText(String(p.b.count), p.x, p.y - 12); });
+}
+
 export function renderCampaigns() {
   const items = [...state.store.campaigns].sort((a,b) => sortDateDesc(a.date, b.date));
   el.campaignList.innerHTML = items.length ? items.map(item => {

@@ -2229,6 +2229,15 @@ textarea:focus-visible,
   margin-top: 1.1rem;
 }
 
+/* ── Jobs Won Trend chart ── */
+#jobsWonChart {
+  width: 100%;
+  max-width: 600px;
+  height: 250px;
+  margin-top: 1rem;
+  display: block;
+}
+
 /* ── Decline Reasons summary bars ── */
 .decline-reason-row {
   display: flex;
