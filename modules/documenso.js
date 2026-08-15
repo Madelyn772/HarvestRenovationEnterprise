@@ -4,7 +4,7 @@ import { saveStore } from './store.js';
 import { buildEstimateDocHtml, buildInvoiceDocHtml } from './pdf.js';
 import { saveDocument, renderDocuments } from './documents.js';
 import { renderEstimates } from './estimating.js';
-import { renderInvoices } from './operations.js';
+import { renderInvoices, fillInvoiceFromEstimate } from './operations.js';
 import { renderDashboard } from './dashboard.js';
 
 // Documenso is "configured" only when the placeholder URLs have been replaced
@@ -158,6 +158,13 @@ export function updateEstimateStatus(estimateId, newStatus) {
   saveStore(`Estimate marked as ${newStatus}`);
   renderEstimates();
   renderDashboard();
+  if (newStatus === 'Approved') {
+    // Pre-fill an invoice from the approved estimate and switch to Invoicing —
+    // but DO NOT save it. The user reviews, adds details, and clicks Save Invoice.
+    fillInvoiceFromEstimate(estimateId, { switchView: true });
+    showToast('Estimate approved. Invoice pre-filled — review and add details before saving.', 'info');
+    return;
+  }
   showToast(`Estimate ${estimate.estimateNumber || estimate.id} marked as ${newStatus}.`, 'success');
 }
 
