@@ -3,6 +3,124 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { addActivity, saveStore } from './store.js';
 import { renderAll } from './navigation.js';
 
+// ── Business Scorecard — auto-calculated weekly snapshot (read-only) ──
+export function renderScorecard() {
+  if (!el.scorecardBody) return;
+
+  const weeks = parseInt(el.scorecardPeriod?.value || 8, 10);
+  const now = new Date();
+  const weekRows = [];
+
+  // Build the last N weeks (each week runs Sunday → Saturday; the newest
+  // bucket is the current, in-progress week so today's activity is included).
+  for (let i = weeks - 1; i >= 0; i--) {
+    const weekEnd = new Date(now);
+    weekEnd.setHours(23, 59, 59, 999);
+    weekEnd.setDate(now.getDate() + (6 - now.getDay()) - (i * 7));
+    const weekStart = new Date(weekEnd);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(weekEnd.getDate() - 6);
+
+    // Leads created that week (from CRM clients)
+    const leads = state.store.clients.filter(c => {
+      if (!c.created_at && !c.date) return false;
+      const d = new Date(c.created_at || c.date);
+      return d >= weekStart && d <= weekEnd;
+    }).length;
+
+    // Estimates dated that week
+    const estimatesScheduled = state.store.estimates.filter(e => {
+      if (!e.date) return false;
+      const d = new Date(e.date);
+      return d >= weekStart && d <= weekEnd;
+    }).length;
+
+    // Jobs won / lost that week (from estimate status)
+    const jobsWon = state.store.estimates.filter(e => {
+      if (e.status !== 'Approved') return false;
+      const d = new Date(e.signedAt || e.date || '');
+      return d >= weekStart && d <= weekEnd;
+    }).length;
+
+    const jobsLost = state.store.estimates.filter(e => {
+      if (e.status !== 'Declined') return false;
+      const d = new Date(e.date || '');
+      return d >= weekStart && d <= weekEnd;
+    }).length;
+
+    const totalDecided = jobsWon + jobsLost;
+    const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : '—';
+
+    const revenueSold = state.store.estimates
+      .filter(e => {
+        if (e.status !== 'Approved') return false;
+        const d = new Date(e.signedAt || e.date || '');
+        return d >= weekStart && d <= weekEnd;
+      })
+      .reduce((sum, e) => sum + num(e.estimatedCost || 0), 0);
+
+    const revenueCollected = state.store.invoices
+      .filter(inv => {
+        if (inv.status !== 'Paid') return false;
+        const d = new Date(inv.paidAt || inv.date || '');
+        return d >= weekStart && d <= weekEnd;
+      })
+      .reduce((sum, inv) => sum + num(inv.total || 0), 0);
+
+    // Cash on hand — cumulative total of all paid invoices (simplified)
+    const cashOnHand = state.store.invoices
+      .filter(inv => inv.status === 'Paid')
+      .reduce((sum, inv) => sum + num(inv.total || 0), 0);
+
+    const avgJobValue = jobsWon > 0 ? revenueSold / jobsWon : 0;
+
+    weekRows.push({ weekEnd, leads, estimatesScheduled, jobsWon, jobsLost, closeRate, revenueSold, revenueCollected, cashOnHand, avgJobValue });
+  }
+
+  el.scorecardBody.innerHTML = weekRows.map(row => {
+    const weekLabel = row.weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return `<tr>
+      <td><strong>${weekLabel}</strong></td>
+      <td>${row.leads || '—'}</td>
+      <td>${row.estimatesScheduled || '—'}</td>
+      <td>${row.jobsWon ? '<span class="kpi-good">' + row.jobsWon + '</span>' : '—'}</td>
+      <td>${row.jobsLost ? '<span class="kpi-bad">' + row.jobsLost + '</span>' : '—'}</td>
+      <td>${row.closeRate}</td>
+      <td>${row.revenueSold ? money.format(row.revenueSold) : '—'}</td>
+      <td>${row.revenueCollected ? money.format(row.revenueCollected) : '—'}</td>
+      <td>${row.cashOnHand ? money.format(row.cashOnHand) : '—'}</td>
+      <td>${row.avgJobValue ? money.format(row.avgJobValue) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const totals = weekRows.reduce((acc, row) => ({
+    leads: acc.leads + row.leads,
+    estimatesScheduled: acc.estimatesScheduled + row.estimatesScheduled,
+    jobsWon: acc.jobsWon + row.jobsWon,
+    jobsLost: acc.jobsLost + row.jobsLost,
+    revenueSold: acc.revenueSold + row.revenueSold,
+    revenueCollected: acc.revenueCollected + row.revenueCollected
+  }), { leads: 0, estimatesScheduled: 0, jobsWon: 0, jobsLost: 0, revenueSold: 0, revenueCollected: 0 });
+
+  const totalCloseRate = (totals.jobsWon + totals.jobsLost) > 0
+    ? Math.round((totals.jobsWon / (totals.jobsWon + totals.jobsLost)) * 100) + '%'
+    : '—';
+
+  if (el.scorecardTotals) {
+    el.scorecardTotals.innerHTML = `
+      <div class="totals-row">
+        <div class="totals-item"><span class="totals-label">Total Leads</span><strong>${totals.leads}</strong></div>
+        <div class="totals-item"><span class="totals-label">Total Estimates</span><strong>${totals.estimatesScheduled}</strong></div>
+        <div class="totals-item"><span class="totals-label">Jobs Won</span><strong class="kpi-good">${totals.jobsWon}</strong></div>
+        <div class="totals-item"><span class="totals-label">Jobs Lost</span><strong class="kpi-bad">${totals.jobsLost}</strong></div>
+        <div class="totals-item"><span class="totals-label">Close Rate</span><strong>${totalCloseRate}</strong></div>
+        <div class="totals-item"><span class="totals-label">Revenue Sold</span><strong>${money.format(totals.revenueSold)}</strong></div>
+        <div class="totals-item"><span class="totals-label">Revenue Collected</span><strong>${money.format(totals.revenueCollected)}</strong></div>
+      </div>
+    `;
+  }
+}
+
 export function renderCampaigns() {
   const items = [...state.store.campaigns].sort((a,b) => sortDateDesc(a.date, b.date));
   el.campaignList.innerHTML = items.length ? items.map(item => {

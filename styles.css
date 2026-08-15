@@ -2014,4 +2014,86 @@ textarea:focus-visible,
   font-size: 14px;
 }
 
+/* ── Business Scorecard ── */
+.scorecard-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+.scorecard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.scorecard-table th {
+  background: var(--dark, #1a1612);
+  color: var(--gold, #d8a657);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--gold, #d8a657);
+}
+.scorecard-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border, #e5e0d8);
+  white-space: nowrap;
+}
+.scorecard-table tbody tr:hover {
+  background: var(--cream, #faf7f0);
+}
+.scorecard-table .kpi-good {
+  color: #2e7d32;
+  font-weight: 600;
+}
+.scorecard-table .kpi-bad {
+  color: #c62828;
+  font-weight: 600;
+}
+.scorecard-table .center {
+  text-align: center;
+}
+.scorecard-period select {
+  padding: 6px 10px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--card, #fff);
+  color: var(--text, #2c2c2c);
+}
+.scorecard-totals {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--gold, #d8a657);
+}
+.totals-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.totals-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.totals-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #6b6b6b);
+}
+.totals-item strong {
+  font-size: 18px;
+  color: var(--text, #2c2c2c);
+}
+@media (max-width: 768px) {
+  .scorecard-wrap { overflow-x: scroll; }
+  .scorecard-table { min-width: 800px; }
+  .totals-row { gap: 1rem; }
+  .totals-item strong { font-size: 15px; }
+}
+
 

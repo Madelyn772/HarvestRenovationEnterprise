@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-2" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-3" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -461,6 +461,47 @@
 
       <section class="view" id="marketingView">
         <div class="section-head-row"><div><p class="eyebrow">Marketing Intelligence</p><h3>Track ad performance, website traffic, landing page visibility, and lead sources</h3></div></div>
+        <!-- ── Business Scorecard (auto-calculated, no manual entry) ── -->
+        <article class="card">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">Business Scorecard</p>
+              <h3>Weekly snapshot — is the business healthy?</h3>
+            </div>
+            <div class="scorecard-period">
+              <label><span>Period</span>
+                <select id="scorecardPeriod">
+                  <option value="4">Last 4 weeks</option>
+                  <option value="8" selected>Last 8 weeks</option>
+                  <option value="12">Last 12 weeks</option>
+                  <option value="26">Last 6 months</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="scorecard-wrap">
+            <table class="scorecard-table" id="scorecardTable">
+              <thead>
+                <tr>
+                  <th>Week Ending</th>
+                  <th>Leads</th>
+                  <th>Estimates</th>
+                  <th>Jobs Won</th>
+                  <th>Jobs Lost</th>
+                  <th>Close Rate</th>
+                  <th>Revenue Sold</th>
+                  <th>Revenue Collected</th>
+                  <th>Cash on Hand</th>
+                  <th>Avg Job Value</th>
+                </tr>
+              </thead>
+              <tbody id="scorecardBody">
+                <tr><td colspan="10" class="muted center">Loading scorecard…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="scorecard-totals" id="scorecardTotals"></div>
+        </article>
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Ad KPI Entry</p><h3>Campaign tracker</h3></div></div>
@@ -621,6 +662,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-2"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-3"></script>
 </body>
 </html>
