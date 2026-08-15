@@ -2357,4 +2357,37 @@ html:not(.theme-light) .sidebar {
   box-shadow: 0 1px 4px rgba(31, 26, 20, 0.06);
 }
 
+/* Light theme professional cleanup: flat surfaces, tight subtle borders, no glow */
+.theme-light .ambient-a,
+.theme-light .ambient-b {
+  display: none;
+}
+.theme-light .main {
+  background: #faf9f6;
+}
+.theme-light .main .card,
+.theme-light .main .hero-panel {
+  border-color: rgba(31, 26, 20, 0.06);
+}
+.theme-light .main .stack-item,
+.theme-light .main .summary-row,
+.theme-light .main .summary-tile,
+.theme-light .main .kpi-card,
+.theme-light .main .presence-summary-card {
+  box-shadow: none;
+}
+.theme-light .main input,
+.theme-light .main select,
+.theme-light .main textarea {
+  background: #ffffff;
+  border: 1px solid rgba(31, 26, 20, 0.12);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.theme-light .main .ghost-btn {
+  border: 1px solid rgba(31, 26, 20, 0.12);
+  background: transparent;
+  box-shadow: none;
+}
+
 
