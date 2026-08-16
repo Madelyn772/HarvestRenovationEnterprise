@@ -85,7 +85,7 @@ export const BRAND = {
   contact: 'Juan Puentes',
   phone: '(832) 944-0267',
   website: 'www.harvestrenovation.net',
-  email: 'jp@harvestrenovation.com',
+  email: 'jp@harvestrenovation.net',
   verse: '"For every house is built by someone, the builder of all things is God." Hebrews 3:4',
   thankYou: 'THANK YOU'
 };
