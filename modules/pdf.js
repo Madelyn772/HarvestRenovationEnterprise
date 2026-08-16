@@ -133,7 +133,7 @@ export function buildBrandedDocHtml(opts) {
         <div class="foot-right">
           <div class="balance"><span>${escapeHtml(balanceLabel)}</span><strong>${money.format(num(balance))}</strong></div>
           <div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments || '')}</div></div>
-          <div class="box"><div class="lbl">Signature</div><div class="sigline"></div></div>
+          ${kind === 'INVOICE' ? '<div class="box"><div class="lbl">Signature</div><div class="sigline"></div></div>' : ''}
         </div>
       </div>
       <div class="verse">${escapeHtml(BRAND.verse)}</div>
