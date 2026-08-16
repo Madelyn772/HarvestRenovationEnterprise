@@ -37,13 +37,17 @@ export function renderEmployees() {
     if (admin) {
       const roleSelect = `<label class="inline-field"><span>Role</span><select class="role-select" data-user-id="${profile.id}"><option value="staff"${role === 'staff' ? ' selected' : ''}>Staff</option><option value="admin"${role === 'admin' ? ' selected' : ''}>Admin</option></select></label>`;
       const saveRole = `<button type="button" class="ghost-btn role-save" data-user-id="${profile.id}">Save role</button>`;
-      const statusBtn = (profile.status === 'active')
+      const isActiveUser = profile.status === 'active';
+      const statusBtn = isActiveUser
         ? `<button type="button" class="danger-btn user-deactivate" data-user-id="${profile.id}">Deactivate</button>`
-        : (profile.status === 'pending'
-          ? `<button type="button" class="primary-btn user-activate" data-user-id="${profile.id}">Approve</button>`
-          : `<button type="button" class="primary-btn user-activate" data-user-id="${profile.id}">Reactivate</button>`);
+        : `<button type="button" class="ghost-btn user-activate" data-user-id="${profile.id}" style="color:#2e7d32;border-color:#2e7d32">Reactivate</button>`;
+      // Permanent delete is only allowed for non-active users (deactivate first)
+      // and never for your own account.
+      const deletePermBtn = (!isActiveUser && !currentUser)
+        ? `<button type="button" class="danger-btn user-delete-permanent" data-user-id="${profile.id}" data-user-name="${escapeHtml(profile.full_name || profile.email || 'this user')}">Delete permanently</button>`
+        : '';
       const selfNote = currentUser ? '<p class="muted tiny">This is your account.</p>' : '';
-      adminControls = `<div class="employee-admin-controls">${roleSelect}<div class="form-actions">${saveRole}${currentUser ? '' : statusBtn}</div>${selfNote}</div>`;
+      adminControls = `<div class="employee-admin-controls">${roleSelect}<div class="form-actions">${saveRole}${currentUser ? '' : statusBtn}${deletePermBtn}</div>${selfNote}</div>`;
     }
     return `
       <div class="employee-card ${statusKey}">
@@ -70,6 +74,7 @@ export function renderEmployees() {
   }));
   el.employeeList.querySelectorAll('.user-deactivate').forEach(btn => btn.addEventListener('click', () => handleSetUserStatus(btn.dataset.userId, 'inactive')));
   el.employeeList.querySelectorAll('.user-activate').forEach(btn => btn.addEventListener('click', () => handleSetUserStatus(btn.dataset.userId, 'active')));
+  el.employeeList.querySelectorAll('.user-delete-permanent').forEach(btn => btn.addEventListener('click', () => promptPermanentDelete(btn.dataset.userId, btn.dataset.userName)));
 }
 
 export function renderTeamPending() {
@@ -108,11 +113,97 @@ export async function handleSetUserStatus(userId, status) {
     await Promise.all([loadTeamProfiles(), loadAllProfiles(), loadPendingUsers()]);
     renderEmployees();
     renderTeamPending();
-    showToast(status === 'active' ? 'User activated.' : 'User deactivated.', 'success');
+    showToast(status === 'active' ? 'User reactivated.' : 'User deactivated.', 'success');
   } catch (error) {
     console.error(error);
     showToast(missingFunctionMessage(error, 'set_user_status') || error.message || 'Unable to update status.', 'error');
   }
+}
+
+// Permanent delete with admin-password confirmation. Only for non-active users
+// (deactivate first) and never your own account. Verifies the admin's password
+// via signInWithPassword BEFORE deleting the profile row.
+export function promptPermanentDelete(userId, userName) {
+  if (!isAdmin()) return;
+  if (String(userId) === String(state.session?.user?.id || '')) {
+    showToast('You cannot delete your own account.', 'error');
+    return;
+  }
+  const profile = [...(state.allProfiles || []), ...(state.teamProfiles || []), ...(state.pendingUsers || [])]
+    .find(p => String(p.id) === String(userId));
+  if (profile && profile.status === 'active') {
+    showToast('Deactivate this user before deleting them permanently.', 'error');
+    return;
+  }
+  const name = userName || profile?.full_name || profile?.email || 'this user';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Permanently delete user">
+      <div class="modal-head">
+        <h3>Permanently delete ${escapeHtml(name)}?</h3>
+        <button type="button" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <p class="muted tiny">This cannot be undone. Enter your admin password to confirm.</p>
+      <label class="decline-other-wrap"><span>Your password</span><input type="password" class="perm-del-pass" autocomplete="current-password" /></label>
+      <p class="perm-del-error" style="color:#c62828;font-size:.8rem;margin:.5rem 0 0;display:none"></p>
+      <div class="modal-actions">
+        <button type="button" class="ghost-btn perm-del-cancel">Cancel</button>
+        <button type="button" class="danger-btn perm-del-confirm">Delete permanently</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const passInput = overlay.querySelector('.perm-del-pass');
+  const errEl = overlay.querySelector('.perm-del-error');
+  const confirmBtn = overlay.querySelector('.perm-del-confirm');
+  passInput.focus();
+
+  let busy = false;
+  const close = () => overlay.remove();
+  overlay.querySelector('.perm-del-cancel').addEventListener('click', close);
+  overlay.querySelector('.modal-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  confirmBtn.addEventListener('click', async () => {
+    if (busy) return;
+    const password = passInput.value;
+    if (!password) {
+      errEl.textContent = 'Enter your password.';
+      errEl.style.display = 'block';
+      return;
+    }
+    busy = true;
+    errEl.style.display = 'none';
+    confirmBtn.textContent = 'Verifying…';
+    try {
+      const email = state.session?.user?.email || state.profile?.email || '';
+      // 1) Verify the admin's password (never delete without confirming).
+      const { error: authError } = await state.supabase.auth.signInWithPassword({ email, password });
+      if (authError) {
+        errEl.textContent = 'Incorrect password. Delete cancelled.';
+        errEl.style.display = 'block';
+        confirmBtn.textContent = 'Delete permanently';
+        busy = false;
+        return;
+      }
+      // 2) Delete the profile row.
+      const { error: delError } = await state.supabase.from('profiles').delete().eq('id', userId);
+      if (delError) throw delError;
+      close();
+      await Promise.all([loadTeamProfiles(), loadAllProfiles(), loadPendingUsers()]);
+      renderEmployees();
+      renderTeamPending();
+      showToast('User permanently deleted.', 'success');
+    } catch (error) {
+      console.error('permanent delete failed', error);
+      errEl.textContent = 'Could not delete: ' + (error.message || error);
+      errEl.style.display = 'block';
+      confirmBtn.textContent = 'Delete permanently';
+      busy = false;
+    }
+  });
 }
 
 export function missingFunctionMessage(error, fnName) {

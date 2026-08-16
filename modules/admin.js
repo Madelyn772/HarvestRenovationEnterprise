@@ -2,15 +2,17 @@ import { state, isAdmin } from './state.js';
 import { el, escapeHtml, emptyHtml, showToast } from './dom.js';
 import { safeRpc, loadPendingUsers, loadTeamProfiles, loadAllProfiles } from './auth.js';
 import { renderAll } from './navigation.js';
+import { promptPermanentDelete } from './team.js';
 
 export function renderPendingUsers() {
   if (!isAdmin()) {
     el.pendingList.innerHTML = emptyHtml('Admin access required.');
     return;
   }
-  el.pendingList.innerHTML = state.pendingUsers.length ? state.pendingUsers.map(user => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(user.full_name || user.email)}</h4><p>${escapeHtml(user.email || '')}</p></div><span class="badge">Pending</span></div><div class="form-actions"><button class="primary-btn pending-approve" data-user-id="${user.id}">Approve</button><button class="danger-btn pending-deny" data-user-id="${user.id}">Deny</button></div></div>`).join('') : emptyHtml('No pending access requests.');
+  el.pendingList.innerHTML = state.pendingUsers.length ? state.pendingUsers.map(user => `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(user.full_name || user.email)}</h4><p>${escapeHtml(user.email || '')}</p></div><span class="badge">Pending</span></div><div class="form-actions"><button class="primary-btn pending-approve" data-user-id="${user.id}">Approve</button><button class="danger-btn pending-deny" data-user-id="${user.id}">Deny</button><button class="danger-btn pending-delete" data-user-id="${user.id}" data-user-name="${escapeHtml(user.full_name || user.email || 'this user')}">Delete permanently</button></div></div>`).join('') : emptyHtml('No pending access requests.');
   el.pendingList.querySelectorAll('.pending-approve').forEach(btn => btn.addEventListener('click', () => reviewPending(btn.dataset.userId, 'approve')));
   el.pendingList.querySelectorAll('.pending-deny').forEach(btn => btn.addEventListener('click', () => reviewPending(btn.dataset.userId, 'deny')));
+  el.pendingList.querySelectorAll('.pending-delete').forEach(btn => btn.addEventListener('click', () => promptPermanentDelete(btn.dataset.userId, btn.dataset.userName)));
 }
 
 export async function reviewPending(userId, decision) {
