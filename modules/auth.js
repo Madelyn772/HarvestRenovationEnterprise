@@ -117,7 +117,7 @@ export async function loadAuthenticatedApp(forceRefresh = false) {
   }
 
   bindAuthUi();
-  loadStore();
+  await loadStore();
   purgeExpiredTrash();
   showAppOnly();
   state.adminViewAs = getStoredAdminView();

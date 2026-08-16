@@ -10,7 +10,7 @@ export function cacheDom() {
     'invoiceClientSelect','relatedEstimate','invoiceNumber','invoiceDate','invoiceItems','addInvoiceRow','printInvoice','noteForm','noteClientSelect',
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits','scorecardBody','scorecardTotals','scorecardPeriod','declineReasonSummary','jobsWonChart','chartPeriod',
     'trackedLeadsCount','adCplValue','companyCalendarWrap','companyCalendarBadge','teamCalendarList','upcomingFeed','employeeSearch','employeeList',    'readinessList','employeePresenceSummary','profileForm','passwordForm','companyCalendarForm','pendingList','adminGrantAccessForm','saveStateChip','authStatusChip','calendarStatusChip',
-    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle','staffViewToggle','exportDataBtn','importDataBtn','importDataInput',
+    'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle','staffViewToggle','exportDataBtn','importDataBtn','importDataInput','migrateToSupabaseBtn',
     'uploadDocForm','uploadDocFile','reservedNumberCard','reservedNumberForm','reservedNumberList',
     'topbarActions','toggleUploadBtn','uploadPanel',
     'sendEstimate','estimateClientPhone','sendInvoice'

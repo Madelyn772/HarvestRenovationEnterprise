@@ -1,6 +1,6 @@
 import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
-import { exportBackup, handleBackupFile } from './store.js';
+import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm } from './estimating.js';
@@ -121,6 +121,7 @@ export function bindAppUi() {
     el.importDataBtn.addEventListener('click', () => el.importDataInput.click());
     el.importDataInput.addEventListener('change', handleBackupFile);
   }
+  if (el.migrateToSupabaseBtn) el.migrateToSupabaseBtn.addEventListener('click', migrateToCloud);
   if (el.uploadDocForm) el.uploadDocForm.addEventListener('submit', handleDocumentUpload);
   if (el.reservedNumberForm) el.reservedNumberForm.addEventListener('submit', handleReservedNumberAdd);
   const clearUploadBtn = document.getElementById('clearUploadDocForm');

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-18" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-19" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -667,6 +667,13 @@
             <input type="file" id="importDataInput" accept="application/json,.json" class="hidden" />
           </div>
         </article>
+        <article class="card">
+          <div class="card-head"><div><p class="eyebrow">Cloud sync</p><h3>Share data across computers</h3></div></div>
+          <p class="muted">Once set up in the cloud, your data syncs automatically and both users see the same records from any computer. Click below <strong>once</strong>, on the computer with your most complete data, to move all your existing data to the cloud. After this, both users will see the same data.</p>
+          <div class="form-actions">
+            <button type="button" class="primary-btn" id="migrateToSupabaseBtn">Migrate this device&rsquo;s data to the cloud</button>
+          </div>
+        </article>
         <article class="card real-admin-only hidden">
           <div class="card-head"><div><p class="eyebrow">Access View</p><h3>Admin / staff view</h3></div></div>
           <p class="muted">Preview the portal the way your staff see it. Switching to staff view hides admin-only tools and the Admin tab. Your role does not change — switch back any time.</p>
@@ -719,6 +726,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-18"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-19"></script>
 </body>
 </html>
