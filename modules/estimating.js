@@ -62,7 +62,8 @@ export function collectEstimateFromForm() {
   const materialPercent = num(data.materialPercent);
   const laborPercent = num(data.laborPercent);
   const finalPercent = num(data.finalPercent);
-  const depositPercent = num(data.depositPercent || 30);
+  const depositEnabled = data.depositEnabled === 'on' || data.depositEnabled === true;
+  const depositPercent = depositEnabled ? num(data.depositPercent || 30) : 0;
   const laborBase = quantity * rate;
   const materialMarkup = materialCost * (materialPercent / 100);
   const laborMarkup = laborBase * (laborPercent / 100);
@@ -101,7 +102,7 @@ export function renderEstimateSummary(estimate) {
   el.estimateSummary.innerHTML = `
     <div class="summary-tile"><span>Client</span><strong>${escapeHtml(estimate.clientName || 'Select a client')}</strong></div>
     <div class="summary-tile"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>
-    <div class="summary-tile"><span>Deposit due</span><strong>${money.format(num(estimate.depositAmount))}</strong></div>
+    <div class="summary-tile"><span>${num(estimate.depositPercent) > 0 ? `Deposit (${num(estimate.depositPercent)}%)` : 'Deposit'}</span><strong>${num(estimate.depositPercent) > 0 ? money.format(num(estimate.depositAmount)) : 'No deposit'}</strong></div>
     <div class="summary-row"><span>Labor base</span><strong>${money.format(num(estimate.laborBase))}</strong></div>
     <div class="summary-row"><span>Material cost + markup</span><strong>${money.format(num(estimate.materialCost) + num(estimate.materialMarkup))}</strong></div>
     <div class="summary-row"><span>Status</span><strong>${escapeHtml(estimate.status || 'Draft')}</strong></div>
@@ -126,7 +127,8 @@ export function loadEstimateIntoForm(id) {
   el.estimateForm.pricingMode.value = item.pricingMode || 'labor';
   el.estimateForm.laborPercent.value = item.laborPercent || 0;
   el.estimateForm.finalPercent.value = item.finalPercent || 0;
-  el.estimateForm.depositPercent.value = item.depositPercent || 30;
+  el.estimateForm.depositPercent.value = num(item.depositPercent) > 0 ? item.depositPercent : 30;
+  if (el.estimateForm.depositEnabled) el.estimateForm.depositEnabled.checked = num(item.depositPercent) > 0;
   el.estimateForm.status.value = item.status || 'Draft';
   el.estimateForm.scope.value = item.scope || '';
   if (el.estimateForm.comments) el.estimateForm.comments.value = item.comments || '';

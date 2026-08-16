@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-21" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-22" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -300,7 +300,11 @@
               <label><span>Pricing mode</span><select name="pricingMode" id="pricingMode"><option value="labor">Labor + Material</option><option value="final">Final Markup</option></select></label>
               <label><span>Labor markup %</span><input name="laborPercent" type="number" step="0.01" /></label>
               <label><span>Final markup %</span><input name="finalPercent" type="number" step="0.01" /></label>
-              <label><span>Deposit %</span><input name="depositPercent" type="number" step="0.01" value="30" /></label>
+              <label class="inline-check">
+                <input type="checkbox" name="depositEnabled" checked />
+                <span>Apply 30% deposit</span>
+              </label>
+              <input name="depositPercent" type="hidden" value="30" />
               <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
               <label class="full"><span>Scope of work</span><textarea name="scope" rows="5"></textarea></label>
               <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
@@ -726,6 +730,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-21"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-22"></script>
 </body>
 </html>

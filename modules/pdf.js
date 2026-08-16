@@ -33,7 +33,8 @@ export function buildBrandedDocHtml(opts) {
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
   const scopeBlock = scope ? `<div class="item-row scope"><div class="desc">${escapeHtml(scope)}</div><div class="amt"></div></div>` : '';
   const itemRows = rows.map(r => `<div class="item-row"><div class="desc">${escapeHtml(r.desc || '')}</div><div class="amt">${r.amount == null ? '' : money.format(num(r.amount))}</div></div>`).join('');
-  const dep = num(depositPercent) || 30;
+  const depPct = num(depositPercent);
+  const dep = depPct || 30;
   const depAmountText = num(depositAmount) ? ` (${money.format(num(depositAmount))})` : '';
   const statusBadge = (status && status.toLowerCase() !== 'draft')
     ? `<span class="status">${escapeHtml(status)}</span>`
@@ -126,7 +127,7 @@ export function buildBrandedDocHtml(opts) {
       <div class="foot">
         <div class="foot-left">
           <div class="thanks">${escapeHtml(BRAND.thankYou)}</div>
-          <div class="term"><strong>${dep}% Upfront:</strong> A deposit of ${dep}%${depAmountText} is required upfront to cover material costs.</div>
+          ${depPct > 0 ? `<div class="term"><strong>${dep}% Upfront:</strong> A deposit of ${dep}%${depAmountText} is required upfront to cover material costs.</div>` : ''}
           <div class="term"><strong>Price Adjustments:</strong> Any additional requests or modifications beyond the agreed-upon scope will result in a price adjustment.</div>
           <div class="qnote">For questions concerning this ${kind.toLowerCase()}, please contact<br/>${escapeHtml(BRAND.contact)}, ${escapeHtml(BRAND.phone)}, ${escapeHtml(BRAND.email)}<br/><a href="https://${escapeHtml(BRAND.website)}">${escapeHtml(BRAND.website)}</a></div>
         </div>
