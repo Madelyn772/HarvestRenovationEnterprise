@@ -61,7 +61,7 @@ export function renderDashboard() {
   el.analyticsSummary.innerHTML = analyticsRows;
 
   const activities = [...state.store.activity].slice(-8).reverse();
-  el.activityFeed.innerHTML = activities.length ? activities.map(item => stackItem(item.meta || 'Activity', item.text, formatDate(item.date))).join('') : emptyHtml('No activity yet.');
+  el.activityFeed.innerHTML = activities.length ? activities.map(item => stackItem(item.meta || 'Activity', escapeHtml(item.user ? `${item.text} — ${item.user}` : item.text), formatDate(item.date))).join('') : emptyHtml('No activity yet.');
 
   renderChecklist();
 }

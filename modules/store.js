@@ -166,7 +166,14 @@ export async function migrateToCloud() {
 
 
 export function addActivity(text, meta) {
-  state.store.activity.push({ id: uid('ACT'), text, meta, date: new Date().toISOString() });
+  state.store.activity.push({
+    id: uid('ACT'),
+    text,
+    meta,
+    date: new Date().toISOString(),
+    user: state.profile?.full_name || state.session?.user?.email || 'Unknown',
+    user_id: state.session?.user?.id || null
+  });
   if (state.store.activity.length > 60) state.store.activity = state.store.activity.slice(-60);
 }
 
