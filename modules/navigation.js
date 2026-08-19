@@ -136,6 +136,51 @@ export function bindAppUi() {
     });
   }
   applyTheme(getStoredTheme());
+  initMobileNav();
+}
+
+export function initMobileNav() {
+  const sidebar = document.getElementById('appSidebar');
+  const scrim = document.getElementById('sidebarScrim');
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const mobileLogout = document.getElementById('mobileLogoutBtn');
+  if (!sidebar || !scrim || !menuBtn) return;
+
+  const openDrawer = () => {
+    scrim.hidden = false;
+    sidebar.classList.add('is-open');
+    scrim.classList.add('is-visible');
+    menuBtn.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('drawer-open');
+  };
+  const closeDrawer = () => {
+    sidebar.classList.remove('is-open');
+    scrim.classList.remove('is-visible');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('drawer-open');
+  };
+  const toggleDrawer = () => sidebar.classList.contains('is-open') ? closeDrawer() : openDrawer();
+
+  menuBtn.addEventListener('click', toggleDrawer);
+  scrim.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+  // Choosing any section (or the settings/quick-jump buttons) closes the drawer.
+  sidebar.querySelectorAll('.nav-btn, [data-jump], #openSettingsPanelBtn').forEach(btn => btn.addEventListener('click', closeDrawer));
+
+  // The mobile top-bar log-out proxies to the real sidebar button.
+  if (mobileLogout) mobileLogout.addEventListener('click', () => document.getElementById('logoutBtn')?.click());
+
+  // Collapsible form sections (mobile accordions). Headers are hidden on desktop.
+  document.querySelectorAll('.mobile-section-head').forEach(head => {
+    head.addEventListener('click', () => head.closest('.mobile-section')?.classList.toggle('is-collapsed'));
+  });
+
+  // Clear drawer state when the viewport grows back to desktop.
+  const mq = window.matchMedia('(max-width: 960px)');
+  const onChange = e => { if (!e.matches) closeDrawer(); };
+  if (mq.addEventListener) mq.addEventListener('change', onChange);
+  else if (mq.addListener) mq.addListener(onChange);
 }
 
 export function getStoredTheme() {
@@ -176,6 +221,8 @@ export function setView(view) {
   const [title, subtitle] = titleMap[view] || ['Harvest Portal', ''];
   el.pageTitle.textContent = title;
   el.pageSubtitle.textContent = subtitle;
+  const mt = document.getElementById('mobilePageTitle');
+  if (mt) mt.textContent = el.pageTitle.textContent;
   // The shared top-bar actions (Open Main Website / Create Estimate) aren't
   // relevant on the Documents tab, which has its own Upload control.
   if (el.topbarActions) el.topbarActions.classList.toggle('hidden', view === 'documents');

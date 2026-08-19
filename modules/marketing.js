@@ -83,15 +83,15 @@ export function renderScorecard() {
     const weekLabel = row.weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return `<tr>
       <td><strong>${weekLabel}</strong></td>
-      <td>${row.leads || dash}</td>
-      <td>${row.estimatesScheduled || dash}</td>
-      <td>${row.jobsWon ? '<span class="kpi-good">' + row.jobsWon + '</span>' : dash}</td>
-      <td>${row.jobsLost ? '<span class="kpi-bad">' + row.jobsLost + '</span>' : dash}</td>
-      <td>${row.closeRate}</td>
-      <td>${row.revenueSold ? money.format(row.revenueSold) : dash}</td>
-      <td>${row.revenueCollected ? money.format(row.revenueCollected) : dash}</td>
-      <td>${row.cashOnHand ? money.format(row.cashOnHand) : dash}</td>
-      <td>${row.avgJobValue ? money.format(row.avgJobValue) : dash}</td>
+      <td data-label="Leads">${row.leads || dash}</td>
+      <td data-label="Estimates">${row.estimatesScheduled || dash}</td>
+      <td data-label="Jobs Won">${row.jobsWon ? '<span class="kpi-good">' + row.jobsWon + '</span>' : dash}</td>
+      <td data-label="Jobs Lost">${row.jobsLost ? '<span class="kpi-bad">' + row.jobsLost + '</span>' : dash}</td>
+      <td data-label="Close Rate">${row.closeRate}</td>
+      <td data-label="Revenue Sold">${row.revenueSold ? money.format(row.revenueSold) : dash}</td>
+      <td data-label="Revenue Collected">${row.revenueCollected ? money.format(row.revenueCollected) : dash}</td>
+      <td data-label="Cash on Hand">${row.cashOnHand ? money.format(row.cashOnHand) : dash}</td>
+      <td data-label="Avg Job Value">${row.avgJobValue ? money.format(row.avgJobValue) : dash}</td>
     </tr>`;
   }).join('');
 

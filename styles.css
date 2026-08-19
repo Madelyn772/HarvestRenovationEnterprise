@@ -1314,68 +1314,7 @@ textarea:focus {
   flex: 0 0 auto;
 }
 
-/* ===== Mobile: compact top bar + horizontal nav ===== */
-@media (max-width: 960px) {
-  .shell { display: block; }
-  .sidebar {
-    position: static;
-    min-height: auto;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: .6rem 1rem;
-    padding: .85rem 1rem;
-  }
-  .brand-block {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-  .brand-block h1 {
-    font-size: 1.5rem;
-    line-height: 1.1;
-  }
-  .sidebar-user {
-    flex: 1 1 100%;
-    margin: .2rem 0 0;
-    padding: .8rem;
-  }
-  .nav {
-    order: 9;
-    display: flex;
-    flex: 1 1 100%;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: .5rem;
-    padding-bottom: .3rem;
-    scrollbar-width: none;
-  }
-  .nav::-webkit-scrollbar { display: none; }
-  .nav-btn {
-    flex: 0 0 auto;
-    width: auto;
-    white-space: nowrap;
-    padding: .6rem .9rem;
-    font-size: .9rem;
-  }
-  .sidebar-card {
-    flex: 1 1 100%;
-    order: 10;
-    margin-top: .4rem;
-  }
-  .sidebar-card.mobile-hide { display: none; }
-  .main { padding: 1rem; }
-}
-
-@media (max-width: 640px) {
-  .brand-block h1 { font-size: 1.35rem; }
-  .topbar-actions { width: 100%; }
-  .topbar-actions .secondary-btn,
-  .topbar-actions .primary-btn {
-    flex: 1 1 auto;
-    text-align: center;
-  }
-}
+/* ===== Mobile layout consolidated into the drawer block at end of file ===== */
 
 /* ============================================================
    Readability layer — light, high-contrast write surfaces.
@@ -2388,6 +2327,230 @@ html:not(.theme-light) .sidebar {
   border: 1px solid rgba(31, 26, 20, 0.12);
   background: transparent;
   box-shadow: none;
+}
+
+/* ============================================================
+   MOBILE OVERHAUL — drawer nav, collapsible form sections,
+   stacked scorecard, invoice cards. Appended last so these
+   rules win the cascade over all earlier @media blocks.
+   ============================================================ */
+
+/* Mobile top bar is hidden on desktop. */
+.mobile-topbar { display: none; }
+
+/* Collapsible form sections: on desktop the wrappers are invisible (display:
+   contents) so fields flow straight into the parent .form-grid — byte-for-byte
+   identical to before. The accordion headers are hidden. */
+.mobile-section, .mobile-section-body { display: contents; }
+.mobile-section-head { display: none; }
+
+@media (max-width: 960px) {
+  /* ── Mobile top bar ── */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding: .75rem 1rem;
+    background: #0f0c08;
+    border-bottom: 1px solid var(--line);
+    color: #f4e9d4;
+  }
+  .mobile-topbar-title { display: flex; align-items: center; gap: .6rem; min-width: 0; }
+  .mobile-topbar-title strong {
+    font-size: 1rem; color: #f4e9d4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .brand-mark.sm { width: 34px; height: 34px; font-size: .8rem; }
+  .mobile-menu-btn {
+    display: inline-flex; flex-direction: column; justify-content: center;
+    gap: 4px; width: 42px; height: 42px; padding: 10px;
+    background: transparent; border: 1px solid rgba(255,255,255,.18);
+    border-radius: 10px; cursor: pointer; flex: 0 0 auto;
+  }
+  .mobile-menu-btn span {
+    display: block; height: 2px; background: #f4e9d4; border-radius: 2px;
+    transition: transform .18s ease, opacity .18s ease;
+  }
+  .mobile-menu-btn[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .mobile-menu-btn[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .mobile-menu-btn[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+  .mobile-topbar-action {
+    width: 42px; height: 42px; border-radius: 10px; flex: 0 0 auto;
+    background: transparent; border: 1px solid rgba(255,255,255,.18);
+    color: #f4e9d4; font-size: 1.1rem; cursor: pointer;
+  }
+
+  /* ── Drawerize the sidebar ── */
+  .shell { display: block; }
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: min(84vw, 320px);
+    min-height: 100vh;
+    z-index: 80;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    overflow-y: auto;
+    padding: 1.25rem 1rem 1.5rem;
+    border: 0;
+    border-right: 1px solid var(--line);
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  .sidebar.is-open { transform: translateX(0); }
+  .sidebar-scrim {
+    position: fixed; inset: 0; z-index: 70;
+    background: rgba(10,8,6,.55);
+    opacity: 0; pointer-events: none;
+    transition: opacity .22s ease;
+    border: 0;
+  }
+  .sidebar-scrim.is-visible { opacity: 1; pointer-events: auto; }
+  body.drawer-open { overflow: hidden; }
+
+  /* Nav is a vertical list again inside the drawer. */
+  .nav {
+    display: grid;
+    grid-auto-flow: row;
+    gap: .5rem;
+    overflow: visible;
+  }
+  .nav-btn {
+    width: 100%;
+    text-align: left;
+    white-space: normal;
+    padding: .85rem 1rem;
+    font-size: .95rem;
+  }
+
+  /* Reveal the sidebar's desktop-hidden cards inside the drawer. */
+  .sidebar .mobile-hide { display: block; }
+  .sidebar .brand-block h1 { font-size: 1.05rem; }
+  .sidebar .brand-block .muted { display: none; }
+  .sidebar .sidebar-user { padding: .75rem; }
+
+  .main { padding: 1rem; }
+
+  /* ── Card headers stay horizontal (title + action on one row) ── */
+  .topbar, .split-head, .card-head, .section-head-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: .6rem .75rem;
+  }
+  .topbar > div:first-child,
+  .split-head > div:first-child,
+  .card-head > div:first-child,
+  .section-head-row > div:first-child { flex: 1 1 60%; min-width: 0; }
+  .card-head h3, .section-head-row h3, .topbar h2 {
+    font-size: 1.15rem; line-height: 1.25; margin: 0;
+  }
+  .card-head .search-input, .split-head .search-input { flex: 1 1 100%; }
+
+  /* ── Collapsible form sections become accordions on mobile ── */
+  .mobile-section {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin: 0 0 .75rem;
+    background: rgba(255,255,255,.02);
+    grid-column: 1 / -1;
+  }
+  .mobile-section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; cursor: pointer;
+    padding: .8rem 1rem;
+    font-weight: 600; font-size: .95rem; color: #f4e9d4;
+    background: transparent; border: 0; text-align: left;
+  }
+  .mobile-section-head::after { content: '−'; font-size: 1rem; color: var(--gold); }
+  .mobile-section.is-collapsed .mobile-section-head::after { content: '＋'; }
+  .mobile-section-body { display: grid; gap: 1rem; padding: 0 1rem 1rem; }
+  .mobile-section.is-collapsed .mobile-section-body { display: none; }
+  .theme-light .main .mobile-section-head { color: #1f1a14; }
+  .theme-light .main .mobile-section { background: #faf7f1; border-color: rgba(31,26,20,.10); }
+}
+
+/* ── KPI scorecard: stacked card-per-row (≤768px) ── */
+@media (max-width: 768px) {
+  .scorecard-wrap { overflow-x: visible; }
+  .scorecard-table { min-width: 0; width: 100%; }
+  .scorecard-table thead { display: none; }
+  .scorecard-table tbody tr {
+    display: block;
+    padding: .85rem 1rem;
+    margin-bottom: .6rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255,255,255,.02);
+  }
+  .scorecard-table tbody td {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: .25rem 0;
+    border: 0;
+    font-size: .9rem;
+  }
+  .scorecard-table tbody td::before {
+    content: attr(data-label);
+    font-size: .72rem; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted);
+    margin-right: 1rem;
+  }
+  .scorecard-table tbody td:first-child {
+    font-weight: 700; font-size: 1rem;
+    padding-bottom: .5rem; margin-bottom: .35rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .scorecard-table tbody td:first-child::before { content: ''; }
+  .theme-light .main .scorecard-table tbody tr {
+    background: #faf7f1; border-color: rgba(31,26,20,.10);
+  }
+}
+
+@media (max-width: 640px) {
+  /* ── Action rows: primary full-width, secondary/ghost/danger 2-per-row ── */
+  .form-actions {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+  }
+  .form-actions .primary-btn { flex: 1 1 100%; width: 100%; }
+  .form-actions .secondary-btn,
+  .form-actions .ghost-btn,
+  .form-actions .danger-btn {
+    flex: 1 1 calc(50% - .25rem); width: auto;
+    padding: .7rem .5rem; font-size: .88rem;
+  }
+
+  /* ── Invoice line items become distinct cards ── */
+  .invoice-row {
+    grid-template-columns: 1fr;
+    gap: .4rem;
+    padding: .75rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(255,255,255,.03);
+    margin-bottom: .5rem;
+    position: relative;
+  }
+  .invoice-row .remove-invoice-row {
+    position: absolute; top: .35rem; right: .5rem;
+  }
+  .theme-light .main .invoice-row {
+    background: #faf7f1; border-color: rgba(31,26,20,.10);
+  }
+
+  /* ── Tap targets: 44px minimum; 16px inputs to stop iOS zoom-on-focus ── */
+  .nav-btn, .primary-btn, .secondary-btn, .ghost-btn, .danger-btn,
+  .chip-btn, .icon-btn, .mobile-topbar-action, .mobile-menu-btn {
+    min-height: 44px;
+  }
+  input, select, textarea { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .sidebar-scrim, .mobile-menu-btn span { transition: none; }
 }
 
 
