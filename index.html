@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-28" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-29" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -429,6 +429,22 @@
           </article>
         </div>
         <article class="card"><div class="card-head"><div><p class="eyebrow">Saved Estimates</p><h3>Proposal library</h3></div></div><div id="estimateList" class="stack"></div></article>
+
+        <dialog id="recordDepositDialog" class="crm-dialog">
+          <button type="button" class="dialog-close" data-close-dialog="recordDepositDialog" aria-label="Close">×</button>
+          <div class="card-head"><div><p class="eyebrow">Deposit</p><h3>Record deposit received</h3></div></div>
+          <p class="muted tiny">Adds this deposit as a payment on the linked invoice and marks the estimate as deposit-received.</p>
+          <form id="recordDepositForm" class="form-grid">
+            <label><span>Amount</span><input name="amount" type="number" step="0.01" min="0" required /></label>
+            <label><span>Method</span><select name="method"><option>Check</option><option>Cash</option><option>Card</option><option>ACH</option><option>Zelle</option><option>Other</option></select></label>
+            <label><span>Date</span><input name="date" type="date" /></label>
+            <label><span>Reference</span><input name="reference" placeholder="Check # / txn id" /></label>
+            <div class="form-actions full">
+              <button type="submit" class="primary-btn">Record deposit</button>
+              <button type="button" class="ghost-btn" data-close-dialog="recordDepositDialog">Cancel</button>
+            </div>
+          </form>
+        </dialog>
       </section>
 
       <!-- ── Invoicing view (pulled out of Operations) ── -->
@@ -868,6 +884,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-28"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-29"></script>
 </body>
 </html>

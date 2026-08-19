@@ -330,6 +330,8 @@ export function migrateEstimate(record) {
   if (!r.validUntil) r.validUntil = addDaysISO(r.date, 30);
   if (r.termsAndConditions == null) r.termsAndConditions = DEFAULT_ESTIMATE_TERMS;
   if (r.signatureBlockEnabled == null) r.signatureBlockEnabled = true;
+  if (r.depositReceivedAt == null) r.depositReceivedAt = '';
+  if (r.depositReceivedBy == null) r.depositReceivedBy = '';
   return r;
 }
 

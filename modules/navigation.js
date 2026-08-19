@@ -3,7 +3,7 @@ import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickYelpSave } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle } from './estimating.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
@@ -131,6 +131,7 @@ export function bindAppUi() {
   });
   const useClientPhoneCb = document.getElementById('useClientPhone');
   if (useClientPhoneCb) useClientPhoneCb.addEventListener('change', handleUseClientPhoneToggle);
+  if (el.recordDepositForm) el.recordDepositForm.addEventListener('submit', handleRecordDepositSubmit);
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));

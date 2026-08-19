@@ -79,6 +79,13 @@ export function buildBrandedDocHtml(opts) {
     <div class="sig"><div class="sigline"></div><div class="siglabel">Contractor signature (Harvest Renovation)</div></div>
     <div class="sig"><div class="sigline"></div><div class="siglabel">Date</div></div>
   </div>` : '';
+  const hasComments = (comments || '').trim().length > 0;
+  const isPaidInvoice = kind === 'INVOICE' && num(balance) <= 0.01;
+  const effBalanceLabel = isPaidInvoice ? 'PAID IN FULL' : balanceLabel;
+  const effBalanceColor = isPaidInvoice ? '#2e7d32' : balanceColor;
+  const paymentInstructions = (kind === 'INVOICE' && num(balance) > 0.01)
+    ? `<div class="terms"><div class="band">Payment Instructions</div><div class="tbody">Make checks payable to: ${escapeHtml(BRAND.name)}\nFor ACH, Zelle, or card payments, contact ${escapeHtml(BRAND.phone)} or ${escapeHtml(BRAND.email)}\nPlease include invoice #${escapeHtml(number)} on your payment.</div></div>`
+    : '';
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
   ${(typeof document !== 'undefined' && document.baseURI) ? `<base href="${escapeHtml(document.baseURI)}">` : ''}
   <title>${kindLabel} ${escapeHtml(number)} — Harvest Renovation</title>
@@ -178,16 +185,16 @@ export function buildBrandedDocHtml(opts) {
       <div class="foot">
         <div class="foot-left">
           <div class="thanks">${escapeHtml(BRAND.thankYou)}</div>
-          ${depPct > 0 ? `<div class="term"><strong>${dep}% Upfront:</strong> A deposit of ${dep}%${depAmountText} is required upfront to cover material costs.</div>` : ''}
-          <div class="term"><strong>Price Adjustments:</strong> Any additional requests or modifications beyond the agreed-upon scope will result in a price adjustment.</div>
+          ${kind === 'ESTIMATE' && depPct > 0 ? `<div class="term"><strong>${dep}% Upfront:</strong> A deposit of ${dep}%${depAmountText} is required upfront to cover material costs.</div>` : ''}
           <div class="qnote">For questions concerning this ${kind.toLowerCase()}, please contact<br/>${escapeHtml(BRAND.contact)}, ${escapeHtml(BRAND.phone)}, ${escapeHtml(BRAND.email)}<br/><a href="https://${escapeHtml(BRAND.website)}">${escapeHtml(BRAND.website)}</a></div>
         </div>
         <div class="foot-right">
           ${summaryHtml}
-          <div class="balance"><span>${escapeHtml(balanceLabel)}</span><strong${balanceColor ? ` style="color:${balanceColor}"` : ''}>${money.format(num(balance))}</strong></div>
-          <div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments || '')}</div></div>
+          <div class="balance"><span>${escapeHtml(effBalanceLabel)}</span><strong${effBalanceColor ? ` style="color:${effBalanceColor}"` : ''}>${money.format(num(balance))}</strong></div>
+          ${hasComments ? `<div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments)}</div></div>` : ''}
         </div>
       </div>
+      ${paymentInstructions}
       ${termsBlock}
       ${sigsBlock}
       <div class="verse">${escapeHtml(BRAND.verse)}</div>

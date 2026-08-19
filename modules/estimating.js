@@ -3,7 +3,7 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, updateNewClientFieldsVisibility, renderAll, setView } from './navigation.js';
 import { resolveFormClient } from './crm.js';
-import { fillInvoiceFromEstimate } from './operations.js';
+import { fillInvoiceFromEstimate, renderInvoices, computeInvoiceBalances } from './operations.js';
 import { printEstimate } from './pdf.js';
 import { updateEstimateStatus } from './documenso.js';
 
@@ -20,6 +20,12 @@ export function saveEstimateFromForm() {
   payload.clientId = resolved.clientId;
   payload.clientName = resolved.clientName || payload.clientName;
   payload.id = payload.id || uid('EST');
+  // Preserve deposit-received tracking (not a form field) across edits.
+  const existingRec = state.store.estimates.find(e => e.id === payload.id);
+  if (existingRec) {
+    payload.depositReceivedAt = existingRec.depositReceivedAt || '';
+    payload.depositReceivedBy = existingRec.depositReceivedBy || '';
+  }
   upsertArray('estimates', payload, 'id');
   // Keep editing the same record so re-saving (or printing) updates in place.
   el.estimateForm.estimateId.value = payload.id;
@@ -342,15 +348,25 @@ export function renderEstimates() {
       : status === 'Declined'
       ? `<button class="ghost-btn estimate-reopen" data-estimate-id="${item.id}">Reopen</button>`
       : '';
+    const depPct = num(item.depositPercent);
+    const depositPill = depPct > 0
+      ? (item.depositReceivedAt
+          ? '<span class="status-pill" style="color:#2e7d32;border-color:#2e7d32">Deposit received ✓</span>'
+          : `<span class="status-pill" style="color:#caa05a;border-color:#caa05a">Deposit ${depPct}% — ${money.format(num(item.depositAmount))}</span>`)
+      : '';
+    const recordDepositBtn = (status === 'Approved' && depPct > 0 && !item.depositReceivedAt)
+      ? `<button class="ghost-btn estimate-record-deposit" data-estimate-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Record Deposit</button>`
+      : '';
     const declineText = status === 'Declined' && item.declineReason
       ? (item.declineReason === 'Other' && item.declineReasonOther ? item.declineReasonOther : item.declineReason)
       : '';
     const declineLine = declineText ? `<p class="decline-reason">Declined — ${escapeHtml(declineText)}</p>` : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted">${statusBadge || escapeHtml(status)} • Deposit ${money.format(num(item.depositAmount))}</p>${declineLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted deal-pill-row">${statusBadge || escapeHtml(status)} ${depositPill}</p>${declineLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-invoice').forEach(btn => btn.addEventListener('click', () => fillInvoiceFromEstimate(btn.dataset.estimateId, { switchView: true })));
   el.estimateList.querySelectorAll('.estimate-email').forEach(btn => btn.addEventListener('click', () => emailEstimate(btn.dataset.estimateId)));
+  el.estimateList.querySelectorAll('.estimate-record-deposit').forEach(btn => btn.addEventListener('click', () => openRecordDepositDialog(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-print').forEach(btn => btn.addEventListener('click', () => {
     const estimate = state.store.estimates.find(item => item.id === btn.dataset.estimateId);
     if (estimate) printEstimate(estimate);
@@ -358,6 +374,48 @@ export function renderEstimates() {
   el.estimateList.querySelectorAll('.estimate-approve').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Approved')));
   el.estimateList.querySelectorAll('.estimate-decline').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Declined')));
   el.estimateList.querySelectorAll('.estimate-reopen').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Sent')));
+}
+
+// Open the "record deposit" dialog for an approved estimate with a linked invoice.
+export function openRecordDepositDialog(estimateId) {
+  const est = state.store.estimates.find(e => e.id === estimateId);
+  if (!est) return;
+  const invoice = state.store.invoices.find(i => i.relatedEstimate === est.id);
+  if (!invoice) { showToast('Convert this estimate to an invoice first, then record the deposit.', 'error'); return; }
+  const dlg = document.getElementById('recordDepositDialog');
+  if (!dlg) return;
+  dlg.dataset.estimateId = est.id;
+  const form = dlg.querySelector('form');
+  form.amount.value = num(est.depositAmount).toFixed(2);
+  form.method.value = 'Check';
+  form.date.value = todayISO();
+  form.reference.value = '';
+  dlg.showModal();
+}
+
+export function handleRecordDepositSubmit(event) {
+  event.preventDefault();
+  const dlg = document.getElementById('recordDepositDialog');
+  if (!dlg) return;
+  const est = state.store.estimates.find(e => e.id === dlg.dataset.estimateId);
+  if (!est) { dlg.close(); return; }
+  const invoice = state.store.invoices.find(i => i.relatedEstimate === est.id);
+  if (!invoice) { showToast('Convert this estimate to an invoice first, then record the deposit.', 'error'); dlg.close(); return; }
+  const form = dlg.querySelector('form');
+  const amount = num(form.amount.value);
+  invoice.payments = invoice.payments || [];
+  invoice.payments.push({ id: uid('PAY'), date: form.date.value || todayISO(), amount, method: form.method.value, reference: form.reference.value || '', note: 'Deposit from ' + (est.estimateNumber || est.id) });
+  const { total, paid, balance } = computeInvoiceBalances(invoice);
+  if (total > 0 && balance <= 0.01) invoice.status = 'Paid';
+  else if (paid > 0 && paid < total && invoice.status !== 'Draft' && invoice.status !== 'Sent') invoice.status = 'Partial';
+  est.depositReceivedAt = new Date().toISOString();
+  est.depositReceivedBy = state.profile?.full_name || '';
+  addActivity(`Deposit recorded for ${est.estimateNumber || est.id}.`, 'Billing');
+  saveStore('Deposit recorded for ' + (est.estimateNumber || est.id));
+  dlg.close();
+  renderEstimates();
+  renderInvoices();
+  showToast('Deposit received — invoice balance updated.', 'success');
 }
 
 export function emailEstimate(estimateId) {
