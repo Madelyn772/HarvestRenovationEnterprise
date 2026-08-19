@@ -112,7 +112,7 @@ export function bindAppUi() {
     if (node) node.addEventListener('click', () => clearFormForButton(id));
   });
 
-  el.estimateTemplateSelect.addEventListener('change', applyEstimateTemplate);
+  el.estimateTemplateSelect.addEventListener('change', () => applyEstimateTemplate({ fromUser: true }));
 
   // Show the "new client info" fields only when the estimate dropdown is set
   // to the "client not on the list" option.
@@ -458,7 +458,10 @@ export function clearFormForButton(id) {
     addInvoiceRow();
   }
   if (form === el.estimateForm) {
+    const estItems = document.getElementById('estimateItems');
+    if (estItems) estItems.innerHTML = '';
     applyEstimateTemplate();
     el.estimateForm.user.value = state.profile?.full_name || state.session?.user?.user_metadata?.full_name || '';
+    hydrateEstimateForm();
   }
 }

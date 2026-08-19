@@ -160,7 +160,7 @@ export function recomputeEstimateTotals() {
   renderEstimateSummary(estimate);
 }
 
-export function applyEstimateTemplate() {
+export function applyEstimateTemplate({ fromUser = false } = {}) {
   const template = estimateTemplates[el.estimateTemplateSelect.value];
   if (!template) return;
   el.estimateForm.trade.value = template.trade;
@@ -172,7 +172,15 @@ export function applyEstimateTemplate() {
   if (!el.estimateForm.scope.value) el.estimateForm.scope.value = template.scope;
   const wrap = getEstimateItemsEl();
   const hasItems = wrap && wrap.querySelectorAll('.line-item-row').length > 0;
-  if (!hasItems || confirm('Replace current line items with the template items?')) {
+  if (fromUser) {
+    // Only prompt when the user actively switches templates over existing items.
+    if (!hasItems || confirm('Replace current line items with the template items?')) {
+      loadTemplateItems();
+    } else {
+      recomputeEstimateTotals();
+    }
+  } else if (!hasItems) {
+    // Programmatic call (populate / clear / convert): seed only when empty, no prompt.
     loadTemplateItems();
   } else {
     recomputeEstimateTotals();
