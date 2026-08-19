@@ -206,6 +206,16 @@ function addDaysISO(dateStr, days) {
   return d.toISOString().slice(0, 10);
 }
 
+// Fill blank defaults when the Invoicing view opens on a fresh form.
+export function hydrateInvoiceForm() {
+  const dateInput = document.getElementById('invoiceDate');
+  if (dateInput && !dateInput.value) dateInput.value = todayISO();
+  const dueInput = document.getElementById('invoiceDueDate');
+  if (dueInput && !dueInput.value) dueInput.value = addDaysISO(dateInput ? dateInput.value : todayISO(), 15);
+  const numInput = document.getElementById('invoiceNumber');
+  if (numInput && !numInput.value) numInput.value = autoNumber('INV');
+}
+
 export function renderInvoices() {
   const items = [...state.store.invoices].sort((a,b) => sortDateDesc(a.date, b.date));
   el.invoiceList.innerHTML = items.length ? items.map(item => {

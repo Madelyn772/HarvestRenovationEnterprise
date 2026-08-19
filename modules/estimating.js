@@ -1,4 +1,4 @@
-import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, estimateTemplates, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate } from './state.js';
+import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, estimateTemplates, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate, todayISO } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, updateNewClientFieldsVisibility, renderAll, setView } from './navigation.js';
@@ -85,10 +85,50 @@ export function hydrateEstimateForm() {
   if (el.estimateForm.user && !el.estimateForm.user.value) {
     el.estimateForm.user.value = state.profile?.full_name || currentUserName() || '';
   }
+  if (el.estimateDate && !el.estimateDate.value) el.estimateDate.value = todayISO();
+  if (el.estimateNumber && !el.estimateNumber.value) el.estimateNumber.value = autoNumber('EST');
   const terms = document.getElementById('estimateTerms');
   if (terms && !terms.value) terms.value = DEFAULT_ESTIMATE_TERMS;
   syncEstimateValidUntil();
   updateDepositCustomVisibility();
+  // Only auto-sync the phone on a fresh form; a loaded record keeps its saved value.
+  if (!el.estimateForm.estimateId.value) syncEstimateClientPhone();
+  // Fresh form (no record loaded) with no rows → give one blank row to type into.
+  const wrap = getEstimateItemsEl();
+  if (wrap && !el.estimateForm.estimateId.value && wrap.querySelectorAll('.line-item-row').length === 0) {
+    addEstimateRow();
+  }
+}
+
+// Mirror the selected client's saved phone into the e-signature phone field.
+export function syncEstimateClientPhone() {
+  const phoneInput = document.getElementById('estimateClientPhone');
+  const checkbox = document.getElementById('useClientPhone');
+  if (!phoneInput || !checkbox) return;
+  const clientId = el.estimateForm.clientId ? el.estimateForm.clientId.value : '';
+  const client = clientId && clientId !== '__new__' ? findClient(clientId) : null;
+  if (client && client.phone) {
+    checkbox.checked = true;
+    phoneInput.value = client.phone;
+    phoneInput.disabled = true;
+  } else {
+    checkbox.checked = false;
+    phoneInput.value = '';
+    phoneInput.disabled = false;
+  }
+}
+
+export function handleUseClientPhoneToggle() {
+  const phoneInput = document.getElementById('estimateClientPhone');
+  const checkbox = document.getElementById('useClientPhone');
+  if (!phoneInput || !checkbox) return;
+  if (checkbox.checked) {
+    syncEstimateClientPhone();
+  } else {
+    phoneInput.disabled = false;
+    phoneInput.value = '';
+    phoneInput.focus();
+  }
 }
 
 export function readEstimateItemsFromDom() {
@@ -106,7 +146,7 @@ export function readEstimateItemsFromDom() {
       unitPrice,
       amount: quantity * unitPrice
     };
-  }).filter(it => it.description || it.amount || it.unitPrice);
+  });
 }
 
 export function addEstimateRow(item = {}) {
@@ -126,7 +166,7 @@ export function addEstimateRow(item = {}) {
     node.querySelector('[data-line-amount]').textContent = money.format(q * up);
     recomputeEstimateTotals();
   };
-  node.querySelectorAll('[name="quantity"],[name="unitPrice"]').forEach(inp => {
+  node.querySelectorAll('input, select').forEach(inp => {
     inp.addEventListener('input', refresh);
     inp.addEventListener('change', refresh);
   });
@@ -163,24 +203,18 @@ export function recomputeEstimateTotals() {
 export function applyEstimateTemplate({ fromUser = false } = {}) {
   const template = estimateTemplates[el.estimateTemplateSelect.value];
   if (!template) return;
-  el.estimateForm.trade.value = template.trade;
-  el.estimateForm.measurementType.value = template.measurementType;
-  el.estimateForm.rate.value = template.rate;
-  el.estimateForm.materialPercent.value = template.materialPercent;
-  el.estimateForm.laborPercent.value = template.laborPercent;
-  el.estimateForm.finalPercent.value = template.finalPercent;
-  if (!el.estimateForm.scope.value) el.estimateForm.scope.value = template.scope;
+  // Starter items only: derive the trade from the pick; never touch scope or the
+  // legacy calc fields (those are gone). Line items describe the work now.
+  if (el.estimateForm.trade) el.estimateForm.trade.value = template.trade || '';
   const wrap = getEstimateItemsEl();
   const hasItems = wrap && wrap.querySelectorAll('.line-item-row').length > 0;
   if (fromUser) {
-    // Only prompt when the user actively switches templates over existing items.
-    if (!hasItems || confirm('Replace current line items with the template items?')) {
+    if (!hasItems || confirm('Replace current line items with the starter items?')) {
       loadTemplateItems();
     } else {
       recomputeEstimateTotals();
     }
   } else if (!hasItems) {
-    // Programmatic call (populate / clear / convert): seed only when empty, no prompt.
     loadTemplateItems();
   } else {
     recomputeEstimateTotals();
@@ -189,29 +223,19 @@ export function applyEstimateTemplate({ fromUser = false } = {}) {
 
 export function collectEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
-  // Top-level measurement quantity shares the name "quantity" with line rows,
-  // so read it from its specific input to avoid the FormData collision.
-  const qtyInput = document.getElementById('estimateQuantity');
-  const quantity = num(qtyInput ? qtyInput.value : data.quantity);
-  const rate = num(data.rate);
-  const materialCost = num(data.materialCost);
-  const materialPercent = num(data.materialPercent);
-  const laborPercent = num(data.laborPercent);
   const finalPercent = num(data.finalPercent);
   const items = readEstimateItemsFromDom();
-  const laborBase = quantity * rate;
-  const materialMarkup = materialCost * (materialPercent / 100);
-  const laborMarkup = laborBase * (laborPercent / 100);
-  const legacySubtotal = laborBase + materialCost + materialMarkup + laborMarkup;
-  const subtotal = items.length ? items.reduce((sum, it) => sum + num(it.amount), 0) : legacySubtotal;
+  // Subtotal is always the sum of line items (no legacy lumped-pricing fallback).
+  const subtotal = items.reduce((sum, it) => sum + num(it.amount), 0);
   const taxPercent = num(data.taxPercent);
   const taxAmount = subtotal * taxPercent / 100;
   const permitsFees = num(data.permitsFees);
-  const finalPay = data.pricingMode === 'final' ? subtotal * (finalPercent / 100) : 0;
+  const finalPay = finalPercent > 0 ? subtotal * (finalPercent / 100) : 0;
   const estimatedCost = subtotal + taxAmount + permitsFees + finalPay;
   const depositPercent = getDepositPercent();
   const depositAmount = estimatedCost * (depositPercent / 100);
   const linkedClient = data.clientId && data.clientId !== '__new__' ? findClient(data.clientId) : null;
+  const phoneInput = document.getElementById('estimateClientPhone');
   return {
     id: data.estimateId || '',
     clientId: data.clientId,
@@ -219,11 +243,10 @@ export function collectEstimateFromForm() {
     date: data.date,
     user: data.user,
     trade: data.trade,
-    measurementType: data.measurementType,
-    rate, quantity, materialCost, materialPercent,
-    pricingMode: data.pricingMode,
-    laborPercent, finalPercent, depositPercent,
-    laborBase, materialMarkup, laborMarkup, finalPay,
+    // Legacy lumped-pricing keys retained for backwards compatibility (unused).
+    measurementType: '', rate: 0, quantity: 0, materialCost: 0, materialPercent: 0,
+    pricingMode: 'labor', laborPercent: 0, finalPercent, depositPercent,
+    laborBase: 0, materialMarkup: 0, laborMarkup: 0, finalPay,
     items, subtotal, taxPercent, taxAmount, permitsFees,
     validUntil: data.validUntil || '',
     termsAndConditions: (data.termsAndConditions != null ? data.termsAndConditions : ''),
@@ -232,7 +255,7 @@ export function collectEstimateFromForm() {
     scope: data.scope,
     comments: data.comments || '',
     billingName: linkedClient ? (linkedClient.name || '') : (data.clientName || ''),
-    billingPhone: linkedClient ? (linkedClient.phone || '') : (data.clientPhone || ''),
+    billingPhone: phoneInput ? phoneInput.value : (linkedClient ? (linkedClient.phone || '') : (data.clientPhone || '')),
     billingEmail: data.billingEmail || (linkedClient ? (linkedClient.email || '') : (data.clientEmail || '')),
     billingAddress: data.billingAddress || (linkedClient ? (linkedClient.address || '') : ''),
     status: data.status,
@@ -269,15 +292,11 @@ export function loadEstimateIntoForm(id) {
   el.estimateForm.date.value = item.date || '';
   el.estimateForm.user.value = item.user || '';
   el.estimateForm.trade.value = item.trade || '';
-  el.estimateForm.measurementType.value = item.measurementType || 'SquareFoot';
-  el.estimateForm.rate.value = item.rate || 0;
-  const qtyInput = document.getElementById('estimateQuantity');
-  if (qtyInput) qtyInput.value = item.quantity || 0;
-  el.estimateForm.materialCost.value = item.materialCost || 0;
-  el.estimateForm.materialPercent.value = item.materialPercent || 0;
-  el.estimateForm.pricingMode.value = item.pricingMode || 'labor';
-  el.estimateForm.laborPercent.value = item.laborPercent || 0;
   el.estimateForm.finalPercent.value = item.finalPercent || 0;
+  const phoneInput = document.getElementById('estimateClientPhone');
+  const useClientPhone = document.getElementById('useClientPhone');
+  if (phoneInput) { phoneInput.value = item.billingPhone || ''; phoneInput.disabled = false; }
+  if (useClientPhone) useClientPhone.checked = false;
   const depSel = document.getElementById('estimateDepositPercent');
   const depPct = num(item.depositPercent);
   if (depSel) {

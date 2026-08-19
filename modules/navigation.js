@@ -3,8 +3,8 @@ import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickYelpSave } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout } from './operations.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle } from './estimating.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
 import { renderEmployees, renderTeamPending, renderReadiness } from './team.js';
@@ -127,7 +127,10 @@ export function bindAppUi() {
     const client = e.target.value && e.target.value !== '__new__' ? findClient(e.target.value) : null;
     if (client) autofillClientFields(el.estimateForm, client, { billingEmail: 'email', billingAddress: 'address' });
     updateNewClientFieldsVisibility();
+    syncEstimateClientPhone();
   });
+  const useClientPhoneCb = document.getElementById('useClientPhone');
+  if (useClientPhoneCb) useClientPhoneCb.addEventListener('change', handleUseClientPhoneToggle);
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
@@ -272,6 +275,7 @@ export function renderCurrentView() {
       renderEstimates();
     },
     invoicing: () => {
+      hydrateInvoiceForm();
       renderInvoiceBalanceCallout();
       renderInvoices();
     },
@@ -356,6 +360,8 @@ export function hydrateForms() {
 
 export function populateTemplateSelect() {
   el.estimateTemplateSelect.innerHTML = Object.keys(estimateTemplates).map(key => `<option value="${escapeHtml(key)}">${escapeHtml(key)}</option>`).join('');
+  // Default to "Other" = blank slate (no starter items, no scope).
+  el.estimateTemplateSelect.value = 'Other';
   applyEstimateTemplate();
 }
 

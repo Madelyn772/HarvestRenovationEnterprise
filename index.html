@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-27" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-28" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -351,7 +351,7 @@
             <form id="estimateForm" class="form-grid">
               <input type="hidden" name="estimateId" />
               <div class="mobile-section"><button type="button" class="mobile-section-head">Client</button><div class="mobile-section-body">
-              <label><span>Template</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
+              <label><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
               <label><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
               <div class="new-client-fields full is-hidden" id="estimateNewClientFields">
                 <p class="full new-client-note muted tiny">New client info — only needed when adding a client that is not on the list.</p>
@@ -363,22 +363,15 @@
               <label class="full"><span>Project / billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
               <label class="full"><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
               <label class="full"><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS delivery (optional)" /></label>
+              <label class="full inline-check"><input type="checkbox" id="useClientPhone" checked /><span>Use client&rsquo;s saved phone</span></label>
               </div></div>
               <div class="mobile-section"><button type="button" class="mobile-section-head">Estimate details</button><div class="mobile-section-body">
               <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
               <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
               <label><span>Prepared by</span><input name="user" /></label>
               <label><span>Trade</span><input name="trade" /></label>
-              <label><span>Measurement type</span><select name="measurementType"><option>SquareFoot</option><option>LinearFoot</option><option>FlatRate</option></select></label>
               </div></div>
-              <div class="mobile-section"><button type="button" class="mobile-section-head">Pricing</button><div class="mobile-section-body">
-              <label><span>Rate</span><input name="rate" type="number" step="0.01" /></label>
-              <label><span>Quantity</span><input name="quantity" id="estimateQuantity" type="number" step="0.01" /></label>
-              <label><span>Material cost</span><input name="materialCost" type="number" step="0.01" /></label>
-              <label><span>Material markup %</span><input name="materialPercent" type="number" step="0.01" /></label>
-              <label><span>Pricing mode</span><select name="pricingMode" id="pricingMode"><option value="labor">Labor + Material</option><option value="final">Final Markup</option></select></label>
-              <label><span>Labor markup %</span><input name="laborPercent" type="number" step="0.01" /></label>
-              <label><span>Final markup %</span><input name="finalPercent" type="number" step="0.01" /></label>
+              <div class="mobile-section"><button type="button" class="mobile-section-head">Deposit</button><div class="mobile-section-body">
               <label><span>Deposit</span>
                 <select name="depositPercent" id="estimateDepositPercent">
                   <option value="0">No deposit</option>
@@ -394,7 +387,7 @@
               </div></div>
               <div class="mobile-section"><button type="button" class="mobile-section-head">Scope &amp; status</button><div class="mobile-section-body">
               <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
-              <label class="full"><span>Scope of work</span><textarea name="scope" rows="5"></textarea></label>
+              <label class="full"><span>Scope of work</span><textarea name="scope" rows="5" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
               <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
               </div></div>
               <div class="estimate-items-shell full">
@@ -410,6 +403,7 @@
                 <div id="estimateItems" class="stack compact-stack"></div>
                 <div class="line-items-totals" id="estimateLineTotals"></div>
               </div>
+              <label><span>Final markup %</span><input name="finalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
               <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
               <label><span>Permits &amp; fees ($, pass-through)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
               <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
@@ -874,6 +868,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-27"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-28"></script>
 </body>
 </html>

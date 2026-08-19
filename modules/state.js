@@ -64,10 +64,7 @@ export const estimateTemplates = {
     { description: 'Flashing, vents & accessories', category: 'Materials', quantity: 1, unit: 'LS', unitPrice: 900 },
     { description: 'Installation labor', category: 'Labor', quantity: 1, unit: 'LS', unitPrice: 3600 }
   ] },
-  Other: { trade: 'General Scope', measurementType: 'FlatRate', rate: 0, materialPercent: 10, laborPercent: 15, finalPercent: 8, scope: 'Custom scope to be defined after field review.', items: [
-    { description: 'Labor', category: 'Labor', quantity: 1, unit: 'LS', unitPrice: 0 },
-    { description: 'Materials', category: 'Materials', quantity: 1, unit: 'LS', unitPrice: 0 }
-  ] }
+  Other: { trade: 'General Scope', measurementType: 'FlatRate', rate: 0, materialPercent: 10, laborPercent: 15, finalPercent: 8, scope: 'Custom scope to be defined after field review.', items: [] }
 };
 
 export const DEFAULT_ESTIMATE_TERMS = [
@@ -309,9 +306,26 @@ export function migrateEstimate(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
+  // Legacy lumped-pricing subtotal — used only to rescue old records that were
+  // saved before the line-item editor and therefore carry no items[].
+  const laborBase = num(r.quantity) * num(r.rate);
+  const materialMarkup = num(r.materialCost) * (num(r.materialPercent) / 100);
+  const laborMarkup = laborBase * (num(r.laborPercent) / 100);
+  const legacySubtotal = laborBase + num(r.materialCost) + materialMarkup + laborMarkup;
+  if (!r.items.length && legacySubtotal > 0) {
+    r.items = [{
+      id: uid('ITM'),
+      description: `${r.trade || 'Project'} \u2014 lumped total (migrated)`,
+      category: 'Other',
+      quantity: 1,
+      unit: 'LS',
+      unitPrice: legacySubtotal,
+      amount: legacySubtotal
+    }];
+  }
   if (r.taxPercent == null) r.taxPercent = 0;
   if (r.permitsFees == null) r.permitsFees = 0;
-  if (r.subtotal == null) r.subtotal = r.items.reduce((s, it) => s + num(it && it.amount), 0);
+  if (r.subtotal == null) r.subtotal = r.items.reduce((s, it) => s + num(it && it.amount), 0) || legacySubtotal;
   if (r.taxAmount == null) r.taxAmount = num(r.subtotal) * num(r.taxPercent) / 100;
   if (!r.validUntil) r.validUntil = addDaysISO(r.date, 30);
   if (r.termsAndConditions == null) r.termsAndConditions = DEFAULT_ESTIMATE_TERMS;
