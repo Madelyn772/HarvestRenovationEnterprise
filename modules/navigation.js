@@ -1,10 +1,10 @@
-import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient } from './state.js';
+import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate } from './operations.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm } from './estimating.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
 import { renderEmployees, renderTeamPending, renderReadiness } from './team.js';
@@ -50,7 +50,7 @@ export function bindAppUi() {
   el.clientForm.addEventListener('submit', handleClientSave);
   el.leadForm.addEventListener('submit', handleLeadSave);
   el.estimateForm.addEventListener('submit', handleEstimateSave);
-  el.calculateEstimate.addEventListener('click', () => renderEstimateSummary(collectEstimateFromForm()));
+  el.calculateEstimate.addEventListener('click', () => recomputeEstimateTotals());
   el.printEstimate.addEventListener('click', () => {
     const saved = saveEstimateFromForm();
     if (!saved) return;
@@ -86,6 +86,26 @@ export function bindAppUi() {
   el.adminGrantAccessForm.addEventListener('submit', handleAdminGrantAccess);
   if (el.checklistAddForm) el.checklistAddForm.addEventListener('submit', handleChecklistAdd);
   el.addInvoiceRow.addEventListener('click', () => addInvoiceRow());
+
+  // Itemized estimate + invoice controls.
+  const addEstBtn = document.getElementById('addEstimateRow');
+  if (addEstBtn) addEstBtn.addEventListener('click', () => addEstimateRow());
+  const loadTplBtn = document.getElementById('loadTemplateItems');
+  if (loadTplBtn) loadTplBtn.addEventListener('click', () => loadTemplateItems());
+  const addPayBtn = document.getElementById('addPaymentRow');
+  if (addPayBtn) addPayBtn.addEventListener('click', () => addPaymentRow());
+  const depositSel = document.getElementById('estimateDepositPercent');
+  if (depositSel) depositSel.addEventListener('change', () => { updateDepositCustomVisibility(); recomputeEstimateTotals(); });
+  const estDateInput = document.getElementById('estimateDate');
+  if (estDateInput) estDateInput.addEventListener('change', () => syncEstimateValidUntil());
+  const validUntilInput = document.getElementById('estimateValidUntil');
+  if (validUntilInput) validUntilInput.addEventListener('input', () => { validUntilInput.dataset.auto = 'false'; });
+  el.estimateForm.addEventListener('input', debounce(() => recomputeEstimateTotals(), 150));
+  el.estimateForm.addEventListener('change', () => recomputeEstimateTotals());
+  const invNumInput = document.getElementById('invoiceNumber');
+  if (invNumInput) invNumInput.addEventListener('focus', () => { if (!invNumInput.value) invNumInput.value = autoNumber('INV'); });
+  const estNumInput = document.getElementById('estimateNumber');
+  if (estNumInput) estNumInput.addEventListener('focus', () => { if (!estNumInput.value) estNumInput.value = autoNumber('EST'); });
 
   ['clearClientForm','clearLeadForm','clearEstimateForm','clearJobForm','clearCalendarForm','clearInvoiceForm','clearNoteForm'].forEach(id => {
     const node = document.getElementById(id);
@@ -240,10 +260,14 @@ export function renderCurrentView() {
       renderClientDetail();
     },
     estimating: () => {
-      renderEstimateSummary(collectEstimateFromForm());
+      hydrateEstimateForm();
+      recomputeEstimateTotals();
       renderEstimates();
     },
-    invoicing: () => renderInvoices(),
+    invoicing: () => {
+      renderInvoiceBalanceCallout();
+      renderInvoices();
+    },
     operations: () => {
       renderJobs();
       renderCalendarItems();

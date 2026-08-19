@@ -2553,4 +2553,105 @@ html:not(.theme-light) .sidebar {
   .sidebar, .sidebar-scrim, .mobile-menu-btn span { transition: none; }
 }
 
+/* ============================================================
+   Itemized estimates + invoices: line-item grid, payments,
+   balance callout. Appended last so these rules win.
+   ============================================================ */
+.line-items-head {
+  display: grid;
+  grid-template-columns: 2fr 1fr .7fr .6fr 1fr 1fr 2.2rem;
+  gap: .5rem;
+  padding: .35rem .1rem;
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.line-items-head.invoice-line {
+  grid-template-columns: 2fr .7fr .6fr 1fr 1fr 2.2rem;
+}
+.line-item-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr .7fr .6fr 1fr 1fr 2.2rem;
+  gap: .5rem;
+  align-items: center;
+  padding: .4rem .1rem;
+  border-top: 1px solid var(--line);
+}
+.line-item-row.invoice-line {
+  grid-template-columns: 2fr .7fr .6fr 1fr 1fr 2.2rem;
+}
+.line-item-row input, .line-item-row select { padding: .45rem .55rem; }
+.line-item-row .line-amount { font-weight: 700; text-align: right; }
+.line-item-tools { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+.line-items-totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .2rem .8rem;
+  padding: .75rem .1rem 0;
+  font-size: .95rem;
+}
+.line-items-totals .row { display: contents; }
+.line-items-totals .row.total strong { font-size: 1.15rem; }
+
+/* Payments */
+.payment-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1.5fr 2.2rem;
+  gap: .5rem;
+  align-items: center;
+  padding: .4rem .1rem;
+  border-top: 1px solid var(--line);
+}
+.payment-row input, .payment-row select { padding: .45rem .55rem; }
+.balance-callout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .75rem;
+  margin-top: .75rem;
+}
+.balance-callout > div {
+  padding: .7rem .9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.02);
+}
+.balance-callout span { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.balance-callout strong { font-size: 1.15rem; }
+.balance-callout .owed strong { color: #c62828; }
+.balance-callout .paid-in-full strong { color: #2e7d32; }
+
+.invoice-amount-cell { text-align: right; }
+.invoice-balance-owed { color: #c62828; font-weight: 600; font-size: .82rem; margin: .15rem 0 0; }
+
+/* Light theme */
+.theme-light .main .line-items-head { color: #7a6a4f; }
+.theme-light .main .balance-callout > div { background: #faf7f1; border-color: rgba(31,26,20,.10); }
+
+/* Mobile — line-item + payment rows collapse to cards */
+@media (max-width: 768px) {
+  .line-items-head { display: none; }
+  .line-item-row, .line-item-row.invoice-line, .payment-row {
+    grid-template-columns: 1fr 1fr;
+    padding: .75rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: .5rem;
+    background: rgba(255,255,255,.03);
+    position: relative;
+  }
+  .line-item-row input[name="description"],
+  .payment-row input[name="note"] { grid-column: 1 / -1; }
+  .line-item-row .line-amount { grid-column: 1 / -1; text-align: right; padding-top: .25rem; border-top: 1px dashed var(--line); }
+  .line-item-row .remove-line-row,
+  .line-item-row .remove-invoice-row,
+  .payment-row .remove-payment-row {
+    position: absolute; top: .4rem; right: .5rem;
+  }
+  .balance-callout { grid-template-columns: 1fr; }
+  .theme-light .main .line-item-row,
+  .theme-light .main .payment-row { background: #faf7f1; border-color: rgba(31,26,20,.10); }
+}
+
 

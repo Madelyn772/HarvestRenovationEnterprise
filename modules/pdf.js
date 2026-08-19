@@ -1,4 +1,4 @@
-import { money, num, formatDate, currentUserName, autoNumber, BRAND, BRAND_LOGO_PATH } from './state.js';
+import { money, num, formatDate, currentUserName, autoNumber, BRAND, BRAND_LOGO_PATH, DEFAULT_ESTIMATE_TERMS, DEFAULT_INVOICE_TERMS } from './state.js';
 import { escapeHtml, openPrintWindow } from './dom.js';
 import { saveDocument, renderDocuments } from './documents.js';
 
@@ -19,26 +19,66 @@ export function brandWheatSvg() {
   </svg>`;
 }
 
+// Render a scope string: bullet lines (- or *) become a <ul>, else plain text.
+function scopeToHtml(scope) {
+  if (!scope) return '';
+  const lines = String(scope).split('\n').map(l => l.trim()).filter(Boolean);
+  const hasBullets = lines.some(l => /^[-*]\s+/.test(l));
+  if (hasBullets) {
+    const lis = lines.map(l => `<li>${escapeHtml(l.replace(/^[-*]\s+/, ''))}</li>`).join('');
+    return `<ul class="scope-list">${lis}</ul>`;
+  }
+  return escapeHtml(scope);
+}
+
 // Shared, branded estimate/invoice document modeled on the Harvest Renovation
 // letterhead (black + gold, wheat mark, bill-to, line items, terms, signature).
 export function buildBrandedDocHtml(opts) {
   const {
     kind = 'ESTIMATE', number = '', date = '', status = '',
     bill = {}, rows = [], scope = '', comments = '',
-    balanceLabel = 'BALANCE DUE', balance = 0,
-    depositPercent = 0, depositAmount = 0
+    balanceLabel = 'BALANCE DUE', balance = 0, balanceColor = '',
+    depositPercent = 0, depositAmount = 0,
+    validUntil = '', dueDate = '', preparedBy = '',
+    subtotal = null, taxPercent = 0, taxAmount = 0, permitsFees = 0,
+    paymentsReceived = 0, paymentsRows = [],
+    terms = '', signatureBlockEnabled = false
   } = opts;
   const kindLabel = escapeHtml(kind);
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
-  const scopeBlock = scope ? `<div class="item-row scope"><div class="desc">${escapeHtml(scope)}</div><div class="amt"></div></div>` : '';
-  const itemRows = rows.map(r => `<div class="item-row"><div class="desc">${escapeHtml(r.desc || '')}</div><div class="amt">${r.amount == null ? '' : money.format(num(r.amount))}</div></div>`).join('');
+  const scopeBlock = scope ? `<div class="item-row scope"><div class="desc">${scopeToHtml(scope)}</div><div class="amt"></div></div>` : '';
+  const itemRows = rows.map(r => {
+    const descHtml = r.descHtml != null ? r.descHtml : escapeHtml(r.desc || '');
+    return `<div class="item-row"><div class="desc">${descHtml}${r.subHtml || ''}</div><div class="amt">${r.amount == null ? '' : money.format(num(r.amount))}</div></div>`;
+  }).join('');
   const depPct = num(depositPercent);
   const dep = depPct || 30;
   const depAmountText = num(depositAmount) ? ` (${money.format(num(depositAmount))})` : '';
   const statusBadge = (status && status.toLowerCase() !== 'draft')
     ? `<span class="status">${escapeHtml(status)}</span>`
     : '';
+  const metaRows = [[`${kindLabel} No.`, escapeHtml(number || '—')], ['Date', escapeHtml(formatDate(date) || '—')]];
+  if (validUntil) metaRows.push(['Valid until', escapeHtml(formatDate(validUntil))]);
+  if (dueDate) metaRows.push(['Due date', escapeHtml(formatDate(dueDate))]);
+  if (preparedBy) metaRows.push(['Prepared by', escapeHtml(preparedBy)]);
+  const metaHtml = metaRows.map(([l, v]) => `<div class="mrow"><span class="ml">${l}</span><span class="mv">${v}</span></div>`).join('');
+  const summaryRows = [];
+  if (subtotal != null) summaryRows.push(['Subtotal', money.format(num(subtotal))]);
+  if (num(taxAmount) > 0) summaryRows.push([`Tax (${num(taxPercent)}%)`, money.format(num(taxAmount))]);
+  if (num(permitsFees) > 0) summaryRows.push(['Permits & fees', money.format(num(permitsFees))]);
+  if (num(paymentsReceived) > 0) summaryRows.push(['Payments received', '−' + money.format(num(paymentsReceived))]);
+  const summaryHtml = summaryRows.map(([l, v]) => `<div class="sumrow"><span>${escapeHtml(l)}</span><span>${v}</span></div>`).join('');
+  const payTable = (paymentsRows && paymentsRows.length)
+    ? `<div class="items paytable"><div class="ihead pay"><span>Date</span><span>Amount</span><span>Method</span><span>Reference</span></div><div class="ibody">${paymentsRows.map(p => `<div class="item-row pay"><div>${escapeHtml(formatDate(p.date) || '—')}</div><div>${money.format(num(p.amount))}</div><div>${escapeHtml(p.method || '')}</div><div>${escapeHtml(p.reference || '')}</div></div>`).join('')}</div></div>`
+    : '';
+  const termsBlock = terms ? `<div class="terms"><div class="band">Terms &amp; Conditions</div><div class="tbody">${escapeHtml(terms)}</div></div>` : '';
+  const sigsBlock = signatureBlockEnabled ? `<div class="sigs">
+    <div class="sig"><div class="sigline"></div><div class="siglabel">Client signature</div></div>
+    <div class="sig"><div class="sigline"></div><div class="siglabel">Date</div></div>
+    <div class="sig"><div class="sigline"></div><div class="siglabel">Contractor signature (Harvest Renovation)</div></div>
+    <div class="sig"><div class="sigline"></div><div class="siglabel">Date</div></div>
+  </div>` : '';
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
   ${(typeof document !== 'undefined' && document.baseURI) ? `<base href="${escapeHtml(document.baseURI)}">` : ''}
   <title>${kindLabel} ${escapeHtml(number)} — Harvest Renovation</title>
@@ -63,12 +103,10 @@ export function buildBrandedDocHtml(opts) {
     .contact .lines div{font-size:13px;color:#7a6a4f;line-height:1.55}
     .contact .lines a{color:#7a6a4f;text-decoration:none}
     .meta{border:1px solid #0f0c08;min-width:240px;border-radius:6px;overflow:hidden}
-    .meta .head{display:grid;grid-template-columns:1fr 1fr;background:#0f0c08}
-    .meta .head span{padding:7px 12px;font-size:11px;letter-spacing:.1em;color:#caa05a;text-transform:uppercase}
-    .meta .head span:last-child{text-align:right}
-    .meta .val{display:grid;grid-template-columns:1fr 1fr}
-    .meta .val span{padding:9px 12px;font-size:14px;font-weight:700;color:#181410}
-    .meta .val span:last-child{text-align:right}
+    .meta .mrow{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #eadfce}
+    .meta .mrow:last-child{border-bottom:none}
+    .meta .ml{padding:7px 12px;font-size:11px;letter-spacing:.08em;color:#fff;background:#0f0c08;text-transform:uppercase}
+    .meta .mv{padding:7px 12px;font-size:13px;font-weight:700;color:#181410;text-align:right}
     .billto{padding:0 26px}
     .billto .band{background:#0f0c08;color:#caa05a;font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:7px 12px;margin-top:18px}
     .billto .body{padding:12px;border:1px solid #eadfce;border-top:none}
@@ -77,23 +115,38 @@ export function buildBrandedDocHtml(opts) {
     .items .ihead{display:grid;grid-template-columns:1fr 150px;background:#0f0c08}
     .items .ihead span{padding:8px 12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#caa05a}
     .items .ihead span:last-child{text-align:right}
-    .items .ibody{border:1px solid #eadfce;border-top:none;min-height:300px}
+    .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
+    .items.paytable{margin-top:14px}
+    .items.paytable .ibody{min-height:0}
+    .items .ihead.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
+    .items .ihead.pay span:last-child{text-align:left}
     .item-row{display:grid;grid-template-columns:1fr 150px;border-bottom:1px solid #f0e8da}
+    .item-row.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
+    .item-row.pay div{padding:9px 12px;font-size:12px;color:#2c2419}
     .item-row .desc{padding:11px 12px;font-size:13px;color:#2c2419;white-space:pre-wrap}
     .item-row .amt{padding:11px 12px;font-size:13px;font-weight:600;text-align:right;color:#2c2419}
     .item-row.scope .desc{color:#181410}
+    .line-sub{font-size:11px;color:#8a7a5e;margin-top:2px}
+    .scope-list{margin:0;padding-left:18px}
+    .scope-list li{font-size:13px;color:#2c2419;line-height:1.5}
     .foot{display:grid;grid-template-columns:1fr 270px;gap:0;padding:18px 26px 4px}
     .thanks{font-size:26px;font-weight:800;color:#caa05a;letter-spacing:.04em;text-align:center;margin:8px 0 14px}
     .term{font-size:11px;color:#6b5d46;line-height:1.5;margin-bottom:8px}
     .qnote{font-size:11px;color:#6b5d46;font-style:italic;text-align:center;margin-top:14px;line-height:1.6}
     .qnote a{color:#9a7530}
-    .balance{display:flex;justify-content:space-between;align-items:center;background:#f6ead2;border:1px solid #d8b878;border-radius:6px;padding:11px 14px}
+    .sumrow{display:flex;justify-content:space-between;font-size:12px;color:#2c2419;padding:4px 2px;border-bottom:1px solid #f0e8da}
+    .balance{display:flex;justify-content:space-between;align-items:center;background:#f6ead2;border:1px solid #d8b878;border-radius:6px;padding:11px 14px;margin-top:8px}
     .balance span{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#5b4a2c}
     .balance strong{font-size:18px;color:#181410}
     .box{border:1px solid #eadfce;border-radius:6px;margin-top:12px;min-height:64px;padding:9px 12px}
     .box .lbl{font-size:12px;font-weight:700;color:#181410;margin-bottom:6px}
     .box .val{font-size:12px;color:#2c2419;white-space:pre-wrap}
-    .sigline{border-bottom:1px solid #b9a888;margin-top:26px}
+    .terms{padding:0 26px;margin-top:16px}
+    .terms .band{background:#0f0c08;color:#caa05a;font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:7px 12px}
+    .terms .tbody{border:1px solid #eadfce;border-top:none;padding:12px;font-size:11px;color:#6b5d46;line-height:1.6;white-space:pre-wrap}
+    .sigs{display:grid;grid-template-columns:1fr 200px 1fr 200px;gap:24px;padding:22px 26px 8px}
+    .sigs .siglabel{font-size:11px;color:#6b5d46;margin-top:6px;text-transform:uppercase;letter-spacing:.08em}
+    .sigs .sigline{border-bottom:1px solid #b9a888;height:32px}
     .verse{background:#0f0c08;color:#caa05a;text-align:center;font-size:12px;letter-spacing:.02em;padding:12px 20px;margin-top:18px}
     @media print{.bar{display:none}body{background:#fff}.sheet{margin:0 auto;width:auto;box-shadow:none}@page{margin:0}}
   </style></head>
@@ -101,7 +154,7 @@ export function buildBrandedDocHtml(opts) {
     <div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
     <div class="sheet">
       <div class="top">
-        <div class="brand"><img class="brand-logo" src="${BRAND_LOGO_PATH}" alt="${escapeHtml(BRAND.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span class="brand-fallback" style="display:none">${brandWheatSvg()}<span class="bname">${escapeHtml(BRAND.name)}</span></span></div>
+        <div class="brand"><span class="brand-fallback" style="display:flex">${brandWheatSvg()}<span class="bname">${escapeHtml(BRAND.name)}</span></span><img class="brand-logo" src="${BRAND_LOGO_PATH}" alt="${escapeHtml(BRAND.name)}" style="display:none" onload="this.style.display='block';this.previousElementSibling.style.display='none';" onerror="this.style.display='none';" /></div>
         <div class="title"><strong>${kindLabel}</strong>${statusBadge}</div>
       </div>
       <div class="contact">
@@ -111,10 +164,7 @@ export function buildBrandedDocHtml(opts) {
           <div>${escapeHtml(BRAND.website)}</div>
           <div>${escapeHtml(BRAND.email)}</div>
         </div>
-        <div class="meta">
-          <div class="head"><span>${kindLabel} No.</span><span>Date</span></div>
-          <div class="val"><span>${escapeHtml(number || '—')}</span><span>${escapeHtml(formatDate(date) || '—')}</span></div>
-        </div>
+        <div class="meta">${metaHtml}</div>
       </div>
       <div class="billto">
         <div class="band">Bill To</div>
@@ -124,6 +174,7 @@ export function buildBrandedDocHtml(opts) {
         <div class="ihead"><span>Description</span><span>Amount</span></div>
         <div class="ibody">${scopeBlock}${itemRows}</div>
       </div>
+      ${payTable}
       <div class="foot">
         <div class="foot-left">
           <div class="thanks">${escapeHtml(BRAND.thankYou)}</div>
@@ -132,11 +183,13 @@ export function buildBrandedDocHtml(opts) {
           <div class="qnote">For questions concerning this ${kind.toLowerCase()}, please contact<br/>${escapeHtml(BRAND.contact)}, ${escapeHtml(BRAND.phone)}, ${escapeHtml(BRAND.email)}<br/><a href="https://${escapeHtml(BRAND.website)}">${escapeHtml(BRAND.website)}</a></div>
         </div>
         <div class="foot-right">
-          <div class="balance"><span>${escapeHtml(balanceLabel)}</span><strong>${money.format(num(balance))}</strong></div>
+          ${summaryHtml}
+          <div class="balance"><span>${escapeHtml(balanceLabel)}</span><strong${balanceColor ? ` style="color:${balanceColor}"` : ''}>${money.format(num(balance))}</strong></div>
           <div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments || '')}</div></div>
-          ${kind === 'INVOICE' ? '<div class="box"><div class="lbl">Signature</div><div class="sigline"></div></div>' : ''}
         </div>
       </div>
+      ${termsBlock}
+      ${sigsBlock}
       <div class="verse">${escapeHtml(BRAND.verse)}</div>
     </div>
     <script>window.onload=function(){setTimeout(function(){window.print()},250)}</script>
@@ -144,13 +197,24 @@ export function buildBrandedDocHtml(opts) {
 }
 
 export function buildEstimateDocHtml(estimate) {
-  const rows = [];
-  const materialTotal = num(estimate.materialCost) + num(estimate.materialMarkup);
-  const laborTotal = num(estimate.laborBase) + num(estimate.laborMarkup);
-  if (materialTotal) rows.push({ desc: 'Materials (cost + markup)', amount: materialTotal });
-  if (laborTotal) rows.push({ desc: `Labor${estimate.trade ? ' — ' + estimate.trade : ''}`, amount: laborTotal });
-  if (num(estimate.finalPay)) rows.push({ desc: 'Final markup', amount: num(estimate.finalPay) });
-  if (!rows.length) rows.push({ desc: estimate.trade || 'Project scope', amount: num(estimate.estimatedCost) });
+  const items = estimate.items || [];
+  let rows;
+  if (items.length) {
+    rows = items.map(it => {
+      const cat = it.category && it.category !== 'Other' ? ` · ${it.category}` : '';
+      const q = num(it.quantity);
+      const subHtml = q > 1 ? `<div class="line-sub">${q} ${escapeHtml(it.unit || '')} × ${money.format(num(it.unitPrice))}</div>` : '';
+      return { descHtml: `${escapeHtml(it.description || '')}${escapeHtml(cat)}`, subHtml, amount: num(it.amount != null ? it.amount : q * num(it.unitPrice)) };
+    });
+  } else {
+    rows = [];
+    const materialTotal = num(estimate.materialCost) + num(estimate.materialMarkup);
+    const laborTotal = num(estimate.laborBase) + num(estimate.laborMarkup);
+    if (materialTotal) rows.push({ desc: 'Materials (cost + markup)', amount: materialTotal });
+    if (laborTotal) rows.push({ desc: `Labor${estimate.trade ? ' — ' + estimate.trade : ''}`, amount: laborTotal });
+    if (num(estimate.finalPay)) rows.push({ desc: 'Final markup', amount: num(estimate.finalPay) });
+    if (!rows.length) rows.push({ desc: estimate.trade || 'Project scope', amount: num(estimate.estimatedCost) });
+  }
   return buildBrandedDocHtml({
     kind: 'ESTIMATE',
     number: estimate.estimateNumber || '',
@@ -168,7 +232,15 @@ export function buildEstimateDocHtml(estimate) {
     balanceLabel: 'BALANCE DUE',
     balance: num(estimate.estimatedCost),
     depositPercent: num(estimate.depositPercent),
-    depositAmount: num(estimate.depositAmount)
+    depositAmount: num(estimate.depositAmount),
+    validUntil: estimate.validUntil || '',
+    preparedBy: estimate.user || currentUserName(),
+    subtotal: estimate.subtotal != null ? num(estimate.subtotal) : num(estimate.estimatedCost),
+    taxPercent: num(estimate.taxPercent),
+    taxAmount: num(estimate.taxAmount),
+    permitsFees: num(estimate.permitsFees),
+    terms: estimate.termsAndConditions || DEFAULT_ESTIMATE_TERMS,
+    signatureBlockEnabled: estimate.signatureBlockEnabled !== false
   });
 }
 
@@ -180,16 +252,33 @@ export function printEstimate(estimate) {
 }
 
 export function buildInvoiceDocHtml(invoice) {
-  const rows = (invoice.items || []).map(item => ({ desc: item.description || '', amount: num(item.amount) }));
+  const items = invoice.items || [];
+  const rows = items.map(item => {
+    const q = num(item.quantity);
+    const subHtml = q > 1 ? `<div class="line-sub">${q} ${escapeHtml(item.unit || '')} × ${money.format(num(item.unitPrice))}</div>` : '';
+    return { descHtml: escapeHtml(item.description || ''), subHtml, amount: num(item.amount != null ? item.amount : q * num(item.unitPrice)) };
+  });
+  const total = num(invoice.total != null ? invoice.total : items.reduce((s, it) => s + num(it.amount), 0));
+  const payments = invoice.payments || [];
+  const paid = payments.reduce((s, p) => s + num(p.amount), 0);
+  const balance = total - paid;
   return buildBrandedDocHtml({
     kind: 'INVOICE',
     number: invoice.invoiceNumber || '',
     date: invoice.date,
+    dueDate: invoice.dueDate || '',
     status: invoice.status,
     bill: { name: invoice.clientName, address: invoice.address, phone: invoice.phone, email: invoice.email },
     rows,
     balanceLabel: 'BALANCE DUE',
-    balance: num(invoice.total)
+    balance,
+    balanceColor: balance > 0.01 ? '#c62828' : '#2e7d32',
+    preparedBy: invoice.user || currentUserName(),
+    subtotal: total,
+    paymentsReceived: paid,
+    paymentsRows: payments,
+    terms: invoice.terms || DEFAULT_INVOICE_TERMS,
+    signatureBlockEnabled: true
   });
 }
 

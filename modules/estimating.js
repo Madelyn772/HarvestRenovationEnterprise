@@ -1,4 +1,4 @@
-import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, estimateTemplates } from './state.js';
+import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, estimateTemplates, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, updateNewClientFieldsVisibility, renderAll, setView } from './navigation.js';
@@ -41,6 +41,125 @@ export async function handleEstimateSave(event) {
   if (saveEstimateFromForm()) showToast('Estimate saved.', 'success');
 }
 
+export function getEstimateItemsEl() {
+  return document.getElementById('estimateItems');
+}
+
+// Deposit percent from the dropdown (or the custom input when "Custom…").
+export function getDepositPercent() {
+  const sel = document.getElementById('estimateDepositPercent');
+  if (!sel) return 0;
+  if (sel.value === 'custom') {
+    const custom = el.estimateForm.querySelector('[name="depositPercentCustom"]');
+    return num(custom && custom.value);
+  }
+  return num(sel.value);
+}
+
+export function updateDepositCustomVisibility() {
+  const sel = document.getElementById('estimateDepositPercent');
+  const wrap = document.getElementById('estimateDepositCustomWrap');
+  if (!sel || !wrap) return;
+  wrap.classList.toggle('hidden', sel.value !== 'custom');
+}
+
+function addDaysISO(dateStr, days) {
+  const d = dateStr ? new Date(dateStr) : new Date();
+  if (Number.isNaN(d.getTime())) return '';
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// Keep "Valid until" = estimate date + 30 days until the user edits it by hand.
+export function syncEstimateValidUntil(force = false) {
+  const validInput = document.getElementById('estimateValidUntil');
+  if (!validInput) return;
+  if (force || !validInput.value || validInput.dataset.auto !== 'false') {
+    validInput.value = addDaysISO(el.estimateForm.date.value, 30);
+    validInput.dataset.auto = 'true';
+  }
+}
+
+// Fill blank defaults when the estimating view is opened.
+export function hydrateEstimateForm() {
+  if (el.estimateForm.user && !el.estimateForm.user.value) {
+    el.estimateForm.user.value = state.profile?.full_name || currentUserName() || '';
+  }
+  const terms = document.getElementById('estimateTerms');
+  if (terms && !terms.value) terms.value = DEFAULT_ESTIMATE_TERMS;
+  syncEstimateValidUntil();
+  updateDepositCustomVisibility();
+}
+
+export function readEstimateItemsFromDom() {
+  const wrap = getEstimateItemsEl();
+  if (!wrap) return [];
+  return [...wrap.querySelectorAll('.line-item-row')].map(row => {
+    const quantity = num(row.querySelector('[name="quantity"]').value);
+    const unitPrice = num(row.querySelector('[name="unitPrice"]').value);
+    return {
+      id: row.dataset.itemId || uid('ITM'),
+      description: row.querySelector('[name="description"]').value,
+      category: row.querySelector('[name="category"]')?.value || 'Other',
+      quantity,
+      unit: row.querySelector('[name="unit"]')?.value || 'LS',
+      unitPrice,
+      amount: quantity * unitPrice
+    };
+  }).filter(it => it.description || it.amount || it.unitPrice);
+}
+
+export function addEstimateRow(item = {}) {
+  const tpl = document.getElementById('estimateRowTemplate');
+  const wrap = getEstimateItemsEl();
+  if (!tpl || !wrap) return;
+  const node = tpl.content.firstElementChild.cloneNode(true);
+  node.dataset.itemId = item.id || uid('ITM');
+  if (item.description != null) node.querySelector('[name="description"]').value = item.description;
+  if (item.category) node.querySelector('[name="category"]').value = item.category;
+  if (item.quantity != null) node.querySelector('[name="quantity"]').value = item.quantity;
+  if (item.unit) node.querySelector('[name="unit"]').value = item.unit;
+  if (item.unitPrice != null) node.querySelector('[name="unitPrice"]').value = item.unitPrice;
+  const refresh = () => {
+    const q = num(node.querySelector('[name="quantity"]').value);
+    const up = num(node.querySelector('[name="unitPrice"]').value);
+    node.querySelector('[data-line-amount]').textContent = money.format(q * up);
+    recomputeEstimateTotals();
+  };
+  node.querySelectorAll('[name="quantity"],[name="unitPrice"]').forEach(inp => {
+    inp.addEventListener('input', refresh);
+    inp.addEventListener('change', refresh);
+  });
+  node.querySelector('.remove-line-row').addEventListener('click', () => { node.remove(); recomputeEstimateTotals(); });
+  wrap.appendChild(node);
+  const q = num(node.querySelector('[name="quantity"]').value);
+  const up = num(node.querySelector('[name="unitPrice"]').value);
+  node.querySelector('[data-line-amount]').textContent = money.format(q * up);
+}
+
+export function loadTemplateItems() {
+  const template = estimateTemplates[el.estimateTemplateSelect.value];
+  const wrap = getEstimateItemsEl();
+  if (!template || !wrap) return;
+  wrap.innerHTML = '';
+  (template.items || []).forEach(item => addEstimateRow(item));
+  recomputeEstimateTotals();
+}
+
+export function recomputeEstimateTotals() {
+  const estimate = collectEstimateFromForm();
+  const totalsEl = document.getElementById('estimateLineTotals');
+  if (totalsEl) {
+    const rows = [`<div class="row"><span>Subtotal</span><strong>${money.format(num(estimate.subtotal))}</strong></div>`];
+    if (num(estimate.taxAmount) > 0) rows.push(`<div class="row"><span>Tax (${num(estimate.taxPercent)}%)</span><strong>${money.format(num(estimate.taxAmount))}</strong></div>`);
+    if (num(estimate.permitsFees) > 0) rows.push(`<div class="row"><span>Permits &amp; fees</span><strong>${money.format(num(estimate.permitsFees))}</strong></div>`);
+    if (num(estimate.finalPay) > 0) rows.push(`<div class="row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>`);
+    rows.push(`<div class="row total"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>`);
+    totalsEl.innerHTML = rows.join('');
+  }
+  renderEstimateSummary(estimate);
+}
+
 export function applyEstimateTemplate() {
   const template = estimateTemplates[el.estimateTemplateSelect.value];
   if (!template) return;
@@ -51,25 +170,38 @@ export function applyEstimateTemplate() {
   el.estimateForm.laborPercent.value = template.laborPercent;
   el.estimateForm.finalPercent.value = template.finalPercent;
   if (!el.estimateForm.scope.value) el.estimateForm.scope.value = template.scope;
-  renderEstimateSummary(collectEstimateFromForm());
+  const wrap = getEstimateItemsEl();
+  const hasItems = wrap && wrap.querySelectorAll('.line-item-row').length > 0;
+  if (!hasItems || confirm('Replace current line items with the template items?')) {
+    loadTemplateItems();
+  } else {
+    recomputeEstimateTotals();
+  }
 }
 
 export function collectEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
-  const quantity = num(data.quantity);
+  // Top-level measurement quantity shares the name "quantity" with line rows,
+  // so read it from its specific input to avoid the FormData collision.
+  const qtyInput = document.getElementById('estimateQuantity');
+  const quantity = num(qtyInput ? qtyInput.value : data.quantity);
   const rate = num(data.rate);
   const materialCost = num(data.materialCost);
   const materialPercent = num(data.materialPercent);
   const laborPercent = num(data.laborPercent);
   const finalPercent = num(data.finalPercent);
-  const depositEnabled = data.depositEnabled === 'on' || data.depositEnabled === true;
-  const depositPercent = depositEnabled ? num(data.depositPercent || 30) : 0;
+  const items = readEstimateItemsFromDom();
   const laborBase = quantity * rate;
   const materialMarkup = materialCost * (materialPercent / 100);
   const laborMarkup = laborBase * (laborPercent / 100);
-  const subtotal = laborBase + materialCost + materialMarkup + laborMarkup;
+  const legacySubtotal = laborBase + materialCost + materialMarkup + laborMarkup;
+  const subtotal = items.length ? items.reduce((sum, it) => sum + num(it.amount), 0) : legacySubtotal;
+  const taxPercent = num(data.taxPercent);
+  const taxAmount = subtotal * taxPercent / 100;
+  const permitsFees = num(data.permitsFees);
   const finalPay = data.pricingMode === 'final' ? subtotal * (finalPercent / 100) : 0;
-  const estimatedCost = subtotal + finalPay;
+  const estimatedCost = subtotal + taxAmount + permitsFees + finalPay;
+  const depositPercent = getDepositPercent();
   const depositAmount = estimatedCost * (depositPercent / 100);
   const linkedClient = data.clientId && data.clientId !== '__new__' ? findClient(data.clientId) : null;
   return {
@@ -84,6 +216,10 @@ export function collectEstimateFromForm() {
     pricingMode: data.pricingMode,
     laborPercent, finalPercent, depositPercent,
     laborBase, materialMarkup, laborMarkup, finalPay,
+    items, subtotal, taxPercent, taxAmount, permitsFees,
+    validUntil: data.validUntil || '',
+    termsAndConditions: (data.termsAndConditions != null ? data.termsAndConditions : ''),
+    signatureBlockEnabled: data.signatureBlockEnabled === 'on' || data.signatureBlockEnabled === true,
     estimatedCost, depositAmount,
     scope: data.scope,
     comments: data.comments || '',
@@ -99,15 +235,21 @@ export function collectEstimateFromForm() {
 
 export function renderEstimateSummary(estimate) {
   if (!estimate) return;
-  el.estimateSummary.innerHTML = `
-    <div class="summary-tile"><span>Client</span><strong>${escapeHtml(estimate.clientName || 'Select a client')}</strong></div>
-    <div class="summary-tile"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>
-    <div class="summary-tile"><span>${num(estimate.depositPercent) > 0 ? `Deposit (${num(estimate.depositPercent)}%)` : 'Deposit'}</span><strong>${num(estimate.depositPercent) > 0 ? money.format(num(estimate.depositAmount)) : 'No deposit'}</strong></div>
-    <div class="summary-row"><span>Labor base</span><strong>${money.format(num(estimate.laborBase))}</strong></div>
-    <div class="summary-row"><span>Material cost + markup</span><strong>${money.format(num(estimate.materialCost) + num(estimate.materialMarkup))}</strong></div>
-    <div class="summary-row"><span>Status</span><strong>${escapeHtml(estimate.status || 'Draft')}</strong></div>
-    <div class="stack-item"><h4>Scope of work</h4><p>${escapeHtml(estimate.scope || 'Add scope details here.')}</p></div>
-  `;
+  const depPct = num(estimate.depositPercent);
+  const rows = [
+    `<div class="summary-tile"><span>Client</span><strong>${escapeHtml(estimate.clientName || 'Select a client')}</strong></div>`,
+    `<div class="summary-row"><span>Line items</span><strong>${(estimate.items || []).length}</strong></div>`,
+    `<div class="summary-row"><span>Subtotal</span><strong>${money.format(num(estimate.subtotal))}</strong></div>`
+  ];
+  if (num(estimate.taxAmount) > 0) rows.push(`<div class="summary-row"><span>Tax (${num(estimate.taxPercent)}%)</span><strong>${money.format(num(estimate.taxAmount))}</strong></div>`);
+  if (num(estimate.permitsFees) > 0) rows.push(`<div class="summary-row"><span>Permits &amp; fees</span><strong>${money.format(num(estimate.permitsFees))}</strong></div>`);
+  if (num(estimate.finalPay) > 0) rows.push(`<div class="summary-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>`);
+  rows.push(`<div class="summary-tile"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>`);
+  rows.push(`<div class="summary-tile"><span>${depPct > 0 ? `Deposit (${depPct}%)` : 'Deposit'}</span><strong>${depPct > 0 ? money.format(num(estimate.depositAmount)) : 'No deposit'}</strong></div>`);
+  if (estimate.validUntil) rows.push(`<div class="summary-row"><span>Valid until</span><strong>${escapeHtml(formatDate(estimate.validUntil))}</strong></div>`);
+  rows.push(`<div class="summary-row"><span>Status</span><strong>${escapeHtml(estimate.status || 'Draft')}</strong></div>`);
+  rows.push(`<div class="stack-item"><h4>Scope of work</h4><p>${escapeHtml(estimate.scope || 'Add scope details here.')}</p></div>`);
+  el.estimateSummary.innerHTML = rows.join('');
 }
 
 export function loadEstimateIntoForm(id) {
@@ -121,20 +263,44 @@ export function loadEstimateIntoForm(id) {
   el.estimateForm.trade.value = item.trade || '';
   el.estimateForm.measurementType.value = item.measurementType || 'SquareFoot';
   el.estimateForm.rate.value = item.rate || 0;
-  el.estimateForm.quantity.value = item.quantity || 0;
+  const qtyInput = document.getElementById('estimateQuantity');
+  if (qtyInput) qtyInput.value = item.quantity || 0;
   el.estimateForm.materialCost.value = item.materialCost || 0;
   el.estimateForm.materialPercent.value = item.materialPercent || 0;
   el.estimateForm.pricingMode.value = item.pricingMode || 'labor';
   el.estimateForm.laborPercent.value = item.laborPercent || 0;
   el.estimateForm.finalPercent.value = item.finalPercent || 0;
-  el.estimateForm.depositPercent.value = num(item.depositPercent) > 0 ? item.depositPercent : 30;
-  if (el.estimateForm.depositEnabled) el.estimateForm.depositEnabled.checked = num(item.depositPercent) > 0;
+  const depSel = document.getElementById('estimateDepositPercent');
+  const depPct = num(item.depositPercent);
+  if (depSel) {
+    const match = [...depSel.options].some(o => o.value === String(depPct));
+    if (match) {
+      depSel.value = String(depPct);
+    } else {
+      depSel.value = 'custom';
+      const custom = el.estimateForm.querySelector('[name="depositPercentCustom"]');
+      if (custom) custom.value = depPct;
+    }
+    updateDepositCustomVisibility();
+  }
   el.estimateForm.status.value = item.status || 'Draft';
   el.estimateForm.scope.value = item.scope || '';
   if (el.estimateForm.comments) el.estimateForm.comments.value = item.comments || '';
   if (el.estimateForm.billingAddress) el.estimateForm.billingAddress.value = item.billingAddress || '';
   if (el.estimateForm.billingEmail) el.estimateForm.billingEmail.value = item.billingEmail || '';
-  renderEstimateSummary(item);
+  if (el.estimateForm.taxPercent) el.estimateForm.taxPercent.value = item.taxPercent || 0;
+  if (el.estimateForm.permitsFees) el.estimateForm.permitsFees.value = item.permitsFees || 0;
+  const validInput = document.getElementById('estimateValidUntil');
+  if (validInput) { validInput.value = item.validUntil || ''; validInput.dataset.auto = 'false'; }
+  const termsInput = document.getElementById('estimateTerms');
+  if (termsInput) termsInput.value = item.termsAndConditions != null ? item.termsAndConditions : DEFAULT_ESTIMATE_TERMS;
+  if (el.estimateForm.signatureBlockEnabled) el.estimateForm.signatureBlockEnabled.checked = item.signatureBlockEnabled !== false;
+  const wrap = getEstimateItemsEl();
+  if (wrap) {
+    wrap.innerHTML = '';
+    (item.items || []).forEach(row => addEstimateRow(row));
+  }
+  recomputeEstimateTotals();
   setView('estimating');
 }
 

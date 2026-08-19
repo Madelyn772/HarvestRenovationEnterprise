@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-24" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-25" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -310,23 +310,48 @@
               </div></div>
               <div class="mobile-section"><button type="button" class="mobile-section-head">Pricing</button><div class="mobile-section-body">
               <label><span>Rate</span><input name="rate" type="number" step="0.01" /></label>
-              <label><span>Quantity</span><input name="quantity" type="number" step="0.01" /></label>
+              <label><span>Quantity</span><input name="quantity" id="estimateQuantity" type="number" step="0.01" /></label>
               <label><span>Material cost</span><input name="materialCost" type="number" step="0.01" /></label>
               <label><span>Material markup %</span><input name="materialPercent" type="number" step="0.01" /></label>
               <label><span>Pricing mode</span><select name="pricingMode" id="pricingMode"><option value="labor">Labor + Material</option><option value="final">Final Markup</option></select></label>
               <label><span>Labor markup %</span><input name="laborPercent" type="number" step="0.01" /></label>
               <label><span>Final markup %</span><input name="finalPercent" type="number" step="0.01" /></label>
-              <label class="inline-check">
-                <input type="checkbox" name="depositEnabled" checked />
-                <span>Apply 30% deposit</span>
+              <label><span>Deposit</span>
+                <select name="depositPercent" id="estimateDepositPercent">
+                  <option value="0">No deposit</option>
+                  <option value="10">10%</option>
+                  <option value="20">20%</option>
+                  <option value="30" selected>30%</option>
+                  <option value="40">40%</option>
+                  <option value="50">50%</option>
+                  <option value="custom">Custom…</option>
+                </select>
               </label>
-              <input name="depositPercent" type="hidden" value="30" />
+              <label id="estimateDepositCustomWrap" class="hidden"><span>Custom deposit %</span><input name="depositPercentCustom" type="number" min="0" max="100" step="1" /></label>
               </div></div>
               <div class="mobile-section"><button type="button" class="mobile-section-head">Scope &amp; status</button><div class="mobile-section-body">
               <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
               <label class="full"><span>Scope of work</span><textarea name="scope" rows="5"></textarea></label>
               <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
               </div></div>
+              <div class="estimate-items-shell full">
+                <div class="split-head"><strong>Line items</strong>
+                  <div class="line-item-tools">
+                    <button type="button" class="ghost-btn" id="loadTemplateItems">Load template items</button>
+                    <button type="button" class="ghost-btn" id="addEstimateRow">+ Add line</button>
+                  </div>
+                </div>
+                <div class="line-items-head">
+                  <span>Description</span><span>Category</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
+                </div>
+                <div id="estimateItems" class="stack compact-stack"></div>
+                <div class="line-items-totals" id="estimateLineTotals"></div>
+              </div>
+              <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
+              <label><span>Permits &amp; fees ($, pass-through)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
+              <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
+              <label class="full inline-check"><input type="checkbox" name="signatureBlockEnabled" checked /><span>Print signature block on PDF</span></label>
+              <label class="full"><span>Terms &amp; conditions (prints on estimate)</span><textarea name="termsAndConditions" rows="6" id="estimateTerms"></textarea></label>
               <div class="form-actions full">
                 <button type="button" class="secondary-btn" id="calculateEstimate">Calculate</button>
                 <button type="submit" class="primary-btn">Save Estimate</button>
@@ -362,15 +387,26 @@
               <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
               <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
               <label><span>Client name</span><input name="clientName" /></label>
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Paid</option></select></label>
+              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
               <label><span>Phone</span><input name="phone" /></label>
               <label><span>Email</span><input name="email" type="email" /></label>
               <label class="full"><span>Address</span><input name="address" /></label>
               <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
               <div class="invoice-items-shell full">
                 <div class="split-head"><strong>Invoice Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">Add Row</button></div>
+                <div class="line-items-head invoice-line">
+                  <span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
+                </div>
                 <div id="invoiceItems" class="stack compact-stack"></div>
+                <div class="line-items-totals" id="invoiceLineTotals"></div>
               </div>
+              <div class="invoice-payments-shell full">
+                <div class="split-head"><strong>Payments received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
+                <div id="invoicePayments" class="stack compact-stack"></div>
+                <div class="balance-callout" id="invoiceBalanceCallout"></div>
+              </div>
+              <label><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
+              <label class="full"><span>Terms (prints on invoice)</span><textarea name="terms" rows="4" id="invoiceTerms"></textarea></label>
               <div class="form-actions full">
                 <button type="submit" class="primary-btn">Save Invoice</button>
                 <button type="button" class="primary-btn" id="sendInvoice">Send</button>
@@ -742,13 +778,39 @@
   </div>
 
   <template id="invoiceRowTemplate">
-    <div class="invoice-row">
+    <div class="line-item-row invoice-line">
       <input name="description" placeholder="Description" />
-      <input name="amount" type="number" step="0.01" placeholder="Amount" />
-      <button type="button" class="icon-btn remove-invoice-row">×</button>
+      <input name="quantity" type="number" step="0.01" placeholder="1" />
+      <select name="unit"><option>EA</option><option>SF</option><option>LF</option><option>HR</option><option selected>LS</option></select>
+      <input name="unitPrice" type="number" step="0.01" placeholder="0.00" />
+      <span class="line-amount" data-line-amount>$0.00</span>
+      <button type="button" class="icon-btn remove-invoice-row" aria-label="Remove line">×</button>
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-24"></script>
+  <template id="estimateRowTemplate">
+    <div class="line-item-row">
+      <input name="description" placeholder="Description" />
+      <select name="category"><option>Labor</option><option>Materials</option><option>Subcontractor</option><option>Fees</option><option>Other</option></select>
+      <input name="quantity" type="number" step="0.01" placeholder="1" />
+      <select name="unit"><option>EA</option><option>SF</option><option>LF</option><option>HR</option><option selected>LS</option></select>
+      <input name="unitPrice" type="number" step="0.01" placeholder="0.00" />
+      <span class="line-amount" data-line-amount>$0.00</span>
+      <button type="button" class="icon-btn remove-line-row" aria-label="Remove line">×</button>
+    </div>
+  </template>
+
+  <template id="paymentRowTemplate">
+    <div class="payment-row">
+      <input name="date" type="date" />
+      <input name="amount" type="number" step="0.01" placeholder="0.00" />
+      <select name="method"><option>Check</option><option>Cash</option><option>Card</option><option>ACH</option><option>Zelle</option><option>Other</option></select>
+      <input name="reference" placeholder="Check # / txn id" />
+      <input name="note" placeholder="Note (optional)" />
+      <button type="button" class="icon-btn remove-payment-row" aria-label="Remove payment">×</button>
+    </div>
+  </template>
+
+  <script type="module" src="./app-bootstrap.js?v=20260815-25"></script>
 </body>
 </html>
