@@ -1,10 +1,11 @@
-import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm } from './state.js';
+import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, PIPELINE_STAGES, normalizeLeadStatus } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { applyEstimateTemplate, renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
 
 export function renderClients() {
+  if (!el.clientList) return;
   const query = state.filters.clientSearch;
   const clients = [...state.store.clients].filter(item => [item.name,item.phone,item.email,item.tags,item.source].join(' ').toLowerCase().includes(query)).sort((a,b) => (a.name||'').localeCompare(b.name||''));
   el.clientList.innerHTML = clients.length ? clients.map(client => {
@@ -17,12 +18,18 @@ export function renderClients() {
 
 export function renderLeads() {
   const query = state.filters.clientSearch;
-  const leads = [...state.store.leads].filter(item => [item.clientName,item.phone,item.email,item.service,item.status,item.area].join(' ').toLowerCase().includes(query)).sort((a,b) => sortDateDesc(a.preferredDate, b.preferredDate));
-  el.leadTable.innerHTML = leads.length ? leads.map(lead => {
-    const statusColor = lead.status === 'Won' ? 'var(--green)' : lead.status === 'Lost' ? 'var(--red)' : 'var(--gold-2)';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(lead.clientName || 'Unnamed Lead')}</h4><p>${escapeHtml(lead.service || 'General')} • ${escapeHtml(lead.area || '')}</p></div><strong style="color:${statusColor}">${escapeHtml(lead.status || 'New Lead')}</strong></div><p class="muted">${escapeHtml(lead.phone || '')} ${lead.email ? '• ' + escapeHtml(lead.email) : ''}</p><p>${escapeHtml(lead.notes || '')}</p><div class="form-actions"><button type="button" class="ghost-btn lead-to-estimate" data-lead-id="${lead.id}">→ Estimate</button>${deleteBtn('leads', lead.id)}</div></div>`;
-  }).join('') : emptyHtml('No leads captured yet.');
-  el.leadTable.querySelectorAll('.lead-to-estimate').forEach(btn => btn.addEventListener('click', () => convertLeadToEstimate(btn.dataset.leadId)));
+  if (el.leadTable) {
+    const leads = [...state.store.leads].filter(item => [item.clientName,item.phone,item.email,item.service,item.status,item.area].join(' ').toLowerCase().includes(query)).sort((a,b) => sortDateDesc(a.preferredDate, b.preferredDate));
+    el.leadTable.innerHTML = leads.length ? leads.map(lead => {
+      const statusColor = lead.status === 'Won' ? 'var(--green)' : lead.status === 'Lost' ? 'var(--red)' : 'var(--gold-2)';
+      return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(lead.clientName || 'Unnamed Lead')}</h4><p>${escapeHtml(lead.service || 'General')} • ${escapeHtml(lead.area || '')}</p></div><strong style="color:${statusColor}">${escapeHtml(lead.status || 'New Lead')}</strong></div><p class="muted">${escapeHtml(lead.phone || '')} ${lead.email ? '• ' + escapeHtml(lead.email) : ''}</p><p>${escapeHtml(lead.notes || '')}</p><div class="form-actions"><button type="button" class="ghost-btn lead-edit" data-lead-id="${lead.id}">Edit</button><button type="button" class="ghost-btn lead-to-estimate" data-lead-id="${lead.id}">→ Estimate</button>${deleteBtn('leads', lead.id)}</div></div>`;
+    }).join('') : emptyHtml('No leads captured yet.');
+    el.leadTable.querySelectorAll('.lead-to-estimate').forEach(btn => btn.addEventListener('click', () => convertLeadToEstimate(btn.dataset.leadId)));
+    el.leadTable.querySelectorAll('.lead-edit').forEach(btn => btn.addEventListener('click', () => openDealDialog(btn.dataset.leadId)));
+  }
+  renderPipelineBoard();
+  renderCrmStats();
+  renderContactsTable();
 }
 
 export function renderClientDetail() {
@@ -86,6 +93,7 @@ export async function handleClientSave(event) {
   renderAll();
   showToast('Client saved.', 'success');
   el.clientForm.reset();
+  el.contactDialog?.close();
 }
 
 export function resolveFormClient(data, fields) {
@@ -136,13 +144,61 @@ export function loadClientIntoForm(id) {
 export async function handleLeadSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.leadForm);
-  const payload = { id: uid('L'), clientId: data.clientId, clientName: data.clientName || lookupClientName(data.clientId), phone: data.phone, email: data.email, service: data.service, status: data.status, area: data.area, preferredDate: data.preferredDate, notes: data.notes };
-  state.store.leads.unshift(payload);
-  addActivity(`Captured lead for ${payload.clientName || 'new contact'}.`, 'Leads');
+  if (!data.source) { showToast('Please choose a lead source.', 'error'); return; }
+  const editingId = el.leadForm.dataset.leadId || '';
+  const existing = editingId ? state.store.leads.find(l => l.id === editingId) : null;
+  const newStatus = normalizeLeadStatus(data.status || 'New Lead');
+  const stageChanged = !existing || existing.status !== newStatus;
+  const payload = {
+    id: editingId || uid('L'),
+    clientId: data.clientId,
+    clientName: data.clientName || lookupClientName(data.clientId),
+    phone: data.phone,
+    email: data.email,
+    service: data.service,
+    status: newStatus,
+    source: data.source,
+    estimatedValue: num(data.estimatedValue),
+    area: data.area,
+    preferredDate: data.preferredDate,
+    followUpDate: data.followUpDate || '',
+    notes: data.notes,
+    stageChangedAt: stageChanged ? new Date().toISOString() : (existing.stageChangedAt || new Date().toISOString()),
+    lastContactedAt: existing ? (existing.lastContactedAt || '') : '',
+    owner: existing?.owner || state.profile?.full_name || ''
+  };
+  if (existing) {
+    const idx = state.store.leads.findIndex(l => l.id === editingId);
+    state.store.leads[idx] = payload;
+  } else {
+    state.store.leads.unshift(payload);
+  }
+  el.leadForm.dataset.leadId = '';
+  addActivity(`${existing ? 'Updated' : 'Captured'} lead for ${payload.clientName || 'new contact'}.`, 'Leads');
   saveStore('Lead saved');
   renderAll();
   showToast('Lead saved.', 'success');
   el.leadForm.reset();
+  el.dealDialog?.close();
+}
+
+// Load an existing lead into the deal form for editing.
+export function loadLeadIntoForm(id) {
+  const lead = state.store.leads.find(l => l.id === id);
+  if (!lead) return;
+  el.leadForm.dataset.leadId = lead.id;
+  el.leadForm.clientId.value = lead.clientId || '';
+  el.leadForm.clientName.value = lead.clientName || '';
+  el.leadForm.phone.value = lead.phone || '';
+  el.leadForm.email.value = lead.email || '';
+  el.leadForm.service.value = lead.service || 'Kitchen Remodeling';
+  el.leadForm.source.value = lead.source || '';
+  el.leadForm.status.value = normalizeLeadStatus(lead.status);
+  el.leadForm.estimatedValue.value = lead.estimatedValue || '';
+  el.leadForm.area.value = lead.area || '';
+  el.leadForm.preferredDate.value = lead.preferredDate || '';
+  el.leadForm.followUpDate.value = lead.followUpDate || '';
+  el.leadForm.notes.value = lead.notes || '';
 }
 
 // Load a lead's details into the estimate builder.
@@ -164,5 +220,241 @@ export function convertLeadToEstimate(leadId) {
   setView('estimating');
   el.estimateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   renderEstimateSummary(collectEstimateFromForm());
+  // Advance the pipeline: a lead sent to estimating becomes "Proposal Sent".
+  lead.status = 'Proposal Sent';
+  lead.stageChangedAt = new Date().toISOString();
+  saveStore('Lead advanced to Proposal Sent');
   showToast('Lead loaded into the estimate builder.', 'success');
+}
+
+// ── HubSpot-style pipeline board, stats, contacts table, and dialogs ──
+
+function leadDisplayName(lead) {
+  return lead.clientName || lookupClientName(lead.clientId) || 'Unnamed';
+}
+
+function sourceKey(source) {
+  return String(source || 'other').toLowerCase().replace(/[^a-z]+/g, '-');
+}
+
+function daysInStage(iso) {
+  if (!iso) return 0;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 0;
+  return Math.max(0, Math.floor((Date.now() - then) / 86400000));
+}
+
+function leadMatchesQuery(lead, query) {
+  if (!query) return true;
+  return [lead.clientName, lead.phone, lead.email, lead.service, lead.status, lead.source, lead.area].join(' ').toLowerCase().includes(query);
+}
+
+export function renderCrmStats() {
+  const clients = state.store.clients;
+  const leads = state.store.leads;
+  const active = leads.filter(l => l.status !== 'Won' && l.status !== 'Lost');
+  const now = new Date();
+  const wonThisMonth = leads.filter(l => {
+    if (l.status !== 'Won' || !l.stageChangedAt) return false;
+    const d = new Date(l.stageChangedAt);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const pipelineValue = active.reduce((s, l) => s + num(l.estimatedValue), 0);
+  if (el.crmStatContacts) el.crmStatContacts.textContent = integer.format(clients.length);
+  if (el.crmStatActiveDeals) el.crmStatActiveDeals.textContent = integer.format(active.length);
+  if (el.crmStatWonMonth) el.crmStatWonMonth.textContent = integer.format(wonThisMonth);
+  if (el.crmStatPipelineValue) el.crmStatPipelineValue.textContent = money.format(pipelineValue);
+  // Mirror onto the dashboard "Pipeline Snapshot" tile when present.
+  const snap = (elId, val) => { const n = document.getElementById(elId); if (n) n.textContent = val; };
+  snap('snapContacts', integer.format(clients.length));
+  snap('snapActiveDeals', integer.format(active.length));
+  snap('snapWonMonth', integer.format(wonThisMonth));
+  snap('snapPipelineValue', money.format(pipelineValue));
+}
+
+function dealCardHtml(lead) {
+  const name = leadDisplayName(lead);
+  const days = daysInStage(lead.stageChangedAt);
+  const src = lead.source || 'Other';
+  return `<div class="deal-card" draggable="true" data-lead-id="${lead.id}">
+    <div class="deal-card-top"><strong>${escapeHtml(name)}</strong><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
+    <p class="muted tiny deal-service">${escapeHtml(lead.service || 'General')}</p>
+    <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span><span class="source-pill source-${sourceKey(src)}">${escapeHtml(src)}</span></div>
+    <p class="deal-days muted tiny">${days} day${days === 1 ? '' : 's'} in stage</p>
+  </div>`;
+}
+
+export function renderPipelineBoard() {
+  const board = el.dealPipelineBoard;
+  if (!board) return;
+  const query = state.filters.clientSearch || '';
+  const leads = state.store.leads.filter(l => leadMatchesQuery(l, query));
+  board.innerHTML = PIPELINE_STAGES.map(stage => {
+    const stageLeads = leads.filter(l => normalizeLeadStatus(l.status) === stage);
+    const sum = stageLeads.reduce((s, l) => s + num(l.estimatedValue), 0);
+    const cards = stageLeads.map(dealCardHtml).join('') || '<p class="pipeline-empty muted tiny">No deals</p>';
+    return `<div class="pipeline-col" data-stage="${escapeHtml(stage)}">
+      <div class="pipeline-col-head">${escapeHtml(stage)} · ${stageLeads.length} · ${money.format(sum)}</div>
+      <div class="pipeline-col-body">${cards}</div>
+    </div>`;
+  }).join('');
+  // Drag + drop.
+  board.querySelectorAll('.deal-card').forEach(card => {
+    card.addEventListener('dragstart', e => { card.classList.add('dragging'); e.dataTransfer.setData('text/plain', card.dataset.leadId); e.dataTransfer.effectAllowed = 'move'; });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('click', e => { if (e.target.closest('.deal-move-btn')) return; openDealDialog(card.dataset.leadId); });
+  });
+  board.querySelectorAll('.pipeline-col').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      const id = e.dataTransfer.getData('text/plain');
+      moveDealToStage(id, col.dataset.stage);
+    });
+  });
+  // Touch fallback: "Move ▸" menu.
+  board.querySelectorAll('.deal-move-btn').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openMoveMenu(btn.dataset.leadId, btn); }));
+}
+
+let activeMoveMenu = null;
+function closeMoveMenu() {
+  if (activeMoveMenu) { activeMoveMenu.remove(); activeMoveMenu = null; }
+  document.removeEventListener('click', closeMoveMenu);
+}
+function openMoveMenu(leadId, anchor) {
+  closeMoveMenu();
+  const lead = state.store.leads.find(l => l.id === leadId);
+  const menu = document.createElement('div');
+  menu.className = 'move-menu';
+  menu.innerHTML = PIPELINE_STAGES.map(s => `<button type="button" class="move-menu-item${lead && normalizeLeadStatus(lead.status) === s ? ' current' : ''}" data-stage="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('');
+  document.body.appendChild(menu);
+  const r = anchor.getBoundingClientRect();
+  menu.style.top = `${r.bottom + window.scrollY + 4}px`;
+  menu.style.left = `${Math.max(8, Math.min(r.left + window.scrollX, window.innerWidth - 230))}px`;
+  menu.querySelectorAll('.move-menu-item').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); moveDealToStage(leadId, b.dataset.stage); closeMoveMenu(); }));
+  activeMoveMenu = menu;
+  setTimeout(() => document.addEventListener('click', closeMoveMenu), 0);
+}
+
+export function moveDealToStage(id, stage) {
+  const lead = state.store.leads.find(l => l.id === id);
+  if (!lead || !PIPELINE_STAGES.includes(stage) || normalizeLeadStatus(lead.status) === stage) return;
+  lead.status = stage;
+  lead.stageChangedAt = new Date().toISOString();
+  addActivity(`Moved ${leadDisplayName(lead)} to ${stage}.`, 'CRM');
+  saveStore('Deal moved to ' + stage);
+  renderLeads();
+}
+
+export function renderContactsTable() {
+  const tbody = el.contactsTable;
+  if (!tbody) return;
+  const query = state.filters.clientSearch || '';
+  const clients = [...state.store.clients]
+    .filter(c => [c.name, c.phone, c.email, c.tags, c.source].join(' ').toLowerCase().includes(query))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const header = '<tr class="contacts-head"><th>Name</th><th>Phone</th><th>Email</th><th>Deals</th><th>Last contact</th><th></th></tr>';
+  if (!clients.length) {
+    tbody.innerHTML = header + '<tr><td colspan="6" class="muted">No contacts yet.</td></tr>';
+    return;
+  }
+  const rows = clients.map(c => {
+    const linked = state.store.leads.filter(l => l.clientId === c.id);
+    const lastIso = linked.map(l => l.lastContactedAt || l.stageChangedAt).filter(Boolean).sort().slice(-1)[0] || '';
+    return `<tr>
+      <td><button type="button" class="link-card contact-select" data-client-id="${c.id}">${escapeHtml(c.name || 'Unnamed')}</button></td>
+      <td>${escapeHtml(c.phone || '—')}</td>
+      <td>${escapeHtml(c.email || '—')}</td>
+      <td>${linked.length}</td>
+      <td>${lastIso ? escapeHtml(formatDate(lastIso)) : '—'}</td>
+      <td><button type="button" class="ghost-btn contact-edit" data-client-id="${c.id}">Edit</button>${deleteBtn('clients', c.id)}</td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = header + rows;
+  tbody.querySelectorAll('.contact-select').forEach(btn => btn.addEventListener('click', () => { state.selectedClientId = btn.dataset.clientId; renderClientDetail(); }));
+  tbody.querySelectorAll('.contact-edit').forEach(btn => btn.addEventListener('click', () => openContactDialog(btn.dataset.clientId)));
+}
+
+export function openContactDialog(clientId) {
+  if (clientId) {
+    loadClientIntoForm(clientId);
+  } else {
+    el.clientForm.reset();
+    el.clientForm.clientId.value = '';
+  }
+  el.contactDialog?.showModal();
+}
+
+export function openDealDialog(leadId) {
+  if (leadId) {
+    loadLeadIntoForm(leadId);
+  } else {
+    el.leadForm.reset();
+    el.leadForm.dataset.leadId = '';
+  }
+  el.dealDialog?.showModal();
+}
+
+export function openQuickYelpDialog() {
+  el.quickYelpForm?.reset();
+  el.quickYelpDialog?.showModal();
+}
+
+export async function handleQuickYelpSave(event) {
+  event.preventDefault();
+  const data = objectFromForm(el.quickYelpForm);
+  if (!data.clientName || !data.phone) { showToast('Name and phone are required.', 'error'); return; }
+  const now = new Date().toISOString();
+  state.store.leads.unshift({
+    id: uid('L'),
+    clientId: '',
+    clientName: data.clientName,
+    phone: data.phone,
+    email: '',
+    service: data.service || 'Other',
+    status: 'New Lead',
+    source: 'Yelp',
+    estimatedValue: 0,
+    area: '',
+    preferredDate: '',
+    followUpDate: '',
+    notes: data.notes || '',
+    stageChangedAt: now,
+    lastContactedAt: '',
+    owner: state.profile?.full_name || ''
+  });
+  addActivity(`Yelp lead added: ${data.clientName}.`, 'Leads');
+  saveStore('Yelp lead added');
+  renderAll();
+  showToast('Yelp lead added — logged for KPI tracking.', 'success');
+  el.quickYelpForm.reset();
+  el.quickYelpDialog?.close();
+}
+
+// One-time migration: fill lead source (inherit from linked client, else Other)
+// and stageChangedAt, then persist once. Safe to run on every load.
+export function backfillLeadFields() {
+  const leads = state.store.leads || [];
+  let changed = 0;
+  leads.forEach(lead => {
+    let touched = false;
+    if (!lead.source) {
+      const inherited = lead.clientId ? state.store.clients.find(c => c.id === lead.clientId)?.source : '';
+      lead.source = inherited || 'Other';
+      touched = true;
+    }
+    if (!lead.stageChangedAt) {
+      lead.stageChangedAt = lead.preferredDate || new Date().toISOString();
+      touched = true;
+    }
+    const norm = normalizeLeadStatus(lead.status);
+    if (norm !== lead.status) { lead.status = norm; touched = true; }
+    if (touched) changed++;
+  });
+  if (changed) {
+    saveStore('Backfilled lead pipeline fields');
+    console.log(`Backfilled ${changed} leads.`);
+  }
 }

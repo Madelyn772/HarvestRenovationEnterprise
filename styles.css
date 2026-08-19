@@ -2654,4 +2654,77 @@ html:not(.theme-light) .sidebar {
   .theme-light .main .payment-row { background: #faf7f1; border-color: rgba(31,26,20,.10); }
 }
 
+/* ============================================================
+   CRM: HubSpot-style pipeline, stat strip, contacts, dialogs.
+   ============================================================ */
+.crm-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.crm-head-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+
+.crm-stat-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.crm-stat { padding: 1rem 1.15rem; }
+.crm-stat span { display: block; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.crm-stat strong { display: block; font-size: 1.6rem; margin-top: .3rem; }
+
+.pipeline-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+.pipeline-col { min-width: 260px; flex: 0 0 260px; display: flex; flex-direction: column; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 14px; scroll-snap-align: start; }
+.pipeline-col-head { position: sticky; top: 0; font-weight: 700; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: .7rem .8rem; border-bottom: 1px solid var(--line); color: var(--text); background: inherit; border-radius: 14px 14px 0 0; }
+.pipeline-col-body { display: flex; flex-direction: column; gap: .5rem; padding: .6rem; min-height: 60px; }
+.pipeline-col.drag-over { outline: 2px dashed var(--gold, #caa05a); outline-offset: -2px; }
+.pipeline-empty { text-align: center; padding: .5rem 0; }
+.deal-card { padding: .65rem .7rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.04); cursor: grab; }
+.deal-card:active { cursor: grabbing; }
+.deal-card.dragging { opacity: .4; }
+.deal-card-top { display: flex; justify-content: space-between; align-items: center; gap: .4rem; }
+.deal-card-top strong { font-size: .9rem; }
+.deal-move-btn { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 .2rem; min-height: 0; }
+.deal-service { margin: .15rem 0 0; }
+.deal-card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .35rem; gap: .4rem; }
+.deal-value { font-weight: 700; font-size: .85rem; }
+.deal-days { margin: .25rem 0 0; }
+.theme-light .main .pipeline-col,
+.theme-light .main .deal-card { background: #faf7f1; border-color: rgba(31,26,20,.10); }
+
+.source-pill { font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: .15rem .45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.source-yelp { color: #c62828; border-color: rgba(198,40,40,.4); background: rgba(198,40,40,.1); }
+.source-google, .source-google-business-profile { color: #1a73e8; border-color: rgba(26,115,232,.4); background: rgba(26,115,232,.1); }
+.source-referral { color: #2e7d32; border-color: rgba(46,125,50,.4); background: rgba(46,125,50,.1); }
+.source-website-form { color: #b8860b; border-color: rgba(184,134,11,.4); background: rgba(184,134,11,.12); }
+.source-repeat-customer { color: #7b3fa0; border-color: rgba(123,63,160,.4); background: rgba(123,63,160,.1); }
+.source-facebook { color: #1877f2; border-color: rgba(24,119,242,.4); background: rgba(24,119,242,.1); }
+.source-phone-call { color: #546e7a; border-color: rgba(84,110,122,.4); background: rgba(84,110,122,.1); }
+
+.crm-contacts-details { border: 1px solid var(--line); border-radius: 14px; padding: .5rem .9rem; background: rgba(255,255,255,.02); }
+.crm-contacts-details > summary { cursor: pointer; font-weight: 600; padding: .5rem 0; }
+.contacts-table-wrap { overflow-x: auto; }
+.contacts-table { width: 100%; border-collapse: collapse; }
+.contacts-table th, .contacts-table td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); font-size: .9rem; vertical-align: middle; }
+.contacts-table .contacts-head th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.contacts-table .link-card { background: transparent; border: 0; color: inherit; cursor: pointer; font-weight: 600; text-align: left; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
+.contacts-table td .ghost-btn { padding: .3rem .55rem; margin-right: .3rem; min-height: 0; }
+
+.lead-source-row { margin-bottom: .6rem; }
+.lead-source-bar-label { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: .2rem; }
+.lead-source-bar { height: 8px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; }
+.lead-source-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-2, #d9ae6b), var(--gold, #caa05a)); }
+.theme-light .main .lead-source-bar { background: rgba(31,26,20,.08); }
+
+.move-menu { position: absolute; z-index: 1200; background: #17130e; border: 1px solid #caa05a; border-radius: 10px; padding: .3rem; display: flex; flex-direction: column; gap: .15rem; min-width: 200px; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+.move-menu-item { text-align: left; background: transparent; border: 0; color: #f4e9d4; padding: .55rem .6rem; border-radius: 6px; cursor: pointer; font-size: .85rem; }
+.move-menu-item:hover { background: rgba(217,174,107,.16); }
+.move-menu-item.current { color: #caa05a; font-weight: 700; }
+
+.crm-dialog { max-width: 560px; width: 92vw; border: 1px solid var(--line); border-radius: 16px; padding: 1.5rem; background: #fff; color: #14110d; }
+.crm-dialog::backdrop { background: rgba(10,8,6,.55); }
+.crm-dialog .dialog-close { position: absolute; top: .6rem; right: .8rem; background: transparent; border: 0; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #8a7a5e; }
+html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border-color: #caa05a; }
+
+@media (max-width: 768px) {
+  .crm-stat-strip { grid-template-columns: 1fr 1fr; }
+  .pipeline-scroll { scroll-snap-type: x mandatory; }
+  .pipeline-col { flex-basis: 85vw; min-width: 85vw; }
+  .crm-head-actions { width: 100%; }
+  .crm-head-actions .search-input { flex: 1 1 100%; max-width: none; }
+  .crm-head-actions .ghost-btn, .crm-head-actions .primary-btn { flex: 1 1 auto; }
+}
+
 

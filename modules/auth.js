@@ -3,6 +3,7 @@ import { config, state, isActive, isRealAdmin } from './state.js';
 import { el, updateChip, showToast } from './dom.js';
 import { loadStore } from './store.js';
 import { purgeExpiredTrash } from './trash.js';
+import { backfillLeadFields } from './crm.js';
 import { bindAppUi, getStoredAdminView, hydrateForms, renderCurrentView, renderAll } from './navigation.js';
 import { renderDashboard } from './dashboard.js';
 import { renderEmployees } from './team.js';
@@ -118,6 +119,7 @@ export async function loadAuthenticatedApp(forceRefresh = false) {
 
   bindAuthUi();
   await loadStore();
+  backfillLeadFields();
   purgeExpiredTrash();
   showAppOnly();
   state.adminViewAs = getStoredAdminView();

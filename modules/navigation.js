@@ -2,7 +2,7 @@ import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdm
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd } from './dashboard.js';
-import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave } from './crm.js';
+import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickYelpSave } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
@@ -25,6 +25,8 @@ export function bindAppUi() {
   document.querySelectorAll('[data-jump]').forEach(btn => btn.addEventListener('click', () => {
     const target = document.getElementById(btn.dataset.jump);
     if (!target) return;
+    const dialog = target.closest('dialog');
+    if (dialog) { setView('crm'); if (dialog.showModal) dialog.showModal(); return; }
     const parentView = target.closest('.view');
     if (parentView?.id) setView(parentView.id.replace('View', ''));
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -49,6 +51,11 @@ export function bindAppUi() {
 
   el.clientForm.addEventListener('submit', handleClientSave);
   el.leadForm.addEventListener('submit', handleLeadSave);
+  if (el.newContactBtn) el.newContactBtn.addEventListener('click', () => openContactDialog());
+  if (el.newDealBtn) el.newDealBtn.addEventListener('click', () => openDealDialog());
+  if (el.quickYelpBtn) el.quickYelpBtn.addEventListener('click', () => openQuickYelpDialog());
+  if (el.quickYelpForm) el.quickYelpForm.addEventListener('submit', handleQuickYelpSave);
+  document.querySelectorAll('[data-close-dialog]').forEach(btn => btn.addEventListener('click', () => document.getElementById(btn.dataset.closeDialog)?.close()));
   el.estimateForm.addEventListener('submit', handleEstimateSave);
   el.calculateEstimate.addEventListener('click', () => recomputeEstimateTotals());
   el.printEstimate.addEventListener('click', () => {
@@ -226,7 +233,7 @@ export function setView(view) {
   document.querySelectorAll('.view').forEach(panel => panel.classList.toggle('active', panel.id === `${view}View`));
   const titleMap = {
     dashboard: ['Executive Dashboard', 'Corporate CRM, estimating, operations, and analytics in one interface.'],
-    crm: ['CRM & Leads', 'Manage client records, lead intake, and opportunity flow.'],
+    crm: ['CRM', 'Contacts, deal pipeline, and relationship history.'],
     estimating: ['Estimating', 'Create proposal-ready estimates and PDF exports.'],
     invoicing: ['Invoicing', 'Create, send, and track invoices with e-signature.'],
     operations: ['Operations', 'Run projects, schedule visits, and keep notes organized.'],
@@ -453,6 +460,7 @@ export function clearFormForButton(id) {
   const form = map[id];
   if (!form) return;
   form.reset();
+  if (form === el.leadForm) el.leadForm.dataset.leadId = '';
   if (form === el.invoiceForm) {
     el.invoiceItems.innerHTML = '';
     addInvoiceRow();

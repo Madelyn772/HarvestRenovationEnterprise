@@ -1,4 +1,4 @@
-import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice } from './state.js';
+import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice, migrateLead } from './state.js';
 import { el, updateChip, showToast } from './dom.js';
 import { defaultChecklistItems } from './dashboard.js';
 import { purgeExpiredTrash } from './trash.js';
@@ -25,9 +25,10 @@ export function normalizeStoreShape(raw) {
   Object.keys(base).forEach(key => {
     base[key] = Array.isArray(raw[key]) ? raw[key] : base[key];
   });
-  // Backwards-compatibility: upgrade old estimate/invoice records in place.
+  // Backwards-compatibility: upgrade old estimate/invoice/lead records in place.
   base.estimates = base.estimates.map(migrateEstimate);
   base.invoices = base.invoices.map(migrateInvoice);
+  base.leads = base.leads.map(migrateLead);
   return base;
 }
 

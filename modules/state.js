@@ -88,6 +88,12 @@ export const DEFAULT_INVOICE_TERMS = [
   'Make checks payable to Harvest Renovation. For ACH, Zelle, or card options, contact us.'
 ].join('\n');
 
+// HubSpot-style deal pipeline stages (order = left→right on the board).
+export const PIPELINE_STAGES = ['New Lead', 'Contacted', 'Qualified', 'Estimate Scheduled', 'Estimate Completed', 'Proposal Sent', 'Won', 'Lost'];
+
+// Lead sources tracked for KPI attribution.
+export const LEAD_SOURCES = ['Yelp', 'Google', 'Referral', 'Website Form', 'Phone Call', 'Repeat Customer', 'Google Business Profile', 'Facebook', 'Other'];
+
 export const seedStore = {
   clients: [],
   leads: [],
@@ -337,5 +343,26 @@ export function migrateInvoice(record) {
   if (!r.dueDate) r.dueDate = addDaysISO(r.date, 15);
   if (r.terms == null) r.terms = DEFAULT_INVOICE_TERMS;
   if (r.total == null) r.total = r.items.reduce((s, it) => s + num(it && it.amount), 0);
+  return r;
+}
+
+// Map any legacy/free-text lead status onto the canonical pipeline stages.
+export function normalizeLeadStatus(status) {
+  if (PIPELINE_STAGES.includes(status)) return status;
+  if (status === 'Estimate Sent') return 'Proposal Sent';
+  return 'New Lead';
+}
+
+// Backwards-compatibility: fill in the CRM pipeline fields on old lead records.
+export function migrateLead(record) {
+  if (!record || typeof record !== 'object') return record;
+  const r = { ...record };
+  r.status = normalizeLeadStatus(r.status);
+  if (r.source == null) r.source = '';
+  if (r.estimatedValue == null) r.estimatedValue = 0;
+  if (r.followUpDate == null) r.followUpDate = '';
+  if (r.lastContactedAt == null) r.lastContactedAt = '';
+  if (!r.stageChangedAt) r.stageChangedAt = r.preferredDate || '';
+  if (r.owner == null) r.owner = '';
   return r;
 }

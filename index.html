@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-26" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-27" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -114,7 +114,7 @@
 
       <nav class="nav">
         <button class="nav-btn active" data-view="dashboard">Executive Dashboard</button>
-        <button class="nav-btn" data-view="crm">CRM &amp; Leads<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="crm">CRM<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="estimating">Estimating<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="invoicing">Invoicing<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="operations">Operations<span class="nav-count hidden"></span></button>
@@ -179,6 +179,16 @@
 
         <div class="kpi-grid" id="dashboardKpis"></div>
 
+        <article class="card pipeline-snapshot-card">
+          <div class="card-head"><div><p class="eyebrow">Pipeline Snapshot</p><h3>Deal pipeline at a glance</h3></div><button class="ghost-btn small" data-view-trigger="crm">View Pipeline</button></div>
+          <div class="crm-stat-strip">
+            <div class="crm-stat"><span>Total Contacts</span><strong id="snapContacts">0</strong></div>
+            <div class="crm-stat"><span>Active Deals</span><strong id="snapActiveDeals">0</strong></div>
+            <div class="crm-stat"><span>Won This Month</span><strong id="snapWonMonth">0</strong></div>
+            <div class="crm-stat"><span>Pipeline Value</span><strong id="snapPipelineValue">$0</strong></div>
+          </div>
+        </article>
+
         <div class="grid two">
           <article class="card">
             <div class="card-head">
@@ -227,57 +237,110 @@
       </section>
 
       <section class="view" id="crmView">
-        <div class="section-head-row">
+        <div class="section-head-row crm-head-row">
           <div>
             <p class="eyebrow">CRM Workspace</p>
-            <h3>Clients, leads, source tracking, and relationship history</h3>
+            <h3>Contacts &amp; Deal Pipeline</h3>
+          </div>
+          <div class="crm-head-actions">
+            <input id="clientSearch" class="search-input" placeholder="Search contacts &amp; deals" />
+            <button type="button" class="ghost-btn" id="newContactBtn">+ New Contact</button>
+            <button type="button" class="ghost-btn" id="newDealBtn">+ New Deal</button>
+            <button type="button" class="primary-btn" id="quickYelpBtn">⚡ Quick Add Yelp Lead</button>
           </div>
         </div>
-        <div class="grid two">
-          <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Client Record</p><h3>Create or update client</h3></div></div>
-            <form id="clientForm" class="form-grid">
-              <input type="hidden" name="clientId" />
-              <label><span>Client name</span><input name="name" required /></label>
-              <label><span>Phone</span><input name="phone" required /></label>
-              <label><span>Email</span><input name="email" type="email" /></label>
-              <label><span>Service area / ZIP</span><input name="serviceArea" /></label>
-              <label class="full"><span>Address</span><input name="address" /></label>
-              <label><span>Referral source</span><input name="source" placeholder="Google, referral, repeat customer" /></label>
-              <label><span>Tags</span><input name="tags" placeholder="Kitchen, repeat, commercial" /></label>
-              <label class="full"><span>Client notes</span><textarea name="notes" rows="4"></textarea></label>
-              <div class="form-actions full">
-                <button type="submit" class="primary-btn">Save Client</button>
-                <button type="button" class="ghost-btn" id="clearClientForm">Clear</button>
-              </div>
-            </form>
-          </article>
-          <article class="card">
-            <div class="card-head split-head"><div><p class="eyebrow">Lead Intake</p><h3>Create lead</h3></div><input id="clientSearch" class="search-input" placeholder="Search clients or leads" /></div>
-            <form id="leadForm" class="form-grid">
-              <label><span>Linked client</span><select name="clientId" id="leadClientSelect"></select></label>
-              <label><span>Client name</span><input name="clientName" /></label>
-              <label><span>Phone</span><input name="phone" /></label>
-              <label><span>Email</span><input name="email" type="email" /></label>
-              <label><span>Service</span><select name="service">
-                <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
-              </select></label>
-              <label><span>Status</span><select name="status"><option>New Lead</option><option>Contacted</option><option>Estimate Scheduled</option><option>Estimate Sent</option><option>Won</option><option>Lost</option></select></label>
-              <label><span>Area</span><input name="area" /></label>
-              <label><span>Preferred date</span><input name="preferredDate" type="date" /></label>
-              <label class="full"><span>Notes</span><textarea name="notes" rows="4"></textarea></label>
-              <div class="form-actions full">
-                <button type="submit" class="primary-btn">Save Lead</button>
-                <button type="button" class="ghost-btn" id="clearLeadForm">Clear</button>
-              </div>
-            </form>
-          </article>
+
+        <div class="crm-stat-strip">
+          <div class="crm-stat card"><span>Total Contacts</span><strong id="crmStatContacts">0</strong></div>
+          <div class="crm-stat card"><span>Active Deals</span><strong id="crmStatActiveDeals">0</strong></div>
+          <div class="crm-stat card"><span>Deals Won This Month</span><strong id="crmStatWonMonth">0</strong></div>
+          <div class="crm-stat card"><span>Pipeline Value</span><strong id="crmStatPipelineValue">$0</strong></div>
         </div>
-        <div class="grid two">
-          <article class="card"><div class="card-head"><div><p class="eyebrow">Clients</p><h3>Client records</h3></div></div><div id="clientList" class="stack"></div></article>
-          <article class="card"><div class="card-head"><div><p class="eyebrow">Leads</p><h3>Lead pipeline</h3></div></div><div id="leadTable" class="stack"></div></article>
-        </div>
-        <article class="card"><div class="card-head"><div><p class="eyebrow">Detail View</p><h3 id="clientDetailTitle">Select a client</h3></div></div><div id="clientDetailBody" class="detail-body empty-state">Choose a client to see linked records.</div></article>
+
+        <article class="card">
+          <div class="card-head"><div><p class="eyebrow">Deal Pipeline</p><h3>Drag deals between stages to advance them</h3></div></div>
+          <div class="pipeline-scroll" id="dealPipelineBoard"></div>
+        </article>
+
+        <details class="crm-contacts-details">
+          <summary>Contacts &amp; full lead list</summary>
+          <article class="card">
+            <div class="card-head"><div><p class="eyebrow">Contacts</p><h3>Contact directory</h3></div></div>
+            <div class="contacts-table-wrap"><table class="contacts-table"><tbody id="contactsTable"></tbody></table></div>
+          </article>
+          <div class="grid two">
+            <article class="card"><div class="card-head"><div><p class="eyebrow">Leads</p><h3>All leads (list)</h3></div></div><div id="leadTable" class="stack"></div></article>
+            <article class="card"><div class="card-head"><div><p class="eyebrow">Detail View</p><h3 id="clientDetailTitle">Select a client</h3></div></div><div id="clientDetailBody" class="detail-body empty-state">Choose a client to see linked records.</div></article>
+          </div>
+        </details>
+
+        <dialog id="contactDialog" class="crm-dialog">
+          <button type="button" class="dialog-close" data-close-dialog="contactDialog" aria-label="Close">×</button>
+          <div class="card-head"><div><p class="eyebrow">Contact</p><h3>Create or update contact</h3></div></div>
+          <form id="clientForm" class="form-grid">
+            <input type="hidden" name="clientId" />
+            <label><span>Client name</span><input name="name" required /></label>
+            <label><span>Phone</span><input name="phone" required /></label>
+            <label><span>Email</span><input name="email" type="email" /></label>
+            <label><span>Service area / ZIP</span><input name="serviceArea" /></label>
+            <label class="full"><span>Address</span><input name="address" /></label>
+            <label><span>Referral source</span><input name="source" placeholder="Google, referral, repeat customer" /></label>
+            <label><span>Tags</span><input name="tags" placeholder="Kitchen, repeat, commercial" /></label>
+            <label class="full"><span>Client notes</span><textarea name="notes" rows="4"></textarea></label>
+            <div class="form-actions full">
+              <button type="submit" class="primary-btn">Save Client</button>
+              <button type="button" class="ghost-btn" id="clearClientForm">Clear</button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog id="dealDialog" class="crm-dialog">
+          <button type="button" class="dialog-close" data-close-dialog="dealDialog" aria-label="Close">×</button>
+          <div class="card-head"><div><p class="eyebrow">Deal</p><h3>Create or update deal</h3></div></div>
+          <form id="leadForm" class="form-grid">
+            <label><span>Linked client</span><select name="clientId" id="leadClientSelect"></select></label>
+            <label><span>Client name</span><input name="clientName" /></label>
+            <label><span>Phone</span><input name="phone" /></label>
+            <label><span>Email</span><input name="email" type="email" /></label>
+            <label><span>Service</span><select name="service">
+              <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
+            </select></label>
+            <label><span>Source *</span><select name="source" required>
+              <option value="">Select source…</option>
+              <option>Yelp</option><option>Google</option><option>Referral</option><option>Website Form</option><option>Phone Call</option><option>Repeat Customer</option><option>Google Business Profile</option><option>Facebook</option><option>Other</option>
+            </select></label>
+            <label><span>Stage</span><select name="status">
+              <option>New Lead</option><option>Contacted</option><option>Qualified</option><option>Estimate Scheduled</option><option>Estimate Completed</option><option>Proposal Sent</option><option>Won</option><option>Lost</option>
+            </select></label>
+            <label><span>Estimated value ($)</span><input name="estimatedValue" type="number" min="0" step="0.01" /></label>
+            <label><span>Area</span><input name="area" /></label>
+            <label><span>Preferred date</span><input name="preferredDate" type="date" /></label>
+            <label><span>Follow-up date</span><input name="followUpDate" type="date" /></label>
+            <label class="full"><span>Notes</span><textarea name="notes" rows="4"></textarea></label>
+            <div class="form-actions full">
+              <button type="submit" class="primary-btn">Save Deal</button>
+              <button type="button" class="ghost-btn" id="clearLeadForm">Clear</button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog id="quickYelpDialog" class="crm-dialog">
+          <button type="button" class="dialog-close" data-close-dialog="quickYelpDialog" aria-label="Close">×</button>
+          <div class="card-head"><div><p class="eyebrow">⚡ Quick Add</p><h3>New Yelp lead</h3></div></div>
+          <p class="muted tiny">Logs a New Lead with source = Yelp for accurate KPI attribution.</p>
+          <form id="quickYelpForm" class="form-grid">
+            <label class="full"><span>Name *</span><input name="clientName" required /></label>
+            <label><span>Phone *</span><input name="phone" required /></label>
+            <label><span>Service</span><select name="service">
+              <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
+            </select></label>
+            <label class="full"><span>Notes</span><textarea name="notes" rows="3"></textarea></label>
+            <div class="form-actions full">
+              <button type="submit" class="primary-btn">Add Yelp Lead</button>
+              <button type="button" class="ghost-btn" data-close-dialog="quickYelpDialog">Cancel</button>
+            </div>
+          </form>
+        </dialog>
       </section>
 
       <section class="view" id="estimatingView">
@@ -647,7 +710,7 @@
         </div>
         <div class="grid two">
           <article class="card"><div class="card-head"><div><p class="eyebrow">Campaign Performance</p><h3>Saved KPI rows</h3></div></div><div id="campaignList" class="stack"></div></article>
-          <article class="card"><div class="card-head"><div><p class="eyebrow">Lead Source Mix</p><h3>Top sources from CRM</h3></div></div><div id="leadSourceSummary" class="stack"></div></article>
+          <article class="card"><div class="card-head"><div><p class="eyebrow">Lead Source Mix</p><h3>Top sources from CRM</h3></div></div><div class="metric-duo"><div><span>Yelp leads this week</span><strong id="yelpThisWeek">0</strong></div><div><span>Yelp leads this month</span><strong id="yelpThisMonth">0</strong></div></div><div id="leadSourceSummary" class="stack"></div></article>
         </div>
       </section>
 
@@ -811,6 +874,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-26"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-27"></script>
 </body>
 </html>

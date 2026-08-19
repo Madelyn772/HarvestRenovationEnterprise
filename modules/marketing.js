@@ -303,13 +303,38 @@ export function renderCampaigns() {
 }
 
 export function renderLeadSourceSummary() {
+  const leads = state.store.leads || [];
   const map = new Map();
-  state.store.clients.forEach(item => {
-    const key = item.source || 'Unspecified';
-    map.set(key, (map.get(key) || 0) + 1);
+  leads.forEach(lead => {
+    let src = lead.source;
+    if (!src && lead.clientId) src = state.store.clients.find(c => c.id === lead.clientId)?.source;
+    src = src || 'Unspecified';
+    map.set(src, (map.get(src) || 0) + 1);
   });
-  const rows = [...map.entries()].sort((a,b) => b[1] - a[1]);
-  el.leadSourceSummary.innerHTML = rows.length ? rows.map(([source, count]) => `<div class="summary-row"><span>${escapeHtml(source)}</span><strong>${integer.format(count)}</strong></div>`).join('') : emptyHtml('No lead sources recorded yet.');
+  const rows = [...map.entries()].sort((a, b) => b[1] - a[1]);
+  const max = rows.length ? rows[0][1] : 0;
+  el.leadSourceSummary.innerHTML = rows.length ? rows.map(([source, count]) => {
+    const pct = max ? Math.round((count / max) * 100) : 0;
+    return `<div class="lead-source-row"><div class="lead-source-bar-label"><span>${escapeHtml(source)}</span><strong>${integer.format(count)}</strong></div><div class="lead-source-bar"><span style="width:${pct}%"></span></div></div>`;
+  }).join('') : emptyHtml('No lead sources recorded yet.');
+  renderYelpDuo();
+}
+
+function renderYelpDuo() {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setHours(0, 0, 0, 0);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  const yelp = (state.store.leads || []).filter(l => (l.source || '') === 'Yelp');
+  const week = yelp.filter(l => l.stageChangedAt && new Date(l.stageChangedAt) >= startOfWeek).length;
+  const month = yelp.filter(l => {
+    const d = l.stageChangedAt ? new Date(l.stageChangedAt) : null;
+    return d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const wEl = document.getElementById('yelpThisWeek');
+  if (wEl) wEl.textContent = integer.format(week);
+  const mEl = document.getElementById('yelpThisMonth');
+  if (mEl) mEl.textContent = integer.format(month);
 }
 
 export async function handleCampaignSave(event) {

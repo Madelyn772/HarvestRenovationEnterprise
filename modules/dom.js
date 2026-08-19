@@ -13,7 +13,10 @@ export function cacheDom() {
     'documentList','trashList','teamPendingList','trashPolicyNote','trashRetentionBadge','darkModeToggle','staffViewToggle','exportDataBtn','importDataBtn','importDataInput','migrateToSupabaseBtn',
     'uploadDocForm','uploadDocFile','reservedNumberCard','reservedNumberForm','reservedNumberList',
     'topbarActions','toggleUploadBtn','uploadPanel',
-    'sendEstimate','estimateClientPhone','sendInvoice'
+    'sendEstimate','estimateClientPhone','sendInvoice',
+    'dealPipelineBoard','contactsTable','crmStatContacts','crmStatActiveDeals','crmStatWonMonth','crmStatPipelineValue',
+    'contactDialog','dealDialog','quickYelpDialog','quickYelpForm','newContactBtn','newDealBtn','quickYelpBtn',
+    'yelpThisWeek','yelpThisMonth','pipelineSnapshotBoard'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
