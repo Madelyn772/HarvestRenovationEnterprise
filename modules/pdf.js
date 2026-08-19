@@ -295,3 +295,22 @@ export function printInvoice(invoice) {
   renderDocuments();
   openPrintWindow(html);
 }
+
+export function buildChangeOrderDocHtml(co) {
+  const rows = (co.items || []).map(it => ({ desc: it.description || '', amount: num(it.amount) }));
+  return buildBrandedDocHtml({
+    kind: 'CHANGE ORDER',
+    number: co.changeOrderNumber || '',
+    date: co.date,
+    status: co.status,
+    bill: { name: co.clientName },
+    rows,
+    scope: co.description || '',
+    comments: `Parent estimate: ${co.parentEstimateNumber || ''}\nNew contract total: ${money.format(num(co.newRunningTotal))}`,
+    balanceLabel: 'CHANGE ORDER TOTAL',
+    balance: num(co.deltaAmount),
+    subtotal: num(co.deltaAmount),
+    preparedBy: co.owner || currentUserName(),
+    signatureBlockEnabled: true
+  });
+}

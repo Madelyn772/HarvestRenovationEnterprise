@@ -6,6 +6,7 @@ import { resolveFormClient } from './crm.js';
 import { fillInvoiceFromEstimate, renderInvoices, computeInvoiceBalances } from './operations.js';
 import { printEstimate } from './pdf.js';
 import { updateEstimateStatus } from './documenso.js';
+import { openChangeOrderForm } from './changeOrders.js';
 
 export function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
@@ -361,12 +362,19 @@ export function renderEstimates() {
       ? (item.declineReason === 'Other' && item.declineReasonOther ? item.declineReasonOther : item.declineReason)
       : '';
     const declineLine = declineText ? `<p class="decline-reason">Declined — ${escapeHtml(declineText)}</p>` : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted deal-pill-row">${statusBadge || escapeHtml(status)} ${depositPill}</p>${declineLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
+    const coCount = state.store.changeOrders.filter(c => c.parentEstimateId === item.id).length;
+    const coLine = (status === 'Approved' && coCount > 0) ? `<p class="muted tiny">Change Orders (${coCount})</p>` : '';
+    const approvedExtra = status === 'Approved'
+      ? `<button class="ghost-btn estimate-duplicate" data-estimate-id="${item.id}">Duplicate</button><button class="ghost-btn estimate-changeorder" data-estimate-id="${item.id}">Change Order</button>`
+      : '';
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted deal-pill-row">${statusBadge || escapeHtml(status)} ${depositPill}</p>${declineLine}${coLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${approvedExtra}${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-invoice').forEach(btn => btn.addEventListener('click', () => fillInvoiceFromEstimate(btn.dataset.estimateId, { switchView: true })));
   el.estimateList.querySelectorAll('.estimate-email').forEach(btn => btn.addEventListener('click', () => emailEstimate(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-record-deposit').forEach(btn => btn.addEventListener('click', () => openRecordDepositDialog(btn.dataset.estimateId)));
+  el.estimateList.querySelectorAll('.estimate-duplicate').forEach(btn => btn.addEventListener('click', () => duplicateEstimate(btn.dataset.estimateId)));
+  el.estimateList.querySelectorAll('.estimate-changeorder').forEach(btn => btn.addEventListener('click', () => openChangeOrderForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-print').forEach(btn => btn.addEventListener('click', () => {
     const estimate = state.store.estimates.find(item => item.id === btn.dataset.estimateId);
     if (estimate) printEstimate(estimate);
@@ -416,6 +424,27 @@ export function handleRecordDepositSubmit(event) {
   renderEstimates();
   renderInvoices();
   showToast('Deposit received — invoice balance updated.', 'success');
+}
+
+// Clone an estimate as a fresh Draft (used to bill additional work without
+// touching a signed/invoiced original).
+export function duplicateEstimate(id) {
+  const src = state.store.estimates.find(e => e.id === id);
+  if (!src) return;
+  const copy = structuredClone(src);
+  copy.id = uid('EST');
+  copy.estimateNumber = autoNumber('EST');
+  copy.status = 'Draft';
+  copy.date = todayISO();
+  copy.depositReceivedAt = '';
+  copy.depositReceivedBy = '';
+  copy.items = (copy.items || []).map(it => ({ ...it, id: uid('ITM') }));
+  state.store.estimates.unshift(copy);
+  addActivity(`Duplicated estimate ${src.estimateNumber || src.id}.`, 'Estimating');
+  saveStore('Estimate duplicated');
+  renderAll();
+  loadEstimateIntoForm(copy.id);
+  showToast('Estimate duplicated as a new draft.', 'success');
 }
 
 export function emailEstimate(estimateId) {

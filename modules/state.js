@@ -104,6 +104,7 @@ export const seedStore = {
   documents: [],
   checklist: [],
   reservedNumbers: [],
+  changeOrders: [],
   trash: []
 };
 
@@ -117,7 +118,8 @@ export const collectionLabels = {
   notes: 'Note',
   invoices: 'Invoice',
   campaigns: 'KPI row',
-  documents: 'Document'
+  documents: 'Document',
+  changeOrders: 'Change Order'
 };
 
 export const state = {
@@ -380,5 +382,20 @@ export function migrateLead(record) {
   if (r.lastContactedAt == null) r.lastContactedAt = '';
   if (!r.stageChangedAt) r.stageChangedAt = r.preferredDate || '';
   if (r.owner == null) r.owner = '';
+  return r;
+}
+
+// Backwards-compatibility defaults for change-order records.
+export function migrateChangeOrder(record) {
+  if (!record || typeof record !== 'object') return record;
+  const r = { ...record };
+  if (!Array.isArray(r.items)) r.items = [];
+  if (r.deltaAmount == null) r.deltaAmount = r.items.reduce((s, it) => s + num(it && it.amount), 0);
+  if (r.status == null) r.status = 'Draft';
+  if (r.sentAt == null) r.sentAt = '';
+  if (r.signedAt == null) r.signedAt = '';
+  if (r.signedBy == null) r.signedBy = '';
+  if (r.owner == null) r.owner = '';
+  if (r.notes == null) r.notes = '';
   return r;
 }

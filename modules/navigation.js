@@ -15,6 +15,7 @@ import { renderTrash, softDelete } from './trash.js';
 import { printEstimate, printInvoice } from './pdf.js';
 import { handleLogout } from './auth.js';
 import { sendEstimate, sendInvoice } from './documenso.js';
+import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
 
 export function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
@@ -132,6 +133,11 @@ export function bindAppUi() {
   const useClientPhoneCb = document.getElementById('useClientPhone');
   if (useClientPhoneCb) useClientPhoneCb.addEventListener('change', handleUseClientPhoneToggle);
   if (el.recordDepositForm) el.recordDepositForm.addEventListener('submit', handleRecordDepositSubmit);
+  if (el.changeOrderForm) el.changeOrderForm.addEventListener('submit', handleChangeOrderSave);
+  const addCoBtn = document.getElementById('addChangeOrderRow');
+  if (addCoBtn) addCoBtn.addEventListener('click', () => addChangeOrderRow());
+  const clearCoBtn = document.getElementById('clearChangeOrderForm');
+  if (clearCoBtn) clearCoBtn.addEventListener('click', () => { el.changeOrderForm.reset(); const w = document.getElementById('changeOrderItems'); if (w) w.innerHTML = ''; });
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
@@ -274,6 +280,7 @@ export function renderCurrentView() {
       hydrateEstimateForm();
       recomputeEstimateTotals();
       renderEstimates();
+      renderChangeOrders();
     },
     invoicing: () => {
       hydrateInvoiceForm();
@@ -407,6 +414,7 @@ export function renderAll() {
   renderClientDetail();
   renderEstimateSummary(collectEstimateFromForm());
   renderEstimates();
+  renderChangeOrders();
   renderJobs();
   renderCalendarItems();
   renderInvoices();

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-29" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-30" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -430,6 +430,32 @@
         </div>
         <article class="card"><div class="card-head"><div><p class="eyebrow">Saved Estimates</p><h3>Proposal library</h3></div></div><div id="estimateList" class="stack"></div></article>
 
+        <details class="card co-card" id="changeOrderCard">
+          <summary><strong>Change Orders</strong> <span class="muted tiny">— document scope/price changes after an estimate is signed</span></summary>
+          <div class="card-head"><div><p class="eyebrow">Change Order</p><h3>Create a change order</h3></div></div>
+          <form id="changeOrderForm" class="form-grid">
+            <input type="hidden" name="changeOrderId" />
+            <input type="hidden" name="parentEstimateId" />
+            <label><span>Parent estimate</span><input id="changeOrderParentLabel" value="—" readonly /></label>
+            <label><span>CO number</span><input name="changeOrderNumber" /></label>
+            <label><span>Date</span><input name="date" type="date" /></label>
+            <label class="full"><span>Description of change</span><textarea name="description" rows="2" placeholder="e.g. Add pantry cabinetry"></textarea></label>
+            <div class="estimate-items-shell full">
+              <div class="split-head"><strong>Delta line items</strong><button type="button" class="ghost-btn" id="addChangeOrderRow">+ Add line</button></div>
+              <div class="line-items-head co-line"><span>Description</span><span>Amount (+/-)</span><span></span></div>
+              <div id="changeOrderItems" class="stack compact-stack"></div>
+              <div class="line-items-totals" id="changeOrderTotals"></div>
+            </div>
+            <label class="full"><span>Internal notes</span><textarea name="notes" rows="2"></textarea></label>
+            <div class="form-actions full">
+              <button type="submit" class="primary-btn">Save Change Order</button>
+              <button type="button" class="ghost-btn" id="clearChangeOrderForm">Clear</button>
+            </div>
+          </form>
+          <div class="card-head"><div><p class="eyebrow">Saved Change Orders</p><h3>Change order log</h3></div></div>
+          <div id="changeOrderList" class="stack"></div>
+        </details>
+
         <dialog id="recordDepositDialog" class="crm-dialog">
           <button type="button" class="dialog-close" data-close-dialog="recordDepositDialog" aria-label="Close">×</button>
           <div class="card-head"><div><p class="eyebrow">Deposit</p><h3>Record deposit received</h3></div></div>
@@ -457,6 +483,7 @@
               <input type="hidden" name="invoiceId" />
               <label><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
               <label><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
+              <label><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
               <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
               <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
               <label><span>Client name</span><input name="clientName" /></label>
@@ -884,6 +911,14 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-29"></script>
+  <template id="changeOrderRowTemplate">
+    <div class="co-row line-item-row co-line">
+      <input name="description" placeholder="Description of change" />
+      <input name="amount" type="number" step="0.01" placeholder="Amount (+/-)" />
+      <button type="button" class="icon-btn remove-co-row" aria-label="Remove line">×</button>
+    </div>
+  </template>
+
+  <script type="module" src="./app-bootstrap.js?v=20260815-30"></script>
 </body>
 </html>

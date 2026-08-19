@@ -121,6 +121,7 @@ export function collectInvoiceFromForm() {
     id: data.invoiceId || '',
     clientId: data.clientId,
     relatedEstimate: data.relatedEstimate,
+    relatedChangeOrder: data.relatedChangeOrder || '',
     invoiceNumber: data.invoiceNumber || autoNumber('INV'),
     date: dateInput ? dateInput.value : data.date,
     dueDate: data.dueDate || '',

@@ -2625,6 +2625,11 @@ html:not(.theme-light) .sidebar {
 .invoice-amount-cell { text-align: right; }
 .invoice-balance-owed { color: #c62828; font-weight: 600; font-size: .82rem; margin: .15rem 0 0; }
 
+/* Change-order delta rows: 3-column grid (desc, amount, remove). */
+.line-items-head.co-line { grid-template-columns: 2fr 1fr 2.2rem; }
+.line-item-row.co-line { grid-template-columns: 2fr 1fr 2.2rem; }
+.co-card > summary { cursor: pointer; font-weight: 600; }
+
 /* Light theme */
 .theme-light .main .line-items-head { color: #7a6a4f; }
 .theme-light .main .balance-callout > div { background: #faf7f1; border-color: rgba(31,26,20,.10); }
@@ -2632,7 +2637,7 @@ html:not(.theme-light) .sidebar {
 /* Mobile — line-item + payment rows collapse to cards */
 @media (max-width: 768px) {
   .line-items-head { display: none; }
-  .line-item-row, .line-item-row.invoice-line, .payment-row {
+  .line-item-row, .line-item-row.invoice-line, .line-item-row.co-line, .payment-row {
     grid-template-columns: 1fr 1fr;
     padding: .75rem;
     border: 1px solid var(--line);
