@@ -3,6 +3,40 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { addActivity, saveStore } from './store.js';
 import { renderAll } from './navigation.js';
 
+// ── Shared "deal outcome" helpers so every KPI (scorecard table AND the Jobs
+//    Won trend chart) counts wins/losses the same way: from BOTH the CRM deal
+//    pipeline (a lead moved to Won/Lost) AND estimate outcomes (Approved = won,
+//    Declined = lost), de-duplicated by client so a deal marked in both places
+//    counts once. Records without a client stay distinct by their own id. ──
+export function wonDealsInRange(start, end) {
+  const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
+  const won = new Map(); // key -> deal value (for Revenue Sold)
+  state.store.leads.forEach(l => {
+    if (normalizeLeadStatus(l.status) === 'Won' && inRange(l.stageChangedAt)) {
+      const key = l.clientId || ('lead:' + l.id);
+      if (!won.has(key)) won.set(key, num(l.estimatedValue || 0));
+    }
+  });
+  state.store.estimates.forEach(e => {
+    if (e.status === 'Approved' && inRange(e.signedAt || e.date)) {
+      won.set(e.clientId || ('est:' + e.id), num(e.estimatedCost || 0)); // estimate value wins for revenue
+    }
+  });
+  return won;
+}
+
+export function lostDealsInRange(start, end) {
+  const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
+  const lost = new Set();
+  state.store.leads.forEach(l => {
+    if (normalizeLeadStatus(l.status) === 'Lost' && inRange(l.stageChangedAt)) lost.add(l.clientId || ('lead:' + l.id));
+  });
+  state.store.estimates.forEach(e => {
+    if (e.status === 'Declined' && inRange(e.date)) lost.add(e.clientId || ('est:' + e.id));
+  });
+  return lost;
+}
+
 // ── Business Scorecard — auto-calculated weekly snapshot (read-only) ──
 export function renderScorecard() {
   if (!el.scorecardBody) return;
@@ -38,31 +72,10 @@ export function renderScorecard() {
       return d >= weekStart && d <= weekEnd;
     }).length;
 
-    // Jobs won / lost that week — from BOTH the CRM deal pipeline (a lead
-    // moved to Won/Lost) AND estimate outcomes (Approved = won, Declined =
-    // lost). De-duplicated by client so the same deal marked in both places
-    // is only counted once; records without a client stay distinct by id.
-    const inWeek = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= weekStart && d <= weekEnd; };
-    const wonMap = new Map();   // key -> deal value (for Revenue Sold)
-    const lostSet = new Set();
-
-    state.store.leads.forEach(l => {
-      if (!inWeek(l.stageChangedAt)) return;
-      const s = normalizeLeadStatus(l.status);
-      const key = l.clientId || ('lead:' + l.id);
-      if (s === 'Won' && !wonMap.has(key)) wonMap.set(key, num(l.estimatedValue || 0));
-      else if (s === 'Lost') lostSet.add(key);
-    });
-
-    state.store.estimates.forEach(e => {
-      const key = e.clientId || ('est:' + e.id);
-      if (e.status === 'Approved' && inWeek(e.signedAt || e.date)) {
-        wonMap.set(key, num(e.estimatedCost || 0)); // estimate value wins for revenue
-      } else if (e.status === 'Declined' && inWeek(e.date)) {
-        lostSet.add(key);
-      }
-    });
-
+    // Jobs won / lost that week — combined CRM pipeline + estimate outcomes,
+    // de-duped by client (see wonDealsInRange / lostDealsInRange above).
+    const wonMap = wonDealsInRange(weekStart, weekEnd);
+    const lostSet = lostDealsInRange(weekStart, weekEnd);
     const jobsWon = wonMap.size;
     const jobsLost = lostSet.size;
 
@@ -179,8 +192,9 @@ export function renderDeclineReasons() {
   }).join('');
 }
 
-// ── Jobs Won Trend — vanilla-canvas line chart of approved estimates over
-//    time, grouped by week / month / quarter / year. ──
+// ── Jobs Won Trend — vanilla-canvas line chart of won deals (CRM pipeline
+//    wins + approved estimates, de-duped) over time, grouped by week / month
+//    / quarter / year. ──
 export function renderJobsWonChart() {
   const canvas = el.jobsWonChart;
   if (!canvas || !canvas.getContext) return;
@@ -225,12 +239,10 @@ export function renderJobsWonChart() {
     }
   }
 
-  // Count approved estimates per bucket (by approval/estimate date).
-  const approved = state.store.estimates
-    .filter(e => e.status === 'Approved')
-    .map(e => new Date(e.signedAt || e.date || ''));
+  // Count won deals per bucket — combined CRM pipeline wins + approved
+  // estimates (de-duped by client), matching the scorecard's Jobs Won.
   buckets.forEach(b => {
-    b.count = approved.filter(d => !Number.isNaN(d.getTime()) && d >= b.start && d <= b.end).length;
+    b.count = wonDealsInRange(b.start, b.end).size;
   });
 
   // High-DPI canvas setup; fall back to the attribute size when hidden.
