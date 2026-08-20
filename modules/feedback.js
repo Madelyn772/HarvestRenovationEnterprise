@@ -27,12 +27,14 @@ export async function handleBugReportSave(event) {
     }
   }
   const now = new Date().toISOString();
+  const kind = data.kind || 'Bug';
+  const prefixes = { 'Bug': 'BUG-', 'Change request': 'CHG-', 'Idea': 'IDEA-', 'Question': 'QST-' };
   const report = {
     id: uid('BUG'),
-    number: autoNumber('BUG-'),
+    number: autoNumber(prefixes[kind] || 'REQ-'),
     title: data.title.trim(),
     area: data.area || 'Other',
-    kind: data.kind || 'Bug',
+    kind,
     severity: data.severity || 'Medium',
     description: data.description.trim(),
     attachment,
