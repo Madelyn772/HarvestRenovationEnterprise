@@ -2390,11 +2390,14 @@ html:not(.theme-light) .sidebar {
     position: fixed;
     top: 0; left: 0; bottom: 0;
     width: min(84vw, 320px);
-    min-height: 100vh;
+    min-height: 0;
+    max-height: 100dvh;
     z-index: 80;
     transform: translateX(-100%);
     transition: transform .22s ease;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 1.25rem 1rem 1.5rem;
     border: 0;
     border-right: 1px solid var(--line);
