@@ -15,6 +15,7 @@ export function cacheDom() {
     'topbarActions','toggleUploadBtn','uploadPanel',
     'sendEstimate','estimateClientPhone','sendInvoice','useClientPhone',
     'dealPipelineBoard','contactsTable','crmStatContacts','crmStatActiveDeals','crmStatWonMonth','crmStatPipelineValue',
+    'clearCrmSearch','crmSearchCount','quickAddCustomSourceWrap',
     'contactDialog','dealDialog','quickYelpDialog','quickYelpForm','newContactBtn','newDealBtn','quickYelpBtn',
     'yelpThisWeek','yelpThisMonth','pipelineSnapshotBoard','recordDepositDialog','recordDepositForm',
     'changeOrderForm','changeOrderList','changeOrderItems','changeOrderTotals','changeOrderCard','relatedChangeOrder',

@@ -2,7 +2,7 @@ import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdm
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd } from './dashboard.js';
-import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickYelpSave } from './crm.js';
+import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
@@ -35,6 +35,13 @@ export function bindAppUi() {
   }));
 
   el.clientSearch.addEventListener('input', debounce(e => { state.filters.clientSearch = e.target.value.toLowerCase(); renderClients(); renderLeads(); }));
+  if (el.clearCrmSearch) el.clearCrmSearch.addEventListener('click', () => {
+    el.clientSearch.value = '';
+    state.filters.clientSearch = '';
+    renderClients();
+    renderLeads();
+    el.clientSearch.focus();
+  });
   el.employeeSearch.addEventListener('input', debounce(e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); }));
 
   document.querySelectorAll('[data-doc-filter]').forEach(btn => btn.addEventListener('click', () => {
@@ -56,7 +63,13 @@ export function bindAppUi() {
   if (el.newContactBtn) el.newContactBtn.addEventListener('click', () => openContactDialog());
   if (el.newDealBtn) el.newDealBtn.addEventListener('click', () => openDealDialog());
   if (el.quickYelpBtn) el.quickYelpBtn.addEventListener('click', () => openQuickYelpDialog());
-  if (el.quickYelpForm) el.quickYelpForm.addEventListener('submit', handleQuickYelpSave);
+  if (el.quickYelpForm) {
+    el.quickYelpForm.addEventListener('submit', handleQuickAddSave);
+    el.quickYelpForm.addEventListener('change', e => {
+      if (e.target?.name !== 'source' || !el.quickAddCustomSourceWrap) return;
+      el.quickAddCustomSourceWrap.classList.toggle('is-hidden', e.target.value !== '__custom__');
+    });
+  }
   document.querySelectorAll('[data-close-dialog]').forEach(btn => btn.addEventListener('click', () => document.getElementById(btn.dataset.closeDialog)?.close()));
   el.estimateForm.addEventListener('submit', handleEstimateSave);
   el.calculateEstimate.addEventListener('click', () => recomputeEstimateTotals());

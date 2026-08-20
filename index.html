@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-31" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-32" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -243,10 +243,14 @@
             <h3>Contacts &amp; Deal Pipeline</h3>
           </div>
           <div class="crm-head-actions">
-            <input id="clientSearch" class="search-input" placeholder="Search contacts &amp; deals" />
+            <div class="crm-search-wrap">
+              <input id="clientSearch" class="search-input" placeholder="Search contacts &amp; deals" />
+              <button type="button" class="crm-search-clear" id="clearCrmSearch" hidden aria-label="Clear search">✕</button>
+            </div>
+            <span class="search-result-count" id="crmSearchCount" hidden></span>
             <button type="button" class="ghost-btn" id="newContactBtn">+ New Contact</button>
             <button type="button" class="ghost-btn" id="newDealBtn">+ New Deal</button>
-            <button type="button" class="primary-btn" id="quickYelpBtn">⚡ Quick Add Yelp Lead</button>
+            <button type="button" class="primary-btn" id="quickYelpBtn">⚡ Quick Add Lead</button>
           </div>
         </div>
 
@@ -326,17 +330,22 @@
 
         <dialog id="quickYelpDialog" class="crm-dialog">
           <button type="button" class="dialog-close" data-close-dialog="quickYelpDialog" aria-label="Close">×</button>
-          <div class="card-head"><div><p class="eyebrow">⚡ Quick Add</p><h3>New Yelp lead</h3></div></div>
-          <p class="muted tiny">Logs a New Lead with source = Yelp for accurate KPI attribution.</p>
+          <div class="card-head"><div><p class="eyebrow">⚡ Quick Add</p><h3>Quick Add Lead</h3></div></div>
+          <p class="muted tiny">Quickly add a lead with a source for accurate KPI attribution.</p>
           <form id="quickYelpForm" class="form-grid">
             <label class="full"><span>Name *</span><input name="clientName" required /></label>
             <label><span>Phone *</span><input name="phone" required /></label>
+            <label><span>Source *</span><select name="source" required>
+              <option>Yelp</option><option>Google</option><option>Referral</option><option>Website Form</option><option>Phone Call</option><option>Repeat Customer</option><option>Google Business Profile</option><option>Facebook</option><option>Other</option>
+              <option value="__custom__">Other (custom)…</option>
+            </select></label>
+            <label class="full is-hidden" id="quickAddCustomSourceWrap"><span>Custom source</span><input name="customSource" placeholder="e.g. Nextdoor, trade show" /></label>
             <label><span>Service</span><select name="service">
               <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
             </select></label>
             <label class="full"><span>Notes</span><textarea name="notes" rows="3"></textarea></label>
             <div class="form-actions full">
-              <button type="submit" class="primary-btn">Add Yelp Lead</button>
+              <button type="submit" class="primary-btn">Add Lead</button>
               <button type="button" class="ghost-btn" data-close-dialog="quickYelpDialog">Cancel</button>
             </div>
           </form>
@@ -941,6 +950,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-31"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-32"></script>
 </body>
 </html>

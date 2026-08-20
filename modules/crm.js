@@ -288,11 +288,22 @@ export function renderPipelineBoard() {
   const board = el.dealPipelineBoard;
   if (!board) return;
   const query = state.filters.clientSearch || '';
-  const leads = state.store.leads.filter(l => leadMatchesQuery(l, query));
+  const allLeads = state.store.leads;
+  const leads = allLeads.filter(l => leadMatchesQuery(l, query));
+  // Search feedback: result-count badge + clear button.
+  if (el.crmSearchCount) {
+    el.crmSearchCount.textContent = query ? `${leads.length} of ${allLeads.length} deals` : '';
+    el.crmSearchCount.hidden = !query;
+  }
+  if (el.clearCrmSearch) el.clearCrmSearch.hidden = !query;
+  if (query && !leads.length) {
+    board.innerHTML = `<p class="pipeline-no-match muted">No deals match “${escapeHtml(query)}”</p>`;
+    return;
+  }
   board.innerHTML = PIPELINE_STAGES.map(stage => {
     const stageLeads = leads.filter(l => normalizeLeadStatus(l.status) === stage);
     const sum = stageLeads.reduce((s, l) => s + num(l.estimatedValue), 0);
-    const cards = stageLeads.map(dealCardHtml).join('') || '<p class="pipeline-empty muted tiny">No deals</p>';
+    const cards = stageLeads.map(dealCardHtml).join('') || '<p class="pipeline-empty muted tiny">Drag a deal here</p>';
     return `<div class="pipeline-col" data-stage="${escapeHtml(stage)}">
       <div class="pipeline-col-head">${escapeHtml(stage)} · ${stageLeads.length} · ${money.format(sum)}</div>
       <div class="pipeline-col-body">${cards}</div>
@@ -364,12 +375,12 @@ export function renderContactsTable() {
     const linked = state.store.leads.filter(l => l.clientId === c.id);
     const lastIso = linked.map(l => l.lastContactedAt || l.stageChangedAt).filter(Boolean).sort().slice(-1)[0] || '';
     return `<tr>
-      <td><button type="button" class="link-card contact-select" data-client-id="${c.id}">${escapeHtml(c.name || 'Unnamed')}</button></td>
-      <td>${escapeHtml(c.phone || '—')}</td>
-      <td>${escapeHtml(c.email || '—')}</td>
-      <td>${linked.length}</td>
-      <td>${lastIso ? escapeHtml(formatDate(lastIso)) : '—'}</td>
-      <td><button type="button" class="ghost-btn contact-edit" data-client-id="${c.id}">Edit</button>${deleteBtn('clients', c.id)}</td>
+      <td data-label="Name"><button type="button" class="link-card contact-select" data-client-id="${c.id}">${escapeHtml(c.name || 'Unnamed')}</button></td>
+      <td data-label="Phone">${escapeHtml(c.phone || '—')}</td>
+      <td data-label="Email">${escapeHtml(c.email || '—')}</td>
+      <td data-label="Deals">${linked.length}</td>
+      <td data-label="Last contact">${lastIso ? escapeHtml(formatDate(lastIso)) : '—'}</td>
+      <td data-label="Actions"><button type="button" class="ghost-btn contact-edit" data-client-id="${c.id}">Edit</button>${deleteBtn('clients', c.id)}</td>
     </tr>`;
   }).join('');
   tbody.innerHTML = header + rows;
@@ -399,13 +410,20 @@ export function openDealDialog(leadId) {
 
 export function openQuickYelpDialog() {
   el.quickYelpForm?.reset();
+  if (el.quickAddCustomSourceWrap) el.quickAddCustomSourceWrap.classList.add('is-hidden');
   el.quickYelpDialog?.showModal();
 }
 
-export async function handleQuickYelpSave(event) {
+export async function handleQuickAddSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.quickYelpForm);
   if (!data.clientName || !data.phone) { showToast('Name and phone are required.', 'error'); return; }
+  let source = (data.source || '').trim();
+  if (!source) { showToast('Please choose a lead source.', 'error'); return; }
+  if (source === '__custom__') {
+    source = (data.customSource || '').trim();
+    if (!source) { showToast('Enter a custom source name.', 'error'); return; }
+  }
   const now = new Date().toISOString();
   state.store.leads.unshift({
     id: uid('L'),
@@ -415,7 +433,7 @@ export async function handleQuickYelpSave(event) {
     email: '',
     service: data.service || 'Other',
     status: 'New Lead',
-    source: 'Yelp',
+    source,
     estimatedValue: 0,
     area: '',
     preferredDate: '',
@@ -425,11 +443,12 @@ export async function handleQuickYelpSave(event) {
     lastContactedAt: '',
     owner: state.profile?.full_name || ''
   });
-  addActivity(`Yelp lead added: ${data.clientName}.`, 'Leads');
-  saveStore('Yelp lead added');
+  addActivity(`Lead added: ${data.clientName} (${source}).`, 'Leads');
+  saveStore('Lead added');
   renderAll();
-  showToast('Yelp lead added — logged for KPI tracking.', 'success');
+  showToast(`Lead added — ${source} logged for KPI tracking.`, 'success');
   el.quickYelpForm.reset();
+  if (el.quickAddCustomSourceWrap) el.quickAddCustomSourceWrap.classList.add('is-hidden');
   el.quickYelpDialog?.close();
 }
 
