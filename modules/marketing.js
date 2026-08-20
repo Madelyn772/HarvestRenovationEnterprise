@@ -1,4 +1,4 @@
-import { state, money, integer, num, sortDateDesc, uid, computeCplLabel, objectFromForm, formatDate } from './state.js';
+import { state, money, integer, num, sortDateDesc, uid, computeCplLabel, objectFromForm, formatDate, normalizeLeadStatus } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { addActivity, saveStore } from './store.js';
 import { renderAll } from './navigation.js';
@@ -38,29 +38,21 @@ export function renderScorecard() {
       return d >= weekStart && d <= weekEnd;
     }).length;
 
-    // Jobs won / lost that week (from estimate status)
-    const jobsWon = state.store.estimates.filter(e => {
-      if (e.status !== 'Approved') return false;
-      const d = new Date(e.signedAt || e.date || '');
-      return d >= weekStart && d <= weekEnd;
-    }).length;
-
-    const jobsLost = state.store.estimates.filter(e => {
-      if (e.status !== 'Declined') return false;
-      const d = new Date(e.date || '');
-      return d >= weekStart && d <= weekEnd;
-    }).length;
+    // Jobs won / lost that week — driven by the CRM deal pipeline (a lead
+    // moved to the Won or Lost stage). stageChangedAt marks when it landed
+    // there, so marking a deal Lost on the CRM board now shows here.
+    const inWeek = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= weekStart && d <= weekEnd; };
+    const wonLeads = state.store.leads.filter(l => normalizeLeadStatus(l.status) === 'Won' && inWeek(l.stageChangedAt));
+    const lostLeads = state.store.leads.filter(l => normalizeLeadStatus(l.status) === 'Lost' && inWeek(l.stageChangedAt));
+    const jobsWon = wonLeads.length;
+    const jobsLost = lostLeads.length;
 
     const totalDecided = jobsWon + jobsLost;
     const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : dash;
 
-    const revenueSold = state.store.estimates
-      .filter(e => {
-        if (e.status !== 'Approved') return false;
-        const d = new Date(e.signedAt || e.date || '');
-        return d >= weekStart && d <= weekEnd;
-      })
-      .reduce((sum, e) => sum + num(e.estimatedCost || 0), 0);
+    // Revenue Sold = value of the deals won that week (from each won lead's
+    // estimated value), so it stays consistent with the Jobs Won count.
+    const revenueSold = wonLeads.reduce((sum, l) => sum + num(l.estimatedValue || 0), 0);
 
     const revenueCollected = state.store.invoices
       .filter(inv => {
