@@ -2692,13 +2692,13 @@ html:not(.theme-light) .sidebar {
 .deal-card-top strong { font-size: .9rem; }
 .deal-move-btn { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 .2rem; min-height: 0; }
 .deal-service { margin: .15rem 0 0; }
-.deal-card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .35rem; gap: .4rem; }
+.deal-card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .35rem; gap: .4rem; flex-wrap: wrap; }
 .deal-value { font-weight: 700; font-size: .85rem; }
 .deal-days { margin: .25rem 0 0; }
 .theme-light .main .pipeline-col,
 .theme-light .main .deal-card { background: #faf7f1; border-color: rgba(31,26,20,.10); }
 
-.source-pill { font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: .15rem .45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.source-pill { display: inline-block; flex: 0 0 84px; width: 84px; max-width: 84px; box-sizing: border-box; font-size: .54rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: .14rem .4rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; vertical-align: middle; }
 .source-yelp { color: #c62828; border-color: rgba(198,40,40,.4); background: rgba(198,40,40,.1); }
 .source-google, .source-google-business-profile { color: #1a73e8; border-color: rgba(26,115,232,.4); background: rgba(26,115,232,.1); }
 .source-referral { color: #2e7d32; border-color: rgba(46,125,50,.4); background: rgba(46,125,50,.1); }

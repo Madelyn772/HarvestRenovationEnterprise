@@ -322,7 +322,7 @@ function dealCardHtml(lead) {
   return `<div class="deal-card" draggable="true" data-lead-id="${lead.id}">
     <div class="deal-card-top"><strong>${escapeHtml(name)}</strong><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
     <p class="muted tiny deal-service">${escapeHtml(lead.service || 'General')}</p>
-    <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span><span class="source-pill source-${sourceKey(src)}">${escapeHtml(src)}</span></div>
+    <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span><span class="source-pill source-${sourceKey(src)}" title="${escapeHtml(src)}">${escapeHtml(src)}</span></div>
     <p class="deal-days muted tiny">${days} day${days === 1 ? '' : 's'} in stage</p>
   </div>`;
 }
