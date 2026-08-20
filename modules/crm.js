@@ -435,7 +435,7 @@ export function openQuickYelpDialog() {
 export async function handleQuickAddSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.quickYelpForm);
-  if (!data.clientName || !data.phone) { showToast('Name and phone are required.', 'error'); return; }
+  if (!data.clientName) { showToast('Name is required.', 'error'); return; }
   let source = (data.source || '').trim();
   if (!source) { showToast('Please choose a lead source.', 'error'); return; }
   if (source === '__custom__') {
