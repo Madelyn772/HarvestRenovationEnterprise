@@ -6,6 +6,7 @@ import { saveDocument, renderDocuments } from './documents.js';
 import { renderEstimates } from './estimating.js';
 import { renderInvoices, fillInvoiceFromEstimate } from './operations.js';
 import { renderDashboard } from './dashboard.js';
+import { maybePromptKpiMerge } from './marketing.js';
 
 // Documenso is "configured" only when the placeholder URLs have been replaced
 // with real ones. This keeps the Send flow and webhook polling dormant (no
@@ -232,6 +233,7 @@ export function updateEstimateStatus(estimateId, newStatus) {
       renderDashboard();
       const shown = reason === 'Other' && otherText ? otherText : reason;
       showToast(`Estimate ${estimate.estimateNumber || estimate.id} declined${shown && shown !== 'Unspecified' ? ' — ' + shown : ''}.`, 'success');
+      maybePromptKpiMerge(estimate, 'estimate', () => { saveStore('KPI count preference saved'); renderEstimates(); renderDashboard(); });
     });
     return;
   }
@@ -251,10 +253,14 @@ export function updateEstimateStatus(estimateId, newStatus) {
   renderEstimates();
   renderDashboard();
   if (newStatus === 'Approved') {
-    // Pre-fill an invoice from the approved estimate and switch to Invoicing —
-    // but DO NOT save it. The user reviews, adds details, and clicks Save Invoice.
-    fillInvoiceFromEstimate(estimateId, { switchView: true });
-    showToast('Estimate approved. Invoice pre-filled — review and add details before saving.', 'info');
+    // Ask the duplicate-deal question first (if a same-client win already
+    // exists), then pre-fill an invoice from the approved estimate and switch
+    // to Invoicing — but DO NOT save it. The user reviews and saves manually.
+    maybePromptKpiMerge(estimate, 'estimate', () => {
+      saveStore('KPI count preference saved');
+      fillInvoiceFromEstimate(estimateId, { switchView: true });
+      showToast('Estimate approved. Invoice pre-filled — review and add details before saving.', 'info');
+    });
     return;
   }
   showToast(`Estimate ${estimate.estimateNumber || estimate.id} marked as ${newStatus}.`, 'success');

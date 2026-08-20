@@ -13,9 +13,11 @@ export function wonDealsInRange(start, end) {
   const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
   const values = []; // one entry per won deal (its $ value, for Revenue Sold)
   state.store.leads.forEach(l => {
+    if (l.kpiMergeWith) return; // merged into a same-client counterpart
     if (normalizeLeadStatus(l.status) === 'Won' && inRange(l.stageChangedAt)) values.push(num(l.estimatedValue || 0));
   });
   state.store.estimates.forEach(e => {
+    if (e.kpiMergeWith) return;
     if (e.status === 'Approved' && inRange(e.signedAt || e.date)) values.push(num(e.estimatedCost || 0));
   });
   return values;
@@ -25,12 +27,77 @@ export function lostDealsInRange(start, end) {
   const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
   let count = 0;
   state.store.leads.forEach(l => {
+    if (l.kpiMergeWith) return; // merged into a same-client counterpart
     if (normalizeLeadStatus(l.status) === 'Lost' && inRange(l.stageChangedAt)) count++;
   });
   state.store.estimates.forEach(e => {
+    if (e.kpiMergeWith) return;
     if (e.status === 'Declined' && inRange(e.declinedAt || e.date)) count++;
   });
   return count;
+}
+
+// ── Duplicate-deal merge prompt ──────────────────────────────────────────
+// When a deal outcome (Won/Lost from CRM, or Approved/Declined from an
+// estimate) is recorded and there's already a counted counterpart with the
+// EXACT same client name and same outcome, ask whether it should count as one
+// deal or two. The choice is stored as `kpiMergeWith` on the second record
+// (the count helpers above skip any record carrying that flag).
+const leadOutcome = (l) => { const s = normalizeLeadStatus(l.status); return s === 'Won' ? 'won' : s === 'Lost' ? 'lost' : ''; };
+const estimateOutcome = (e) => e.status === 'Approved' ? 'won' : e.status === 'Declined' ? 'lost' : '';
+
+function findCountedCounterpart(outcome, clientName, selfKind, selfId) {
+  const name = (clientName || '').trim().toLowerCase();
+  if (!name || !outcome) return null;
+  for (const l of state.store.leads) {
+    if ((selfKind === 'lead' && l.id === selfId) || l.kpiMergeWith) continue;
+    if (leadOutcome(l) === outcome && (l.clientName || '').trim().toLowerCase() === name) return { id: l.id, label: 'a CRM deal' };
+  }
+  for (const e of state.store.estimates) {
+    if ((selfKind === 'estimate' && e.id === selfId) || e.kpiMergeWith) continue;
+    if (estimateOutcome(e) === outcome && (e.clientName || '').trim().toLowerCase() === name) return { id: e.id, label: `estimate ${e.estimateNumber || ''}`.trim() };
+  }
+  return null;
+}
+
+function showMergeChoiceModal(clientName, outcome, counterpartLabel, onChoose) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const word = outcome === 'won' ? 'won' : 'lost';
+  overlay.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Duplicate deal">
+      <div class="modal-head">
+        <h3>Duplicate ${word} deal for "${escapeHtml(clientName)}"</h3>
+        <button type="button" class="modal-close" aria-label="Close">×</button>
+      </div>
+      <p class="muted">There's already ${escapeHtml(counterpartLabel)} counted as <strong>${word}</strong> for this client. How should the KPIs count them?</p>
+      <div class="modal-actions">
+        <button type="button" class="primary-btn merge-one">Count as 1 (same deal)</button>
+        <button type="button" class="ghost-btn merge-two">Count as 2 (separate)</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  let done = false;
+  const finish = (merged) => { if (done) return; done = true; document.removeEventListener('keydown', onKey); overlay.remove(); onChoose(merged); };
+  function onKey(e) { if (e.key === 'Escape') finish(true); } // Escape = safe default: count as 1
+  document.addEventListener('keydown', onKey);
+  overlay.querySelector('.merge-one').addEventListener('click', () => finish(true));
+  overlay.querySelector('.merge-two').addEventListener('click', () => finish(false));
+  overlay.querySelector('.modal-close').addEventListener('click', () => finish(true));
+  overlay.addEventListener('click', e => { if (e.target === overlay) finish(true); });
+}
+
+// After marking a record won/lost, check for a same-name counterpart and (if
+// found) ask 1-vs-2, storing the choice. Always calls onDone() when settled.
+export function maybePromptKpiMerge(record, kind, onDone) {
+  const outcome = kind === 'lead' ? leadOutcome(record) : estimateOutcome(record);
+  const cp = outcome ? findCountedCounterpart(outcome, record.clientName, kind, record.id) : null;
+  if (!cp) { onDone && onDone(false); return; }
+  showMergeChoiceModal(record.clientName, outcome, cp.label, (merged) => {
+    if (merged) record.kpiMergeWith = cp.id;
+    else delete record.kpiMergeWith;
+    onDone && onDone(merged);
+  });
 }
 
 // ── Business Scorecard — auto-calculated weekly snapshot (read-only) ──

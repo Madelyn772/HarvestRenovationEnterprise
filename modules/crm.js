@@ -3,6 +3,7 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { applyEstimateTemplate, renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
+import { maybePromptKpiMerge } from './marketing.js';
 
 export function renderClients() {
   if (!el.clientList) return;
@@ -181,6 +182,9 @@ export async function handleLeadSave(event) {
   showToast('Lead saved.', 'success');
   el.leadForm.reset();
   el.dealDialog?.close();
+  if (payload.status === 'Won' || payload.status === 'Lost') {
+    maybePromptKpiMerge(payload, 'lead', () => { saveStore('KPI count preference saved'); renderAll(); });
+  }
 }
 
 // Load an existing lead into the deal form for editing.
@@ -358,6 +362,9 @@ export function moveDealToStage(id, stage) {
   addActivity(`Moved ${leadDisplayName(lead)} to ${stage}.`, 'CRM');
   saveStore('Deal moved to ' + stage);
   renderLeads();
+  if (stage === 'Won' || stage === 'Lost') {
+    maybePromptKpiMerge(lead, 'lead', () => { saveStore('KPI count preference saved'); renderLeads(); });
+  }
 }
 
 export function renderContactsTable() {
