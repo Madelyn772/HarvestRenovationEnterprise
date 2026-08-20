@@ -20,7 +20,8 @@ export function cacheDom() {
     'yelpThisWeek','yelpThisMonth','pipelineSnapshotBoard','recordDepositDialog','recordDepositForm',
     'changeOrderForm','changeOrderList','changeOrderItems','changeOrderTotals','changeOrderCard','relatedChangeOrder',
     'recordPaymentDialog','recordPaymentForm','receiptList','receiptsCard',
-    'feedbackForm','bugReportList'
+    'feedbackForm','bugReportList',
+    'tipText','tipCounter','tipPrev','tipNext','tipAddForm','tipDeleteBtn'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }

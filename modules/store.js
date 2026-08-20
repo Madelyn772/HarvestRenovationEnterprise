@@ -1,6 +1,6 @@
 import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice, migrateLead, migrateChangeOrder, migrateReceipt, isAdmin } from './state.js';
 import { el, updateChip, showToast } from './dom.js';
-import { defaultChecklistItems } from './dashboard.js';
+import { defaultChecklistItems, defaultTips } from './dashboard.js';
 import { purgeExpiredTrash } from './trash.js';
 import { renderAll } from './navigation.js';
 
@@ -86,6 +86,9 @@ export async function loadStore() {
   // first time. Once it exists, keep the admin's saved list.
   if (!Array.isArray(state.store.checklist) || !state.store.checklist.length) {
     state.store.checklist = defaultChecklistItems();
+  }
+  if (!Array.isArray(state.store.tips) || !state.store.tips.length) {
+    state.store.tips = defaultTips();
   }
   if (!state.store.activity.length) {
     addActivity('Portal loaded', 'System');

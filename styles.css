@@ -2800,4 +2800,13 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .bug-actions .ghost-btn { padding: .3rem .6rem; min-height: 0; font-size: .78rem; }
 .bug-status-btn.current { border-color: var(--gold, #caa05a); color: var(--gold, #caa05a); font-weight: 700; }
 
+/* Helpful Tips carousel (dashboard) */
+.tips-card .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.tip-box { display: flex; align-items: center; gap: .6rem; margin: .3rem 0 .6rem; }
+.tip-text { flex: 1 1 auto; margin: 0; font-size: 1rem; line-height: 1.5; min-height: 2.6em; display: flex; align-items: center; }
+.tip-nav { flex: 0 0 auto; min-width: 40px; min-height: 40px; font-size: 1.3rem; line-height: 1; border-radius: 10px; }
+.tip-nav:disabled { opacity: .35; cursor: default; }
+.tip-admin { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.tip-admin .checklist-add { flex: 1 1 auto; }
+
 

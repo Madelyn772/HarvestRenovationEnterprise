@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-50" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-51" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -210,6 +210,22 @@
             <div id="analyticsSummary" class="stack"></div>
           </article>
         </div>
+
+        <article class="card tips-card">
+          <div class="card-head"><div><p class="eyebrow">Helpful Tips</p><h3>Tips &amp; how-tos</h3></div><span class="tip-counter muted tiny" id="tipCounter"></span></div>
+          <div class="tip-box">
+            <button type="button" class="ghost-btn tip-nav" id="tipPrev" aria-label="Previous tip">‹</button>
+            <p class="tip-text" id="tipText"></p>
+            <button type="button" class="ghost-btn tip-nav" id="tipNext" aria-label="Next tip">›</button>
+          </div>
+          <div class="tip-admin">
+            <button type="button" class="ghost-btn hidden" id="tipDeleteBtn">Delete this tip</button>
+            <form id="tipAddForm" class="checklist-add hidden">
+              <input type="text" name="text" placeholder="Add a helpful tip…" maxlength="240" />
+              <button type="submit" class="secondary-btn">Add tip</button>
+            </form>
+          </div>
+        </article>
 
         <div class="grid two">
           <article class="card">
@@ -991,6 +1007,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-50"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-51"></script>
 </body>
 </html>

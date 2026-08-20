@@ -1,4 +1,4 @@
-import { state, integer, money, num, isAdmin, computeCplLabel, PRIORITY_CHECKLIST, uid, formatDate } from './state.js';
+import { state, integer, money, num, isAdmin, computeCplLabel, PRIORITY_CHECKLIST, DEFAULT_TIPS, uid, formatDate } from './state.js';
 import { el, escapeHtml, emptyHtml, stackItem } from './dom.js';
 import { saveStore } from './store.js';
 
@@ -64,6 +64,7 @@ export function renderDashboard() {
   el.activityFeed.innerHTML = activities.length ? activities.map(item => stackItem(item.meta || 'Activity', escapeHtml(item.user ? `${item.text} — ${item.user}` : item.text), formatDate(item.date))).join('') : emptyHtml('No activity yet.');
 
   renderChecklist();
+  renderTips();
 }
 
 export function defaultChecklistItems() {
@@ -116,4 +117,73 @@ export function handleChecklistAdd(event) {
   if (input) input.value = '';
   saveStore('Checklist updated');
   renderChecklist();
+}
+
+// ── Helpful Tips carousel (dashboard) — everyone can click through; admins
+//    can add and delete tips. Stored in state.store.tips (shared cloud). ──
+export function defaultTips() {
+  return DEFAULT_TIPS.map((text, i) => ({ id: `TIP${i + 1}`, text, createdAt: '', createdBy: 'System' }));
+}
+
+let tipIndex = 0;
+
+export function renderTips() {
+  if (!el.tipText) return;
+  const admin = isAdmin();
+  const tips = Array.isArray(state.store.tips) ? state.store.tips : [];
+  if (el.tipAddForm) el.tipAddForm.classList.toggle('hidden', !admin);
+  if (!tips.length) {
+    el.tipText.textContent = admin ? 'No tips yet — add one below.' : 'No tips yet.';
+    if (el.tipCounter) el.tipCounter.textContent = '';
+    if (el.tipPrev) el.tipPrev.disabled = true;
+    if (el.tipNext) el.tipNext.disabled = true;
+    if (el.tipDeleteBtn) el.tipDeleteBtn.classList.add('hidden');
+    return;
+  }
+  if (tipIndex >= tips.length) tipIndex = tips.length - 1;
+  if (tipIndex < 0) tipIndex = 0;
+  el.tipText.textContent = tips[tipIndex].text;
+  if (el.tipCounter) el.tipCounter.textContent = `Tip ${tipIndex + 1} of ${tips.length}`;
+  const multi = tips.length > 1;
+  if (el.tipPrev) el.tipPrev.disabled = !multi;
+  if (el.tipNext) el.tipNext.disabled = !multi;
+  if (el.tipDeleteBtn) el.tipDeleteBtn.classList.toggle('hidden', !admin);
+}
+
+export function nextTip() {
+  const n = (state.store.tips || []).length;
+  if (!n) return;
+  tipIndex = (tipIndex + 1) % n;
+  renderTips();
+}
+
+export function prevTip() {
+  const n = (state.store.tips || []).length;
+  if (!n) return;
+  tipIndex = (tipIndex - 1 + n) % n;
+  renderTips();
+}
+
+export function handleTipAdd(event) {
+  event.preventDefault();
+  if (!isAdmin()) return;
+  const input = el.tipAddForm?.querySelector('input[name="text"]');
+  const text = (input?.value || '').trim();
+  if (!text) return;
+  if (!Array.isArray(state.store.tips)) state.store.tips = [];
+  state.store.tips.push({ id: uid('TIP'), text, createdAt: new Date().toISOString(), createdBy: state.profile?.full_name || '' });
+  tipIndex = state.store.tips.length - 1;
+  if (input) input.value = '';
+  saveStore('Tip added');
+  renderTips();
+}
+
+export function removeCurrentTip() {
+  if (!isAdmin()) return;
+  const tips = state.store.tips || [];
+  if (!tips.length) return;
+  tips.splice(tipIndex, 1);
+  if (tipIndex >= tips.length) tipIndex = Math.max(0, tips.length - 1);
+  saveStore('Tip removed');
+  renderTips();
 }

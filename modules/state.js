@@ -107,8 +107,20 @@ export const seedStore = {
   changeOrders: [],
   receipts: [],
   bugReports: [],
+  tips: [],
   trash: []
 };
+
+export const DEFAULT_TIPS = [
+  'Drag a deal between pipeline stages to move it forward — or use the ▸ menu on a card.',
+  'Mark a deal Won or Lost and your KPIs update automatically.',
+  'Quick Add Lead only needs a name and a source — great for logging calls fast.',
+  'New deals and quick leads are added to Contacts automatically.',
+  'On the pipeline, use “Closed deals” to view This month / quarter / year / All time. Nothing is ever deleted.',
+  'Approve or decline an estimate to update the KPI scorecard.',
+  'To change a signed (locked) estimate, create a Change Order instead of editing it.',
+  'Use the Service Now tab to report a bug or request a change any time.'
+];
 
 // Human-readable labels for each deletable collection, used by the Trash view.
 export const collectionLabels = {

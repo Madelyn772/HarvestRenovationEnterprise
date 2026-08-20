@@ -1,7 +1,7 @@
 import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
-import { renderDashboard, handleChecklistAdd } from './dashboard.js';
+import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, hydrateInvoiceForm } from './operations.js';
@@ -109,6 +109,10 @@ export function bindAppUi() {
   el.companyCalendarForm.addEventListener('submit', handleCompanyCalendarSave);
   el.adminGrantAccessForm.addEventListener('submit', handleAdminGrantAccess);
   if (el.checklistAddForm) el.checklistAddForm.addEventListener('submit', handleChecklistAdd);
+  if (el.tipAddForm) el.tipAddForm.addEventListener('submit', handleTipAdd);
+  if (el.tipNext) el.tipNext.addEventListener('click', nextTip);
+  if (el.tipPrev) el.tipPrev.addEventListener('click', prevTip);
+  if (el.tipDeleteBtn) el.tipDeleteBtn.addEventListener('click', removeCurrentTip);
   el.addInvoiceRow.addEventListener('click', () => addInvoiceRow());
 
   // Itemized estimate + invoice controls.
