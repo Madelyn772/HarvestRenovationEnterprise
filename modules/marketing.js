@@ -4,37 +4,33 @@ import { addActivity, saveStore } from './store.js';
 import { renderAll } from './navigation.js';
 
 // ── Shared "deal outcome" helpers so every KPI (scorecard table AND the Jobs
-//    Won trend chart) counts wins/losses the same way: from BOTH the CRM deal
-//    pipeline (a lead moved to Won/Lost) AND estimate outcomes (Approved = won,
-//    Declined = lost), de-duplicated by client so a deal marked in both places
-//    counts once. Records without a client stay distinct by their own id. ──
+//    Won trend chart) counts wins/losses the same way. BOTH sources count and
+//    ADD together: the CRM deal pipeline (a lead moved to Won/Lost, bucketed by
+//    stageChangedAt) AND estimate outcomes (Approved by signedAt||date = won,
+//    Declined by declinedAt||date = lost). No cross-source de-dupe — a declined
+//    estimate and a lost CRM lead each count as a loss. ──
 export function wonDealsInRange(start, end) {
   const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
-  const won = new Map(); // key -> deal value (for Revenue Sold)
+  const values = []; // one entry per won deal (its $ value, for Revenue Sold)
   state.store.leads.forEach(l => {
-    if (normalizeLeadStatus(l.status) === 'Won' && inRange(l.stageChangedAt)) {
-      const key = l.clientId || ('lead:' + l.id);
-      if (!won.has(key)) won.set(key, num(l.estimatedValue || 0));
-    }
+    if (normalizeLeadStatus(l.status) === 'Won' && inRange(l.stageChangedAt)) values.push(num(l.estimatedValue || 0));
   });
   state.store.estimates.forEach(e => {
-    if (e.status === 'Approved' && inRange(e.signedAt || e.date)) {
-      won.set(e.clientId || ('est:' + e.id), num(e.estimatedCost || 0)); // estimate value wins for revenue
-    }
+    if (e.status === 'Approved' && inRange(e.signedAt || e.date)) values.push(num(e.estimatedCost || 0));
   });
-  return won;
+  return values;
 }
 
 export function lostDealsInRange(start, end) {
   const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
-  const lost = new Set();
+  let count = 0;
   state.store.leads.forEach(l => {
-    if (normalizeLeadStatus(l.status) === 'Lost' && inRange(l.stageChangedAt)) lost.add(l.clientId || ('lead:' + l.id));
+    if (normalizeLeadStatus(l.status) === 'Lost' && inRange(l.stageChangedAt)) count++;
   });
   state.store.estimates.forEach(e => {
-    if (e.status === 'Declined' && inRange(e.date)) lost.add(e.clientId || ('est:' + e.id));
+    if (e.status === 'Declined' && inRange(e.declinedAt || e.date)) count++;
   });
-  return lost;
+  return count;
 }
 
 // ── Business Scorecard — auto-calculated weekly snapshot (read-only) ──
@@ -72,18 +68,17 @@ export function renderScorecard() {
       return d >= weekStart && d <= weekEnd;
     }).length;
 
-    // Jobs won / lost that week — combined CRM pipeline + estimate outcomes,
-    // de-duped by client (see wonDealsInRange / lostDealsInRange above).
-    const wonMap = wonDealsInRange(weekStart, weekEnd);
-    const lostSet = lostDealsInRange(weekStart, weekEnd);
-    const jobsWon = wonMap.size;
-    const jobsLost = lostSet.size;
+    // Jobs won / lost that week — CRM pipeline + estimate outcomes, both
+    // sources add together (see wonDealsInRange / lostDealsInRange above).
+    const wonValues = wonDealsInRange(weekStart, weekEnd);
+    const jobsWon = wonValues.length;
+    const jobsLost = lostDealsInRange(weekStart, weekEnd);
 
     const totalDecided = jobsWon + jobsLost;
     const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : dash;
 
     // Revenue Sold = combined value of the deals won that week.
-    const revenueSold = [...wonMap.values()].reduce((sum, v) => sum + v, 0);
+    const revenueSold = wonValues.reduce((sum, v) => sum + v, 0);
 
     const revenueCollected = state.store.invoices
       .filter(inv => {
@@ -240,9 +235,9 @@ export function renderJobsWonChart() {
   }
 
   // Count won deals per bucket — combined CRM pipeline wins + approved
-  // estimates (de-duped by client), matching the scorecard's Jobs Won.
+  // estimates, matching the scorecard's Jobs Won.
   buckets.forEach(b => {
-    b.count = wonDealsInRange(b.start, b.end).size;
+    b.count = wonDealsInRange(b.start, b.end).length;
   });
 
   // High-DPI canvas setup; fall back to the attribute size when hidden.

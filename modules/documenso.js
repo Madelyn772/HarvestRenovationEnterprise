@@ -224,6 +224,7 @@ export function updateEstimateStatus(estimateId, newStatus) {
   if (newStatus === 'Declined') {
     promptDeclineReason((reason, otherText) => {
       estimate.status = 'Declined';
+      estimate.declinedAt = new Date().toISOString();
       estimate.declineReason = reason || 'Unspecified';
       estimate.declineReasonOther = reason === 'Other' ? (otherText || '') : '';
       saveStore('Estimate marked as Declined');
@@ -236,10 +237,15 @@ export function updateEstimateStatus(estimateId, newStatus) {
   }
 
   estimate.status = newStatus;
-  // Reopening (or any non-declined status) clears the decline reason.
+  // Stamp the decision date so KPIs bucket it by when it happened (not when
+  // the estimate was created). Reopening clears the decline info.
+  if (newStatus === 'Approved') {
+    estimate.signedAt = estimate.signedAt || new Date().toISOString();
+  }
   if (newStatus !== 'Declined') {
     delete estimate.declineReason;
     delete estimate.declineReasonOther;
+    delete estimate.declinedAt;
   }
   saveStore(`Estimate marked as ${newStatus}`);
   renderEstimates();
