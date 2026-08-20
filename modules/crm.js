@@ -85,6 +85,16 @@ export async function handleClientSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.clientForm);
   const id = data.clientId || uid('CL');
+  // Hard stop: no two clients may share the same phone number. Compare digits
+  // only so formatting differences (dashes, spaces, +1) don't slip through.
+  const digits = (data.phone || '').replace(/\D/g, '');
+  if (digits) {
+    const clash = state.store.clients.find(c => c.id !== id && (c.phone || '').replace(/\D/g, '') === digits);
+    if (clash) {
+      showToast(`Phone number already in use by ${clash.name || 'another client'}. Each client must have a unique phone number.`, 'error');
+      return;
+    }
+  }
   const payload = { id, name: data.name, phone: data.phone, email: data.email, serviceArea: data.serviceArea, address: data.address, source: data.source, tags: data.tags, notes: data.notes };
   upsertArray('clients', payload, 'id');
   state.selectedClientId = id;
