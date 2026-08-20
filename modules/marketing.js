@@ -70,9 +70,14 @@ export function renderScorecard() {
       })
       .reduce((sum, inv) => sum + num(inv.total || 0), 0);
 
-    // Cash on hand — cumulative total of all paid invoices (simplified)
+    // Cash on hand — cumulative total of all invoices paid on/before this
+    // week's end, so it reads as a running balance that grows week to week.
     const cashOnHand = state.store.invoices
       .filter(inv => inv.status === 'Paid')
+      .filter(inv => {
+        const d = new Date(inv.paidAt || inv.date || '');
+        return !Number.isNaN(d.getTime()) && d <= weekEnd;
+      })
       .reduce((sum, inv) => sum + num(inv.total || 0), 0);
 
     const avgJobValue = jobsWon > 0 ? revenueSold / jobsWon : 0;
