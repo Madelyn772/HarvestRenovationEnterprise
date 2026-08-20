@@ -23,10 +23,11 @@ export function renderScorecard() {
     weekStart.setHours(0, 0, 0, 0);
     weekStart.setDate(weekEnd.getDate() - 6);
 
-    // Leads created that week (from CRM clients)
-    const leads = state.store.clients.filter(c => {
-      if (!c.created_at && !c.date) return false;
-      const d = new Date(c.created_at || c.date);
+    // Leads created that week (from the CRM lead pipeline)
+    const leads = state.store.leads.filter(l => {
+      const iso = l.createdAt || l.stageChangedAt;
+      if (!iso) return false;
+      const d = new Date(iso);
       return d >= weekStart && d <= weekEnd;
     }).length;
 
@@ -326,9 +327,10 @@ function renderYelpDuo() {
   startOfWeek.setHours(0, 0, 0, 0);
   startOfWeek.setDate(now.getDate() - now.getDay());
   const yelp = (state.store.leads || []).filter(l => (l.source || '') === 'Yelp');
-  const week = yelp.filter(l => l.stageChangedAt && new Date(l.stageChangedAt) >= startOfWeek).length;
+  const week = yelp.filter(l => { const iso = l.createdAt || l.stageChangedAt; return iso && new Date(iso) >= startOfWeek; }).length;
   const month = yelp.filter(l => {
-    const d = l.stageChangedAt ? new Date(l.stageChangedAt) : null;
+    const iso = l.createdAt || l.stageChangedAt;
+    const d = iso ? new Date(iso) : null;
     return d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }).length;
   const wEl = document.getElementById('yelpThisWeek');

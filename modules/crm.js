@@ -164,6 +164,7 @@ export async function handleLeadSave(event) {
     followUpDate: data.followUpDate || '',
     notes: data.notes,
     stageChangedAt: stageChanged ? new Date().toISOString() : (existing.stageChangedAt || new Date().toISOString()),
+    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
     lastContactedAt: existing ? (existing.lastContactedAt || '') : '',
     owner: existing?.owner || state.profile?.full_name || ''
   };
@@ -440,6 +441,7 @@ export async function handleQuickAddSave(event) {
     followUpDate: '',
     notes: data.notes || '',
     stageChangedAt: now,
+    createdAt: now,
     lastContactedAt: '',
     owner: state.profile?.full_name || ''
   });
@@ -466,6 +468,10 @@ export function backfillLeadFields() {
     }
     if (!lead.stageChangedAt) {
       lead.stageChangedAt = lead.preferredDate || new Date().toISOString();
+      touched = true;
+    }
+    if (!lead.createdAt) {
+      lead.createdAt = lead.stageChangedAt || lead.preferredDate || new Date().toISOString();
       touched = true;
     }
     const norm = normalizeLeadStatus(lead.status);
