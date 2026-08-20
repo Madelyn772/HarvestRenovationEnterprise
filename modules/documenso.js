@@ -161,9 +161,12 @@ const DECLINE_REASONS = [
   'Other'
 ];
 
-// Small modal asking for a decline reason. Optional but encouraged: skipping or
-// closing resolves with 'Unspecified'. Calls onDone(reason, otherText).
-function promptDeclineReason(onDone) {
+// Small modal asking for a decline / loss reason. Optional but encouraged:
+// skipping or closing resolves with 'Unspecified'. Calls onDone(reason, other).
+// `opts.title` and `opts.confirmLabel` let callers reuse it (e.g. CRM "Lost").
+export function promptDeclineReason(onDone, opts = {}) {
+  const title = opts.title || 'Why was this estimate declined?';
+  const confirmLabel = opts.confirmLabel || 'Mark Declined';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   const optionsHtml = DECLINE_REASONS.map((r, i) => `
@@ -174,14 +177,14 @@ function promptDeclineReason(onDone) {
   overlay.innerHTML = `
     <div class="modal-card" role="dialog" aria-modal="true" aria-label="Decline reason">
       <div class="modal-head">
-        <h3>Why was this estimate declined?</h3>
+        <h3>${escapeHtml(title)}</h3>
         <button type="button" class="modal-close" aria-label="Close">×</button>
       </div>
       <div class="decline-options">${optionsHtml}</div>
       <label class="decline-other-wrap is-hidden"><span>Tell us more</span><input type="text" class="decline-other" placeholder="Add a short note (optional)" /></label>
       <div class="modal-actions">
         <button type="button" class="ghost-btn decline-skip">Skip</button>
-        <button type="button" class="danger-btn decline-confirm">Mark Declined</button>
+        <button type="button" class="danger-btn decline-confirm">${escapeHtml(confirmLabel)}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);

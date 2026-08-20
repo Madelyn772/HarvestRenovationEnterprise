@@ -154,8 +154,9 @@ export function renderScorecard() {
   }
 }
 
-// ── Decline Reasons summary — grouped counts of declined estimates in the
-//    same period as the scorecard, sorted most-common first, with bars. ──
+// ── Decline / loss reasons summary — grouped counts of declined estimates AND
+//    CRM deals marked Lost (with a reason) in the same period as the scorecard,
+//    sorted most-common first, with bars. ──
 export function renderDeclineReasons() {
   if (!el.declineReasonSummary) return;
   const weeks = parseInt(el.scorecardPeriod?.value || 8, 10);
@@ -166,25 +167,29 @@ export function renderDeclineReasons() {
   const start = new Date(end);
   start.setHours(0, 0, 0, 0);
   start.setDate(end.getDate() - (weeks * 7 - 1));
-
-  const declined = state.store.estimates.filter(e => {
-    if (e.status !== 'Declined') return false;
-    if (!e.date) return true; // include undated declines
-    const d = new Date(e.date);
-    if (Number.isNaN(d.getTime())) return true;
+  const inPeriod = (iso, includeUndated) => {
+    if (!iso) return includeUndated;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return includeUndated;
     return d >= start && d <= end;
+  };
+
+  const counts = new Map();
+  const add = (reason) => { const r = (reason && String(reason).trim()) || 'Unspecified'; counts.set(r, (counts.get(r) || 0) + 1); };
+  // Declined estimates
+  state.store.estimates.forEach(e => {
+    if (e.status === 'Declined' && inPeriod(e.declinedAt || e.date, true)) add(e.declineReason);
+  });
+  // Lost CRM deals that captured a reason
+  state.store.leads.forEach(l => {
+    if (normalizeLeadStatus(l.status) === 'Lost' && l.lostReason && inPeriod(l.lostAt || l.stageChangedAt, true)) add(l.lostReason);
   });
 
-  if (!declined.length) {
-    el.declineReasonSummary.innerHTML = emptyHtml('No declined estimates in this period.');
+  if (!counts.size) {
+    el.declineReasonSummary.innerHTML = emptyHtml('No declined estimates or lost deals in this period.');
     return;
   }
 
-  const counts = new Map();
-  declined.forEach(e => {
-    const reason = (e.declineReason && String(e.declineReason).trim()) || 'Unspecified';
-    counts.set(reason, (counts.get(reason) || 0) + 1);
-  });
   const rows = [...counts.entries()].sort((a, b) => b[1] - a[1]);
   const max = rows[0][1] || 1;
 

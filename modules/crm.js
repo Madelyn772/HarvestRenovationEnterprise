@@ -3,6 +3,22 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { applyEstimateTemplate, renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
+import { promptDeclineReason } from './documenso.js';
+
+// Ask for (and store) the reason a deal was lost — reuses the estimate
+// decline-reason modal so CRM losses feed the same "why we lost" data.
+function captureLostReason(lead) {
+  if (!lead) return;
+  promptDeclineReason((reason, otherText) => {
+    lead.lostReason = reason || 'Unspecified';
+    lead.lostReasonOther = reason === 'Other' ? (otherText || '') : '';
+    lead.lostAt = new Date().toISOString();
+    const shown = reason === 'Other' && otherText ? otherText : reason;
+    saveStore('Lost reason saved');
+    renderLeads();
+    if (shown && shown !== 'Unspecified') showToast(`Marked lost — ${shown}.`, 'success');
+  }, { title: 'Why did we lose this deal?', confirmLabel: 'Save reason' });
+}
 
 export function renderClients() {
   if (!el.clientList) return;
@@ -219,6 +235,7 @@ export async function handleLeadSave(event) {
   showToast('Lead saved.', 'success');
   el.leadForm.reset();
   el.dealDialog?.close();
+  if (stageChanged && payload.status === 'Lost') captureLostReason(payload);
 }
 
 // Load an existing lead into the deal form for editing.
@@ -417,6 +434,7 @@ export function moveDealToStage(id, stage) {
   addActivity(`Moved ${leadDisplayName(lead)} to ${stage}.`, 'CRM');
   saveStore('Deal moved to ' + stage);
   renderLeads();
+  if (stage === 'Lost') captureLostReason(lead);
 }
 
 export function renderContactsTable() {
