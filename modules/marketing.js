@@ -4,100 +4,40 @@ import { addActivity, saveStore } from './store.js';
 import { renderAll } from './navigation.js';
 
 // ── Shared "deal outcome" helpers so every KPI (scorecard table AND the Jobs
-//    Won trend chart) counts wins/losses the same way. BOTH sources count and
-//    ADD together: the CRM deal pipeline (a lead moved to Won/Lost, bucketed by
-//    stageChangedAt) AND estimate outcomes (Approved by signedAt||date = won,
-//    Declined by declinedAt||date = lost). No cross-source de-dupe — a declined
-//    estimate and a lost CRM lead each count as a loss. ──
+//    Won trend chart) counts wins/losses the same way. Both sources feed in:
+//    the CRM deal pipeline (a lead moved to Won/Lost, bucketed by stageChangedAt)
+//    AND estimate outcomes (Approved by signedAt||date = won, Declined by
+//    declinedAt||date = lost). They are de-duplicated by the linked CONTACT
+//    (clientId), NOT by name — so the same client's lead + estimate count once,
+//    while two different clients who happen to share a name count separately.
+//    Records with no contact fall back to their own id (always distinct).
 export function wonDealsInRange(start, end) {
   const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
-  const values = []; // one entry per won deal (its $ value, for Revenue Sold)
+  const won = new Map(); // key (contact) -> deal value, for Revenue Sold
   state.store.leads.forEach(l => {
-    if (l.kpiMergeWith) return; // merged into a same-client counterpart
-    if (normalizeLeadStatus(l.status) === 'Won' && inRange(l.stageChangedAt)) values.push(num(l.estimatedValue || 0));
+    if (normalizeLeadStatus(l.status) === 'Won' && inRange(l.stageChangedAt)) {
+      const key = l.clientId || ('lead:' + l.id);
+      if (!won.has(key)) won.set(key, num(l.estimatedValue || 0));
+    }
   });
   state.store.estimates.forEach(e => {
-    if (e.kpiMergeWith) return;
-    if (e.status === 'Approved' && inRange(e.signedAt || e.date)) values.push(num(e.estimatedCost || 0));
+    if (e.status === 'Approved' && inRange(e.signedAt || e.date)) {
+      won.set(e.clientId || ('est:' + e.id), num(e.estimatedCost || 0)); // estimate $ wins for revenue
+    }
   });
-  return values;
+  return won;
 }
 
 export function lostDealsInRange(start, end) {
   const inRange = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= start && d <= end; };
-  let count = 0;
+  const lost = new Set(); // keyed by contact so a lead + its estimate count once
   state.store.leads.forEach(l => {
-    if (l.kpiMergeWith) return; // merged into a same-client counterpart
-    if (normalizeLeadStatus(l.status) === 'Lost' && inRange(l.stageChangedAt)) count++;
+    if (normalizeLeadStatus(l.status) === 'Lost' && inRange(l.stageChangedAt)) lost.add(l.clientId || ('lead:' + l.id));
   });
   state.store.estimates.forEach(e => {
-    if (e.kpiMergeWith) return;
-    if (e.status === 'Declined' && inRange(e.declinedAt || e.date)) count++;
+    if (e.status === 'Declined' && inRange(e.declinedAt || e.date)) lost.add(e.clientId || ('est:' + e.id));
   });
-  return count;
-}
-
-// ── Duplicate-deal merge prompt ──────────────────────────────────────────
-// When a deal outcome (Won/Lost from CRM, or Approved/Declined from an
-// estimate) is recorded and there's already a counted counterpart with the
-// EXACT same client name and same outcome, ask whether it should count as one
-// deal or two. The choice is stored as `kpiMergeWith` on the second record
-// (the count helpers above skip any record carrying that flag).
-const leadOutcome = (l) => { const s = normalizeLeadStatus(l.status); return s === 'Won' ? 'won' : s === 'Lost' ? 'lost' : ''; };
-const estimateOutcome = (e) => e.status === 'Approved' ? 'won' : e.status === 'Declined' ? 'lost' : '';
-
-function findCountedCounterpart(outcome, clientName, selfKind, selfId) {
-  const name = (clientName || '').trim().toLowerCase();
-  if (!name || !outcome) return null;
-  for (const l of state.store.leads) {
-    if ((selfKind === 'lead' && l.id === selfId) || l.kpiMergeWith) continue;
-    if (leadOutcome(l) === outcome && (l.clientName || '').trim().toLowerCase() === name) return { id: l.id, label: 'a CRM deal' };
-  }
-  for (const e of state.store.estimates) {
-    if ((selfKind === 'estimate' && e.id === selfId) || e.kpiMergeWith) continue;
-    if (estimateOutcome(e) === outcome && (e.clientName || '').trim().toLowerCase() === name) return { id: e.id, label: `estimate ${e.estimateNumber || ''}`.trim() };
-  }
-  return null;
-}
-
-function showMergeChoiceModal(clientName, outcome, counterpartLabel, onChoose) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  const word = outcome === 'won' ? 'won' : 'lost';
-  overlay.innerHTML = `
-    <div class="modal-card" role="dialog" aria-modal="true" aria-label="Duplicate deal">
-      <div class="modal-head">
-        <h3>Duplicate ${word} deal for "${escapeHtml(clientName)}"</h3>
-        <button type="button" class="modal-close" aria-label="Close">×</button>
-      </div>
-      <p class="muted">There's already ${escapeHtml(counterpartLabel)} counted as <strong>${word}</strong> for this client. How should the KPIs count them?</p>
-      <div class="modal-actions">
-        <button type="button" class="primary-btn merge-one">Count as 1 (same deal)</button>
-        <button type="button" class="ghost-btn merge-two">Count as 2 (separate)</button>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  let done = false;
-  const finish = (merged) => { if (done) return; done = true; document.removeEventListener('keydown', onKey); overlay.remove(); onChoose(merged); };
-  function onKey(e) { if (e.key === 'Escape') finish(true); } // Escape = safe default: count as 1
-  document.addEventListener('keydown', onKey);
-  overlay.querySelector('.merge-one').addEventListener('click', () => finish(true));
-  overlay.querySelector('.merge-two').addEventListener('click', () => finish(false));
-  overlay.querySelector('.modal-close').addEventListener('click', () => finish(true));
-  overlay.addEventListener('click', e => { if (e.target === overlay) finish(true); });
-}
-
-// After marking a record won/lost, check for a same-name counterpart and (if
-// found) ask 1-vs-2, storing the choice. Always calls onDone() when settled.
-export function maybePromptKpiMerge(record, kind, onDone) {
-  const outcome = kind === 'lead' ? leadOutcome(record) : estimateOutcome(record);
-  const cp = outcome ? findCountedCounterpart(outcome, record.clientName, kind, record.id) : null;
-  if (!cp) { onDone && onDone(false); return; }
-  showMergeChoiceModal(record.clientName, outcome, cp.label, (merged) => {
-    if (merged) record.kpiMergeWith = cp.id;
-    else delete record.kpiMergeWith;
-    onDone && onDone(merged);
-  });
+  return lost;
 }
 
 // ── Business Scorecard — auto-calculated weekly snapshot (read-only) ──
@@ -135,17 +75,17 @@ export function renderScorecard() {
       return d >= weekStart && d <= weekEnd;
     }).length;
 
-    // Jobs won / lost that week — CRM pipeline + estimate outcomes, both
-    // sources add together (see wonDealsInRange / lostDealsInRange above).
-    const wonValues = wonDealsInRange(weekStart, weekEnd);
-    const jobsWon = wonValues.length;
-    const jobsLost = lostDealsInRange(weekStart, weekEnd);
+    // Jobs won / lost that week — CRM pipeline + estimate outcomes, merged by
+    // contact so the same client's lead + estimate count once (see helpers).
+    const wonMap = wonDealsInRange(weekStart, weekEnd);
+    const jobsWon = wonMap.size;
+    const jobsLost = lostDealsInRange(weekStart, weekEnd).size;
 
     const totalDecided = jobsWon + jobsLost;
     const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : dash;
 
     // Revenue Sold = combined value of the deals won that week.
-    const revenueSold = wonValues.reduce((sum, v) => sum + v, 0);
+    const revenueSold = [...wonMap.values()].reduce((sum, v) => sum + v, 0);
 
     const revenueCollected = state.store.invoices
       .filter(inv => {
@@ -304,7 +244,7 @@ export function renderJobsWonChart() {
   // Count won deals per bucket — combined CRM pipeline wins + approved
   // estimates, matching the scorecard's Jobs Won.
   buckets.forEach(b => {
-    b.count = wonDealsInRange(b.start, b.end).length;
+    b.count = wonDealsInRange(b.start, b.end).size;
   });
 
   // High-DPI canvas setup; fall back to the attribute size when hidden.
