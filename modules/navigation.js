@@ -42,6 +42,7 @@ export function bindAppUi() {
     renderLeads();
     el.clientSearch.focus();
   });
+  if (el.pipelineRange) el.pipelineRange.addEventListener('change', e => { state.filters.pipelineRange = e.target.value; renderLeads(); });
   el.employeeSearch.addEventListener('input', debounce(e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); }));
 
   document.querySelectorAll('[data-doc-filter]').forEach(btn => btn.addEventListener('click', () => {

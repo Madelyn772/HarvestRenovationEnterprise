@@ -2770,4 +2770,15 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-light .main .contacts-table td,
 .theme-light .main .contacts-table .link-card { color: #1f1a14; }
 
+/* Pipeline close-date view filter (HubSpot-style) */
+.pipeline-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.pipeline-range { display: inline-flex; align-items: center; gap: .4rem; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.pipeline-range select { font-size: .8rem; padding: .3rem .5rem; border-radius: 8px; }
+.theme-light .main .pipeline-range { color: #5c5346; }
+@media (max-width: 768px) {
+  .pipeline-head { flex-direction: column; }
+  .pipeline-range { width: 100%; justify-content: space-between; }
+  .pipeline-range select { flex: 1 1 auto; }
+}
+
 

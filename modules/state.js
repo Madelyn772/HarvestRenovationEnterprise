@@ -148,7 +148,8 @@ export const state = {
   filters: {
     clientSearch: '',
     employeeSearch: '',
-    documentType: 'all'
+    documentType: 'all',
+    pipelineRange: 'month'
   }
 };
 

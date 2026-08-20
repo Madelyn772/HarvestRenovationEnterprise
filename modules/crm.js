@@ -327,12 +327,33 @@ function dealCardHtml(lead) {
   </div>`;
 }
 
+function pipelineRangeStart(range) {
+  const now = new Date();
+  if (range === 'year') return new Date(now.getFullYear(), 0, 1);
+  if (range === 'quarter') return new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+  return new Date(now.getFullYear(), now.getMonth(), 1); // month (default)
+}
+
 export function renderPipelineBoard() {
   const board = el.dealPipelineBoard;
   if (!board) return;
   const query = state.filters.clientSearch || '';
+  const range = state.filters.pipelineRange || 'month';
+  if (el.pipelineRange && el.pipelineRange.value !== range) el.pipelineRange.value = range;
   const allLeads = state.store.leads;
-  const leads = allLeads.filter(l => leadMatchesQuery(l, query));
+  let leads = allLeads.filter(l => leadMatchesQuery(l, query));
+  // HubSpot-style close-date view: nothing is deleted. When not actively
+  // searching, CLOSED deals (Won/Lost) only appear if they closed within the
+  // selected range; open/active deals always stay on the board.
+  if (!query && range !== 'all') {
+    const start = pipelineRangeStart(range);
+    leads = leads.filter(l => {
+      const s = normalizeLeadStatus(l.status);
+      if (s !== 'Won' && s !== 'Lost') return true;
+      const d = new Date(l.stageChangedAt || '');
+      return !Number.isNaN(d.getTime()) && d >= start;
+    });
+  }
   // Search feedback: result-count badge + clear button.
   if (el.crmSearchCount) {
     el.crmSearchCount.textContent = query ? `${leads.length} of ${allLeads.length} deals` : '';
