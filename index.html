@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260815-30" />
+  <link rel="stylesheet" href="./styles.css?v=20260815-31" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -520,6 +520,28 @@
             <div id="invoiceList" class="stack"></div>
           </article>
         </div>
+
+        <details class="card co-card" id="receiptsCard">
+          <summary><strong>Receipts</strong> <span class="muted tiny">— issued payment receipts</span></summary>
+          <div class="card-head"><div><p class="eyebrow">Receipts</p><h3>Payment receipt log</h3></div></div>
+          <div id="receiptList" class="stack"></div>
+        </details>
+
+        <dialog id="recordPaymentDialog" class="crm-dialog">
+          <button type="button" class="dialog-close" data-close-dialog="recordPaymentDialog" aria-label="Close">×</button>
+          <div class="card-head"><div><p class="eyebrow">Payment</p><h3>Record a payment</h3></div></div>
+          <p class="muted tiny">Records the payment, updates the balance, and issues a numbered receipt saved to Documents.</p>
+          <form id="recordPaymentForm" class="form-grid">
+            <label><span>Amount received</span><input name="amount" type="number" step="0.01" min="0" required /></label>
+            <label><span>Method</span><select name="method"><option>Check</option><option>Credit Card</option><option>Zelle</option><option>ACH</option><option>Cash</option><option>Other</option></select></label>
+            <label><span>Type</span><select name="type"><option>Deposit</option><option>Progress</option><option>Final</option><option>Full</option></select></label>
+            <label><span>Date</span><input name="date" type="date" /></label>
+            <div class="form-actions full">
+              <button type="submit" class="primary-btn">Record payment</button>
+              <button type="button" class="ghost-btn" data-close-dialog="recordPaymentDialog">Cancel</button>
+            </div>
+          </form>
+        </dialog>
       </section>
 
       <section class="view" id="operationsView">
@@ -919,6 +941,6 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260815-30"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260815-31"></script>
 </body>
 </html>

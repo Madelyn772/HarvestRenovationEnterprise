@@ -16,6 +16,7 @@ import { printEstimate, printInvoice } from './pdf.js';
 import { handleLogout } from './auth.js';
 import { sendEstimate, sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
+import { renderReceipts, handlePaymentDialogSubmit } from './receipts.js';
 
 export function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
@@ -138,6 +139,7 @@ export function bindAppUi() {
   if (addCoBtn) addCoBtn.addEventListener('click', () => addChangeOrderRow());
   const clearCoBtn = document.getElementById('clearChangeOrderForm');
   if (clearCoBtn) clearCoBtn.addEventListener('click', () => { el.changeOrderForm.reset(); const w = document.getElementById('changeOrderItems'); if (w) w.innerHTML = ''; });
+  if (el.recordPaymentForm) el.recordPaymentForm.addEventListener('submit', handlePaymentDialogSubmit);
 
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
@@ -286,6 +288,7 @@ export function renderCurrentView() {
       hydrateInvoiceForm();
       renderInvoiceBalanceCallout();
       renderInvoices();
+      renderReceipts();
     },
     operations: () => {
       renderJobs();
@@ -419,6 +422,7 @@ export function renderAll() {
   renderCalendarItems();
   renderInvoices();
   renderNotes();
+  renderReceipts();
   renderCampaigns();
   renderScorecard();
   renderJobsWonChart();

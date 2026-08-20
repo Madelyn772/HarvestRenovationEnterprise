@@ -314,3 +314,23 @@ export function buildChangeOrderDocHtml(co) {
     signatureBlockEnabled: true
   });
 }
+
+export function buildReceiptDocHtml(receipt) {
+  const paidToDate = num(receipt.previouslyPaid) + num(receipt.amountReceived);
+  const statusLabel = num(receipt.balanceRemaining) <= 0.01 ? 'PAID IN FULL' : `${receipt.paymentType || 'Progress'} Payment`;
+  return buildBrandedDocHtml({
+    kind: 'PAYMENT RECEIPT',
+    number: receipt.receiptNumber || '',
+    date: receipt.paymentDate,
+    status: statusLabel,
+    bill: { name: receipt.clientName },
+    rows: [{ desc: `Payment received — ${receipt.paymentMethod || 'Check'} (${receipt.paymentType || 'Progress'})`, amount: num(receipt.amountReceived) }],
+    comments: `Payment for Invoice ${receipt.invoiceNumber || ''}\nMethod: ${receipt.paymentMethod || 'Check'}  •  Type: ${receipt.paymentType || 'Progress'}`,
+    balanceLabel: 'BALANCE REMAINING',
+    balance: num(receipt.balanceRemaining),
+    subtotal: num(receipt.total),
+    paymentsReceived: paidToDate,
+    preparedBy: receipt.issuedBy || currentUserName(),
+    signatureBlockEnabled: false
+  });
+}

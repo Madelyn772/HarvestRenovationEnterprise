@@ -105,6 +105,7 @@ export const seedStore = {
   checklist: [],
   reservedNumbers: [],
   changeOrders: [],
+  receipts: [],
   trash: []
 };
 
@@ -119,7 +120,8 @@ export const collectionLabels = {
   invoices: 'Invoice',
   campaigns: 'KPI row',
   documents: 'Document',
-  changeOrders: 'Change Order'
+  changeOrders: 'Change Order',
+  receipts: 'Receipt'
 };
 
 export const state = {
@@ -242,7 +244,9 @@ export function numberInUse(type, number, currentId = '') {
   // Only uploaded documents count; generated documents mirror an existing record.
   const inUploads = (state.store.documents || []).some(doc => doc.uploaded && doc.type === type && String(doc.number || '').trim().toLowerCase() === target);
   const inReserved = (state.store.reservedNumbers || []).some(row => row.type === type && String(row.number || '').trim().toLowerCase() === target);
-  return inRecords || inUploads || inReserved;
+  const inChangeOrders = (state.store.changeOrders || []).some(c => String(c.changeOrderNumber || '').trim().toLowerCase() === target);
+  const inReceipts = (state.store.receipts || []).some(r => String(r.receiptNumber || '').trim().toLowerCase() === target);
+  return inRecords || inUploads || inReserved || inChangeOrders || inReceipts;
 }
 
 export function buildMailto(to, subject, body) {
@@ -397,5 +401,18 @@ export function migrateChangeOrder(record) {
   if (r.signedBy == null) r.signedBy = '';
   if (r.owner == null) r.owner = '';
   if (r.notes == null) r.notes = '';
+  return r;
+}
+
+// Backwards-compatibility defaults for receipt records.
+export function migrateReceipt(record) {
+  if (!record || typeof record !== 'object') return record;
+  const r = { ...record };
+  if (r.amountReceived == null) r.amountReceived = 0;
+  if (r.paymentType == null) r.paymentType = 'Progress';
+  if (r.paymentMethod == null) r.paymentMethod = 'Check';
+  if (r.balanceRemaining == null) r.balanceRemaining = 0;
+  if (r.notes == null) r.notes = '';
+  if (r.issuedBy == null) r.issuedBy = '';
   return r;
 }

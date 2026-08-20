@@ -74,6 +74,10 @@ export function saveChangeOrderFromForm() {
   const items = readChangeOrderItems();
   const deltaAmount = items.reduce((s, i) => s + num(i.amount), 0);
   const existing = data.changeOrderId ? state.store.changeOrders.find(c => c.id === data.changeOrderId) : null;
+  if (existing && existing.status === 'Approved' && Math.round(num(existing.deltaAmount) * 100) !== Math.round(deltaAmount * 100)) {
+    showToast('Approved change orders are locked. Create a new change order to bill more.', 'error');
+    return null;
+  }
   const payload = {
     id: data.changeOrderId || uid('CO'),
     changeOrderNumber: data.changeOrderNumber || autoNumber('CO'),

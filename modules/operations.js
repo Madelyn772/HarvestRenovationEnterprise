@@ -5,6 +5,7 @@ import { populateClientSelects, populateEstimateSelects, renderAll, setView } fr
 import { resolveFormClient } from './crm.js';
 import { printInvoice } from './pdf.js';
 import { updateInvoiceStatus } from './documenso.js';
+import { openPaymentDialog, markPaid, generateReceiptForInvoice } from './receipts.js';
 
 export async function handleJobSave(event) {
   event.preventDefault();
@@ -50,6 +51,12 @@ export function saveInvoiceFromForm() {
   }
   const resolved = resolveFormClient(data, { name: data.clientName, phone: data.phone, email: data.email, address: data.address });
   const payload = collectInvoiceFromForm();
+  // Chain guard: a Paid invoice's amounts are locked (edit notes only).
+  const existingInv = payload.id ? state.store.invoices.find(i => i.id === payload.id) : null;
+  if (existingInv && existingInv.status === 'Paid' && invoiceAmountsChanged(existingInv, payload)) {
+    showToast('This invoice is paid — amounts are locked. Duplicate the estimate or create a change order to bill more.', 'error');
+    return null;
+  }
   // Auto-transition status from recorded payments (user's explicit choice wins).
   const bal = computeInvoiceBalances(payload);
   if (num(payload.total) > 0) {
@@ -109,6 +116,13 @@ export function computeInvoiceBalances(invoice) {
   const total = num(invoice.total != null ? invoice.total : (invoice.items || []).reduce((s, it) => s + num(it && it.amount), 0));
   const paid = (invoice.payments || []).reduce((s, p) => s + num(p && p.amount), 0);
   return { total, paid, balance: total - paid };
+}
+
+// True if the invoice's billable amounts (total or line items) changed.
+function invoiceAmountsChanged(a, b) {
+  if (Math.round(num(a.total) * 100) !== Math.round(num(b.total) * 100)) return true;
+  const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice)]));
+  return norm(a.items) !== norm(b.items);
 }
 
 export function collectInvoiceFromForm() {
@@ -224,49 +238,22 @@ export function renderInvoices() {
     const status = item.status || 'Draft';
     const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
+    const lockIcon = status === 'Paid' ? '<span class="lock-icon" title="Paid invoice — amounts cannot be changed">🔒</span>' : '';
     const balanceLine = balance > 0.01 ? `<p class="invoice-balance-owed">Balance ${money.format(balance)}</p>` : '';
-    const markPaidBtn = balance > 0.01 ? `<button class="ghost-btn invoice-markpaid" data-invoice-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Mark Paid</button>` : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><div class="invoice-amount-cell"><strong>${money.format(total)}</strong>${balanceLine}</div></div><p class="muted">${statusBadge || escapeHtml(status)}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button><button class="ghost-btn invoice-addpayment" data-invoice-id="${item.id}">+ Payment</button>${markPaidBtn}${deleteBtn('invoices', item.id)}</div></div>`;
+    const payBtns = balance > 0.01
+      ? `<button class="ghost-btn invoice-record-payment" data-invoice-id="${item.id}">Record Payment</button><button class="ghost-btn invoice-mark-paid" data-invoice-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Mark Paid</button>`
+      : '';
+    const receiptBtn = status === 'Paid' ? `<button class="ghost-btn invoice-generate-receipt" data-invoice-id="${item.id}">Generate Receipt</button>` : '';
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)} ${lockIcon}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><div class="invoice-amount-cell"><strong>${money.format(total)}</strong>${balanceLine}</div></div><p class="muted">${statusBadge || escapeHtml(status)}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${payBtns}${receiptBtn}${deleteBtn('invoices', item.id)}</div></div>`;
   }).join('') : emptyHtml('No invoices yet.');
   el.invoiceList.querySelectorAll('.invoice-print').forEach(btn => btn.addEventListener('click', () => {
     const invoice = state.store.invoices.find(item => item.id === btn.dataset.invoiceId);
     if (invoice) printInvoice(invoice);
   }));
   el.invoiceList.querySelectorAll('.invoice-email').forEach(btn => btn.addEventListener('click', () => emailInvoice(btn.dataset.invoiceId)));
-  el.invoiceList.querySelectorAll('.invoice-addpayment').forEach(btn => btn.addEventListener('click', () => quickAddPayment(btn.dataset.invoiceId)));
-  el.invoiceList.querySelectorAll('.invoice-markpaid').forEach(btn => btn.addEventListener('click', () => quickMarkPaid(btn.dataset.invoiceId)));
-}
-
-function recordInvoicePayment(invoiceId, amount, method = 'Check', note = '') {
-  const invoice = state.store.invoices.find(i => i.id === invoiceId);
-  if (!invoice) return;
-  invoice.payments = invoice.payments || [];
-  invoice.payments.push({ id: uid('PAY'), date: todayISO(), amount: num(amount), method, reference: '', note });
-  const { total, paid, balance } = computeInvoiceBalances(invoice);
-  if (total > 0 && balance <= 0.01) invoice.status = 'Paid';
-  else if (paid > 0 && paid < total && invoice.status !== 'Draft' && invoice.status !== 'Sent') invoice.status = 'Partial';
-  addActivity(`Recorded ${money.format(num(amount))} payment on invoice ${invoice.invoiceNumber || invoice.id}.`, 'Billing');
-  saveStore('Payment recorded');
-  renderAll();
-}
-
-function quickAddPayment(invoiceId) {
-  const raw = prompt('Payment amount ($):');
-  if (raw == null) return;
-  const amount = num(raw);
-  if (amount <= 0) { showToast('Enter a payment amount greater than 0.', 'error'); return; }
-  const method = prompt('Method (Check, Cash, Card, ACH, Zelle, Other):', 'Check') || 'Check';
-  recordInvoicePayment(invoiceId, amount, method);
-  showToast('Payment recorded.', 'success');
-}
-
-function quickMarkPaid(invoiceId) {
-  const invoice = state.store.invoices.find(i => i.id === invoiceId);
-  if (!invoice) return;
-  const { balance } = computeInvoiceBalances(invoice);
-  if (balance <= 0.01) { updateInvoiceStatus(invoiceId, 'Paid'); return; }
-  recordInvoicePayment(invoiceId, balance, 'Check', 'Balance paid in full');
-  showToast('Invoice marked paid.', 'success');
+  el.invoiceList.querySelectorAll('.invoice-record-payment').forEach(btn => btn.addEventListener('click', () => openPaymentDialog(btn.dataset.invoiceId)));
+  el.invoiceList.querySelectorAll('.invoice-mark-paid').forEach(btn => btn.addEventListener('click', () => markPaid(btn.dataset.invoiceId)));
+  el.invoiceList.querySelectorAll('.invoice-generate-receipt').forEach(btn => btn.addEventListener('click', () => generateReceiptForInvoice(btn.dataset.invoiceId)));
 }
 
 export function renderNotes() {
@@ -291,6 +278,18 @@ export async function handleNoteSave(event) {
 export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {}) {
   const estimate = state.store.estimates.find(item => item.id === estimateId);
   if (!estimate) return;
+  // Chain guard: only signed (Approved) estimates can be invoiced, and only once.
+  if (estimate.status !== 'Approved') {
+    showToast('Estimate must be signed by the client before it can be invoiced.', 'error');
+    return;
+  }
+  const existing = state.store.invoices.find(i => i.relatedEstimate === estimate.id);
+  if (existing) {
+    setView('invoicing');
+    renderInvoices();
+    showToast(`This estimate is already invoiced as ${existing.invoiceNumber || existing.id}.`, 'info');
+    return;
+  }
   const client = estimate.clientId ? findClient(estimate.clientId) : null;
   const invDate = document.getElementById('invoiceDate');
   const dueInput = document.getElementById('invoiceDueDate');

@@ -2629,6 +2629,9 @@ html:not(.theme-light) .sidebar {
 .line-items-head.co-line { grid-template-columns: 2fr 1fr 2.2rem; }
 .line-item-row.co-line { grid-template-columns: 2fr 1fr 2.2rem; }
 .co-card > summary { cursor: pointer; font-weight: 600; }
+.lock-icon { font-size: .85rem; opacity: .8; }
+.form-locked input:disabled, .form-locked select:disabled, .form-locked textarea:disabled,
+.form-locked input:read-only, .form-locked textarea:read-only { opacity: .6; background: rgba(120,120,120,.08); cursor: not-allowed; }
 
 /* Light theme */
 .theme-light .main .line-items-head { color: #7a6a4f; }

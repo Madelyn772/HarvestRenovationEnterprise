@@ -26,6 +26,12 @@ export function saveEstimateFromForm() {
   if (existingRec) {
     payload.depositReceivedAt = existingRec.depositReceivedAt || '';
     payload.depositReceivedBy = existingRec.depositReceivedBy || '';
+    // Chain guard: financials are locked once approved/invoiced.
+    const locked = existingRec.status === 'Approved' || state.store.invoices.some(i => i.relatedEstimate === existingRec.id);
+    if (locked && estimateFinancialsChanged(existingRec, payload)) {
+      showToast('Financial fields are locked because this estimate is approved/invoiced. Duplicate it to bill additional work, or create a change order.', 'error');
+      return null;
+    }
   }
   upsertArray('estimates', payload, 'id');
   // Keep editing the same record so re-saving (or printing) updates in place.
@@ -41,6 +47,57 @@ export function saveEstimateFromForm() {
   updateNewClientFieldsVisibility();
   renderAll();
   return payload;
+}
+
+function estFinEq(a, b) { return Math.round(num(a) * 100) === Math.round(num(b) * 100); }
+
+// True if any locked (financial) estimate field differs between two records.
+function estimateFinancialsChanged(a, b) {
+  if (!estFinEq(a.estimatedCost, b.estimatedCost)) return true;
+  if (!estFinEq(a.subtotal, b.subtotal)) return true;
+  if (num(a.depositPercent) !== num(b.depositPercent)) return true;
+  if (!estFinEq(a.taxPercent, b.taxPercent)) return true;
+  if (!estFinEq(a.permitsFees, b.permitsFees)) return true;
+  if (!estFinEq(a.finalPercent, b.finalPercent)) return true;
+  if ((a.trade || '') !== (b.trade || '')) return true;
+  if ((a.scope || '') !== (b.scope || '')) return true;
+  const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice)]));
+  return norm(a.items) !== norm(b.items);
+}
+
+// Disable/enable the estimate's financial inputs (used when a record is locked).
+export function applyEstimateLock(locked) {
+  const F = el.estimateForm;
+  // Text/number/textarea stay in FormData, so lock them via readonly (a disabled
+  // field is omitted from FormData and would make a re-save look like a change).
+  ['taxPercent', 'permitsFees', 'finalPercent', 'depositPercentCustom', 'scope', 'trade'].forEach(n => {
+    const inp = F.querySelector(`[name="${n}"]`);
+    if (inp) inp.readOnly = locked;
+  });
+  document.querySelectorAll('#estimateItems .line-item-row input').forEach(i => { i.readOnly = locked; });
+  // Selects/buttons are read directly (not via FormData), so disable them.
+  const depSel = document.getElementById('estimateDepositPercent');
+  if (depSel) depSel.disabled = locked;
+  if (el.estimateTemplateSelect) el.estimateTemplateSelect.disabled = locked;
+  document.querySelectorAll('#estimateItems .line-item-row select, #estimateItems .remove-line-row').forEach(i => { i.disabled = locked; });
+  const addBtn = document.getElementById('addEstimateRow');
+  if (addBtn) addBtn.disabled = locked;
+  const loadBtn = document.getElementById('loadTemplateItems');
+  if (loadBtn) loadBtn.disabled = locked;
+  if (el.sendEstimate) el.sendEstimate.disabled = locked;
+  F.classList.toggle('form-locked', locked);
+}
+
+// Belt-and-suspenders chain summary used before invoice/receipt actions.
+export function validateDocumentChain(estimateId) {
+  const est = state.store.estimates.find(e => e.id === estimateId);
+  const estimateSigned = est ? est.status === 'Approved' : false;
+  const cos = state.store.changeOrders.filter(c => c.parentEstimateId === estimateId);
+  const changeOrdersSigned = cos.every(c => c.status !== 'Sent');
+  const invoices = state.store.invoices.filter(i => i.relatedEstimate === estimateId);
+  const totalBilled = invoices.reduce((s, i) => s + num(i.total), 0);
+  const totalReceived = invoices.reduce((s, i) => s + (i.payments || []).reduce((a, p) => a + num(p.amount), 0), 0);
+  return { estimateSigned, changeOrdersSigned, invoices: invoices.length, totalBilled, totalReceived };
 }
 
 export async function handleEstimateSave(event) {
@@ -100,6 +157,7 @@ export function hydrateEstimateForm() {
   updateDepositCustomVisibility();
   // Only auto-sync the phone on a fresh form; a loaded record keeps its saved value.
   if (!el.estimateForm.estimateId.value) syncEstimateClientPhone();
+  if (!el.estimateForm.estimateId.value) applyEstimateLock(false);
   // Fresh form (no record loaded) with no rows → give one blank row to type into.
   const wrap = getEstimateItemsEl();
   if (wrap && !el.estimateForm.estimateId.value && wrap.querySelectorAll('.line-item-row').length === 0) {
@@ -335,6 +393,7 @@ export function loadEstimateIntoForm(id) {
     (item.items || []).forEach(row => addEstimateRow(row));
   }
   recomputeEstimateTotals();
+  applyEstimateLock(item.status === 'Approved' || state.store.invoices.some(i => i.relatedEstimate === item.id));
   setView('estimating');
 }
 
@@ -364,13 +423,19 @@ export function renderEstimates() {
     const declineLine = declineText ? `<p class="decline-reason">Declined — ${escapeHtml(declineText)}</p>` : '';
     const coCount = state.store.changeOrders.filter(c => c.parentEstimateId === item.id).length;
     const coLine = (status === 'Approved' && coCount > 0) ? `<p class="muted tiny">Change Orders (${coCount})</p>` : '';
+    const linkedInvoice = state.store.invoices.find(i => i.relatedEstimate === item.id);
+    const lockIcon = (status === 'Approved' || linkedInvoice) ? '<span class="lock-icon" title="Signed agreement — create a change order to modify scope">🔒</span>' : '';
+    const invoiceBtn = linkedInvoice
+      ? `<button class="ghost-btn estimate-view-invoice" data-invoice-id="${linkedInvoice.id}">View Invoice ${escapeHtml(linkedInvoice.invoiceNumber || '')}</button>`
+      : `<button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button>`;
     const approvedExtra = status === 'Approved'
       ? `<button class="ghost-btn estimate-duplicate" data-estimate-id="${item.id}">Duplicate</button><button class="ghost-btn estimate-changeorder" data-estimate-id="${item.id}">Change Order</button>`
       : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted deal-pill-row">${statusBadge || escapeHtml(status)} ${depositPill}</p>${declineLine}${coLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button><button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button><button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${approvedExtra}${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
+    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)} ${lockIcon}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted deal-pill-row">${statusBadge || escapeHtml(status)} ${depositPill}</p>${declineLine}${coLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${approvedExtra}${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-invoice').forEach(btn => btn.addEventListener('click', () => fillInvoiceFromEstimate(btn.dataset.estimateId, { switchView: true })));
+  el.estimateList.querySelectorAll('.estimate-view-invoice').forEach(btn => btn.addEventListener('click', () => { setView('invoicing'); }));
   el.estimateList.querySelectorAll('.estimate-email').forEach(btn => btn.addEventListener('click', () => emailEstimate(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-record-deposit').forEach(btn => btn.addEventListener('click', () => openRecordDepositDialog(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-duplicate').forEach(btn => btn.addEventListener('click', () => duplicateEstimate(btn.dataset.estimateId)));

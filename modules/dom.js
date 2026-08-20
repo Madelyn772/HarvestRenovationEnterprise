@@ -17,7 +17,8 @@ export function cacheDom() {
     'dealPipelineBoard','contactsTable','crmStatContacts','crmStatActiveDeals','crmStatWonMonth','crmStatPipelineValue',
     'contactDialog','dealDialog','quickYelpDialog','quickYelpForm','newContactBtn','newDealBtn','quickYelpBtn',
     'yelpThisWeek','yelpThisMonth','pipelineSnapshotBoard','recordDepositDialog','recordDepositForm',
-    'changeOrderForm','changeOrderList','changeOrderItems','changeOrderTotals','changeOrderCard','relatedChangeOrder'
+    'changeOrderForm','changeOrderList','changeOrderItems','changeOrderTotals','changeOrderCard','relatedChangeOrder',
+    'recordPaymentDialog','recordPaymentForm','receiptList','receiptsCard'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
