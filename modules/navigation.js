@@ -180,6 +180,11 @@ export function bindAppUi() {
   if (el.reservedNumberForm) el.reservedNumberForm.addEventListener('submit', handleReservedNumberAdd);
   if (el.feedbackForm) {
     el.feedbackForm.addEventListener('submit', handleBugReportSave);
+    // Don't let Enter in a single-line field submit (and reset) the form —
+    // only the Submit button should. Textareas keep normal newline behavior.
+    el.feedbackForm.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') e.preventDefault();
+    });
     const clearFeedback = document.getElementById('clearFeedbackForm');
     if (clearFeedback) clearFeedback.addEventListener('click', () => el.feedbackForm.reset());
   }
@@ -273,7 +278,7 @@ export function setView(view) {
     marketing: ['KPIs', 'Track traffic, ad spend, campaign performance, and lead sources.'],
     calendars: ['Calendars', 'Monitor the company calendar and team availability.'],
     team: ['Team', 'View the employee directory and internal build-out roadmap.'],
-    feedback: ['Feedback', 'Report bugs and change requests straight from the portal.'],
+    feedback: ['Service Now', 'Report bugs, issues, and change requests straight from the portal.'],
     settings: ['Settings', 'Manage your employee profile, password, and shared calendar settings.'],
     admin: ['Admin', 'Approve access requests and create active employees.'],
     trash: ['Trash', 'Restore recently deleted items or remove them permanently.']
