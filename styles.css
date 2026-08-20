@@ -2754,4 +2754,16 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .contacts-table td[data-label="Name"] { text-align: left; }
 }
 
+/* ============================================================
+   CRM readability: fix low-contrast text in the light theme.
+   pipeline-col-head hardcodes var(--text) (cream) → white-on-white
+   on light cards; several labels use var(--muted) (light tan) on
+   white. Force readable dark/muted tones in the light workspace.
+   ============================================================ */
+.theme-light .main .pipeline-col-head { color: #2a2118; }
+.theme-light .main .crm-stat span,
+.theme-light .main .contacts-table .contacts-head th,
+.theme-light .main .contacts-table td::before,
+.theme-light .main .search-result-count { color: #5c5346; }
+
 
