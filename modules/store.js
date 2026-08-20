@@ -1,4 +1,4 @@
-import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice, migrateLead, migrateChangeOrder, migrateReceipt } from './state.js';
+import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice, migrateLead, migrateChangeOrder, migrateReceipt, isAdmin } from './state.js';
 import { el, updateChip, showToast } from './dom.js';
 import { defaultChecklistItems } from './dashboard.js';
 import { purgeExpiredTrash } from './trash.js';
@@ -130,6 +130,7 @@ function subscribeCloud() {
       if (!storeHasContent(row.data)) return;
       // Adopt the teammate's update. Forms hold their own DOM values, so this
       // only refreshes the saved data + lists, not anything mid-edit.
+      const prevBugIds = new Set((state.store.bugReports || []).map(b => b.id));
       applyingRemote = true;
       state.store = normalizeStoreShape(row.data);
       cloudInitialized = true;
@@ -137,6 +138,12 @@ function subscribeCloud() {
       applyingRemote = false;
       renderAll();
       updateChip(el.saveStateChip, 'Synced from cloud');
+      // Notify the admin of any brand-new bug reports in this update.
+      if (isAdmin()) {
+        (state.store.bugReports || [])
+          .filter(b => !prevBugIds.has(b.id))
+          .forEach(b => showToast(`New ${(b.kind || 'bug').toLowerCase()} report from ${b.submittedBy || 'a teammate'}: ${b.title}`, 'info'));
+      }
     })
     .subscribe();
 }

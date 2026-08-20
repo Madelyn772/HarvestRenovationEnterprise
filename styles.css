@@ -2781,4 +2781,23 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .pipeline-range select { flex: 1 1 auto; }
 }
 
+/* Feedback / bug reports */
+.bug-card { border: 1px solid var(--line); border-radius: 12px; padding: .8rem .9rem; background: rgba(255,255,255,.03); }
+.theme-light .main .bug-card { background: #faf7f1; border-color: rgba(31,26,20,.10); }
+.bug-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; }
+.bug-card-top strong { font-size: .95rem; }
+.bug-meta { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .4rem 0; }
+.bug-pill { font-size: .62rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: .12rem .45rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.theme-light .main .bug-pill { color: #5c5346; }
+.bug-sev-high, .bug-sev-blocking { color: #c62828; border-color: rgba(198,40,40,.45); background: rgba(198,40,40,.10); }
+.bug-sev-medium { color: #b8860b; border-color: rgba(184,134,11,.4); background: rgba(184,134,11,.10); }
+.bug-desc { margin: .3rem 0; white-space: pre-wrap; }
+.bug-status { font-size: .66rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .18rem .5rem; border-radius: 999px; white-space: nowrap; }
+.bug-status-new { color: #c62828; border: 1px solid rgba(198,40,40,.45); background: rgba(198,40,40,.10); }
+.bug-status-in-progress { color: #1a73e8; border: 1px solid rgba(26,115,232,.45); background: rgba(26,115,232,.10); }
+.bug-status-resolved { color: #2e7d32; border: 1px solid rgba(46,125,50,.45); background: rgba(46,125,50,.10); }
+.bug-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
+.bug-actions .ghost-btn { padding: .3rem .6rem; min-height: 0; font-size: .78rem; }
+.bug-status-btn.current { border-color: var(--gold, #caa05a); color: var(--gold, #caa05a); font-weight: 700; }
+
 

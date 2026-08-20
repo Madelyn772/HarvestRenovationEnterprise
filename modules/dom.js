@@ -19,7 +19,8 @@ export function cacheDom() {
     'contactDialog','dealDialog','quickYelpDialog','quickYelpForm','newContactBtn','newDealBtn','quickYelpBtn',
     'yelpThisWeek','yelpThisMonth','pipelineSnapshotBoard','recordDepositDialog','recordDepositForm',
     'changeOrderForm','changeOrderList','changeOrderItems','changeOrderTotals','changeOrderCard','relatedChangeOrder',
-    'recordPaymentDialog','recordPaymentForm','receiptList','receiptsCard'
+    'recordPaymentDialog','recordPaymentForm','receiptList','receiptsCard',
+    'feedbackForm','bugReportList'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }

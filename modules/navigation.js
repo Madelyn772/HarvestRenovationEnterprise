@@ -6,6 +6,7 @@ import { renderClients, renderLeads, renderClientDetail, handleClientSave, handl
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
+import { handleBugReportSave, renderBugReports, openBugReportCount } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
 import { renderEmployees, renderTeamPending, renderReadiness } from './team.js';
 import { renderPendingUsers, handleAdminGrantAccess } from './admin.js';
@@ -177,6 +178,11 @@ export function bindAppUi() {
   if (el.migrateToSupabaseBtn) el.migrateToSupabaseBtn.addEventListener('click', migrateToCloud);
   if (el.uploadDocForm) el.uploadDocForm.addEventListener('submit', handleDocumentUpload);
   if (el.reservedNumberForm) el.reservedNumberForm.addEventListener('submit', handleReservedNumberAdd);
+  if (el.feedbackForm) {
+    el.feedbackForm.addEventListener('submit', handleBugReportSave);
+    const clearFeedback = document.getElementById('clearFeedbackForm');
+    if (clearFeedback) clearFeedback.addEventListener('click', () => el.feedbackForm.reset());
+  }
   const clearUploadBtn = document.getElementById('clearUploadDocForm');
   if (clearUploadBtn && el.uploadDocForm) clearUploadBtn.addEventListener('click', () => el.uploadDocForm.reset());
   if (el.toggleUploadBtn && el.uploadPanel) {
@@ -267,6 +273,7 @@ export function setView(view) {
     marketing: ['KPIs', 'Track traffic, ad spend, campaign performance, and lead sources.'],
     calendars: ['Calendars', 'Monitor the company calendar and team availability.'],
     team: ['Team', 'View the employee directory and internal build-out roadmap.'],
+    feedback: ['Feedback', 'Report bugs and change requests straight from the portal.'],
     settings: ['Settings', 'Manage your employee profile, password, and shared calendar settings.'],
     admin: ['Admin', 'Approve access requests and create active employees.'],
     trash: ['Trash', 'Restore recently deleted items or remove them permanently.']
@@ -326,6 +333,7 @@ export function renderCurrentView() {
       renderTeamPending();
       renderReadiness();
     },
+    feedback: () => renderBugReports(),
     settings: () => {},
     admin: () => renderPendingUsers(),
     trash: () => renderTrash()
@@ -448,6 +456,7 @@ export function renderAll() {
   renderPendingUsers();
   renderDocuments();
   renderReservedNumbers();
+  renderBugReports();
   renderTrash();
   renderNavCounts();
   renderReadiness();
@@ -469,6 +478,7 @@ export function renderNavCounts() {
     estimating: state.store.estimates.length,
     operations: activeJobs,
     documents: state.store.documents.length,
+    feedback: isAdmin() ? openBugReportCount() : 0,
     trash: state.store.trash.length,
     admin: isAdmin() ? state.pendingUsers.length : 0
   };

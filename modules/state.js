@@ -106,6 +106,7 @@ export const seedStore = {
   reservedNumbers: [],
   changeOrders: [],
   receipts: [],
+  bugReports: [],
   trash: []
 };
 
@@ -121,7 +122,8 @@ export const collectionLabels = {
   campaigns: 'KPI row',
   documents: 'Document',
   changeOrders: 'Change Order',
-  receipts: 'Receipt'
+  receipts: 'Receipt',
+  bugReports: 'Bug report'
 };
 
 export const state = {
