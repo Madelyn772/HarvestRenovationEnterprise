@@ -282,7 +282,7 @@ export function setView(view) {
     marketing: ['KPIs', 'Track traffic, ad spend, campaign performance, and lead sources.'],
     calendars: ['Calendars', 'Monitor the company calendar and team availability.'],
     team: ['Team', 'View the employee directory and internal build-out roadmap.'],
-    feedback: ['Service Now', 'Report bugs, issues, and change requests straight from the portal.'],
+    feedback: ['Service Desk', 'Report bugs, issues, and change requests straight from the portal.'],
     settings: ['Settings', 'Manage your employee profile, password, and shared calendar settings.'],
     admin: ['Admin', 'Approve access requests and create active employees.'],
     trash: ['Trash', 'Restore recently deleted items or remove them permanently.']

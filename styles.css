@@ -2680,6 +2680,11 @@ html:not(.theme-light) .sidebar {
 .crm-stat strong { display: block; font-size: 1.6rem; margin-top: .3rem; }
 
 .pipeline-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+/* The CRM view is a CSS grid; grid items default to min-width:auto, so the
+   horizontal pipeline scroller (esp. 85vw columns on mobile) would stretch the
+   whole view. Let items shrink so the pipeline scrolls inside its own card. */
+#crmView > * { min-width: 0; }
+.pipeline-scroll { max-width: 100%; }
 .pipeline-col { flex: 1 1 200px; min-width: 150px; max-width: 340px; display: flex; flex-direction: column; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 14px; scroll-snap-align: start; }
 .pipeline-col-head { position: sticky; top: 0; font-weight: 700; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; padding: .7rem .8rem; border-bottom: 1px solid var(--line); color: var(--text); background: inherit; border-radius: 14px 14px 0 0; }
 .pipeline-col-body { display: flex; flex-direction: column; gap: .5rem; padding: .6rem; min-height: 60px; }
@@ -2736,7 +2741,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .crm-stat-strip { grid-template-columns: 1fr 1fr; }
   .pipeline-scroll { scroll-snap-type: x mandatory; }
   .pipeline-col { flex: 0 0 85vw; min-width: 85vw; max-width: 85vw; }
-  .crm-head-row { flex-direction: column; align-items: stretch; }
+  .crm-head-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
   .crm-head-actions { width: 100%; position: sticky; top: 0; z-index: 5; background: var(--bg, #0f0c08); padding: .4rem 0; }
   .theme-light .main .crm-head-actions { background: #fbf8f2; }
   .crm-search-wrap { flex: 1 1 100%; width: 100%; }
@@ -2776,7 +2781,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .pipeline-range select { font-size: .8rem; padding: .3rem .5rem; border-radius: 8px; }
 .theme-light .main .pipeline-range { color: #5c5346; }
 @media (max-width: 768px) {
-  .pipeline-head { flex-direction: column; }
+  .pipeline-head { flex-direction: column; flex-wrap: nowrap; }
   .pipeline-range { width: 100%; justify-content: space-between; }
   .pipeline-range select { flex: 1 1 auto; }
 }
