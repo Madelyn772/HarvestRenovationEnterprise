@@ -38,21 +38,39 @@ export function renderScorecard() {
       return d >= weekStart && d <= weekEnd;
     }).length;
 
-    // Jobs won / lost that week — driven by the CRM deal pipeline (a lead
-    // moved to the Won or Lost stage). stageChangedAt marks when it landed
-    // there, so marking a deal Lost on the CRM board now shows here.
+    // Jobs won / lost that week — from BOTH the CRM deal pipeline (a lead
+    // moved to Won/Lost) AND estimate outcomes (Approved = won, Declined =
+    // lost). De-duplicated by client so the same deal marked in both places
+    // is only counted once; records without a client stay distinct by id.
     const inWeek = (iso) => { const d = new Date(iso || ''); return !Number.isNaN(d.getTime()) && d >= weekStart && d <= weekEnd; };
-    const wonLeads = state.store.leads.filter(l => normalizeLeadStatus(l.status) === 'Won' && inWeek(l.stageChangedAt));
-    const lostLeads = state.store.leads.filter(l => normalizeLeadStatus(l.status) === 'Lost' && inWeek(l.stageChangedAt));
-    const jobsWon = wonLeads.length;
-    const jobsLost = lostLeads.length;
+    const wonMap = new Map();   // key -> deal value (for Revenue Sold)
+    const lostSet = new Set();
+
+    state.store.leads.forEach(l => {
+      if (!inWeek(l.stageChangedAt)) return;
+      const s = normalizeLeadStatus(l.status);
+      const key = l.clientId || ('lead:' + l.id);
+      if (s === 'Won' && !wonMap.has(key)) wonMap.set(key, num(l.estimatedValue || 0));
+      else if (s === 'Lost') lostSet.add(key);
+    });
+
+    state.store.estimates.forEach(e => {
+      const key = e.clientId || ('est:' + e.id);
+      if (e.status === 'Approved' && inWeek(e.signedAt || e.date)) {
+        wonMap.set(key, num(e.estimatedCost || 0)); // estimate value wins for revenue
+      } else if (e.status === 'Declined' && inWeek(e.date)) {
+        lostSet.add(key);
+      }
+    });
+
+    const jobsWon = wonMap.size;
+    const jobsLost = lostSet.size;
 
     const totalDecided = jobsWon + jobsLost;
     const closeRate = totalDecided > 0 ? Math.round((jobsWon / totalDecided) * 100) + '%' : dash;
 
-    // Revenue Sold = value of the deals won that week (from each won lead's
-    // estimated value), so it stays consistent with the Jobs Won count.
-    const revenueSold = wonLeads.reduce((sum, l) => sum + num(l.estimatedValue || 0), 0);
+    // Revenue Sold = combined value of the deals won that week.
+    const revenueSold = [...wonMap.values()].reduce((sum, v) => sum + v, 0);
 
     const revenueCollected = state.store.invoices
       .filter(inv => {
