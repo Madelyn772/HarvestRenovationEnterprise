@@ -2799,6 +2799,8 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .bug-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .5rem; }
 .bug-actions .ghost-btn { padding: .3rem .6rem; min-height: 0; font-size: .78rem; }
 .bug-status-btn.current { border-color: var(--gold, #caa05a); color: var(--gold, #caa05a); font-weight: 700; }
+.bug-attach { display: inline-block; margin: .2rem 0 .4rem; font-size: .82rem; }
+.bug-attach-thumb { max-width: 180px; max-height: 140px; border-radius: 8px; border: 1px solid var(--line); display: block; }
 
 /* Helpful Tips carousel (dashboard) */
 .tips-card .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
