@@ -2765,5 +2765,9 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-light .main .contacts-table .contacts-head th,
 .theme-light .main .contacts-table td::before,
 .theme-light .main .search-result-count { color: #5c5346; }
+/* `.card td { color: var(--text) }` (line ~364) forces dark-theme cream onto
+   contacts-table cells in the light theme → invisible on white. Force dark. */
+.theme-light .main .contacts-table td,
+.theme-light .main .contacts-table .link-card { color: #1f1a14; }
 
 
