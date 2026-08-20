@@ -135,6 +135,30 @@ export function resolveFormClient(data, fields) {
   return { clientId: '', clientName: name };
 }
 
+// Ensure a person captured on a lead/deal also exists in the Contacts
+// directory. Links to an existing contact when the phone (digits) or name
+// matches (back-filling a missing phone/email), otherwise creates a new one.
+// Returns the contact id (or '' when there's nothing to save).
+export function findOrCreateContact({ name, phone, email, source }) {
+  const digits = (phone || '').replace(/\D/g, '');
+  const nm = (name || '').trim();
+  let existing = null;
+  if (digits) existing = state.store.clients.find(c => (c.phone || '').replace(/\D/g, '') === digits);
+  if (!existing && nm) existing = state.store.clients.find(c => (c.name || '').trim().toLowerCase() === nm.toLowerCase());
+  if (existing) {
+    if (!existing.phone && phone) existing.phone = phone;
+    if (!existing.email && email) existing.email = email;
+    return existing.id;
+  }
+  if (!nm && !digits) return '';
+  const id = uid('CL');
+  upsertArray('clients', {
+    id, name: nm || 'Unnamed', phone: phone || '', email: email || '',
+    serviceArea: '', address: '', source: source || '', tags: '', notes: ''
+  }, 'id');
+  return id;
+}
+
 export function loadClientIntoForm(id) {
   const client = state.store.clients.find(c => c.id === id);
   if (!client) return;
@@ -160,10 +184,13 @@ export async function handleLeadSave(event) {
   const existing = editingId ? state.store.leads.find(l => l.id === editingId) : null;
   const newStatus = normalizeLeadStatus(data.status || 'New Lead');
   const stageChanged = !existing || existing.status !== newStatus;
+  // Ensure this deal's person is also in Contacts (link existing or create).
+  let contactId = data.clientId && data.clientId !== '__new__' ? data.clientId : (existing?.clientId || '');
+  if (!contactId) contactId = findOrCreateContact({ name: data.clientName, phone: data.phone, email: data.email, source: data.source });
   const payload = {
     id: editingId || uid('L'),
-    clientId: data.clientId,
-    clientName: data.clientName || lookupClientName(data.clientId),
+    clientId: contactId,
+    clientName: data.clientName || lookupClientName(contactId),
     phone: data.phone,
     email: data.email,
     service: data.service,
@@ -188,6 +215,7 @@ export async function handleLeadSave(event) {
   el.leadForm.dataset.leadId = '';
   addActivity(`${existing ? 'Updated' : 'Captured'} lead for ${payload.clientName || 'new contact'}.`, 'Leads');
   saveStore('Lead saved');
+  populateClientSelects();
   renderAll();
   showToast('Lead saved.', 'success');
   el.leadForm.reset();
@@ -443,9 +471,10 @@ export async function handleQuickAddSave(event) {
     if (!source) { showToast('Enter a custom source name.', 'error'); return; }
   }
   const now = new Date().toISOString();
+  const contactId = findOrCreateContact({ name: data.clientName, phone: data.phone, email: '', source });
   state.store.leads.unshift({
     id: uid('L'),
-    clientId: '',
+    clientId: contactId,
     clientName: data.clientName,
     phone: data.phone,
     email: '',
@@ -464,6 +493,7 @@ export async function handleQuickAddSave(event) {
   });
   addActivity(`Lead added: ${data.clientName} (${source}).`, 'Leads');
   saveStore('Lead added');
+  populateClientSelects();
   renderAll();
   showToast(`Lead added — ${source} logged for KPI tracking.`, 'success');
   el.quickYelpForm.reset();
