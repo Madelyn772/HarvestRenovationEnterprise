@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-55" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-56" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -665,7 +665,7 @@
                     <span class="doc-kind">Invoice</span>
                     <span class="doc-hash">#</span><input class="doc-number-input" name="invoiceNumber" id="invoiceNumber" placeholder="—" aria-label="Invoice number" />
                     <span class="doc-edit-hint" aria-hidden="true">✎</span>
-                    <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
+                    <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Signed</option><option>Partial</option><option>Paid</option></select></label>
                   </div>
                   <p class="doc-meta"><span data-doc-meta>New invoice</span></p>
                 </div>
@@ -1265,8 +1265,9 @@
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Password</p><h3>Security</h3></div></div>
             <form id="passwordForm" class="form-grid">
-              <label><span>New password</span><input name="password" type="password" minlength="10" /></label>
-              <label><span>Confirm password</span><input name="confirm_password" type="password" minlength="10" /></label>
+              <label><span>Current password</span><input name="current_password" type="password" autocomplete="current-password" /></label>
+              <label><span>New password</span><input name="password" type="password" minlength="10" autocomplete="new-password" /></label>
+              <label><span>Confirm password</span><input name="confirm_password" type="password" minlength="10" autocomplete="new-password" /></label>
               <div class="form-actions full"><button type="submit" class="primary-btn">Update Password</button></div>
             </form>
             <div class="divider"></div>

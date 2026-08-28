@@ -218,6 +218,7 @@ export function collectInvoiceFromForm() {
     depositAmount: total * (depositPercent / 100),
     terms: data.terms != null ? data.terms : '',
     depositAppliedFromEstimateId: el.invoiceForm.dataset.depositEstimateId || '',
+    relatedChangeOrderId: el.invoiceForm.dataset.changeOrderId || '',
     total
   };
 }
@@ -391,7 +392,7 @@ export function renderInvoices() {
   el.invoiceList.innerHTML = items.length ? items.map(item => {
     const { total, balance } = computeInvoiceBalances(item);
     const status = item.status || 'Draft';
-    const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent') ? 'var(--gold, #caa05a)' : '';
+    const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent' || status === 'Signed') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
     const lockIcon = status === 'Paid' ? '<span class="lock-icon" title="Paid invoice — amounts cannot be changed">🔒</span>' : '';
     const balanceLine = balance > 0.01 ? `<span class="invoice-bal">Balance ${money.format(balance)}</span>` : '';
@@ -463,6 +464,7 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
     el.invoiceItems.innerHTML = '';
     if (payWrap) payWrap.innerHTML = '';
     el.invoiceForm.dataset.depositEstimateId = '';
+    el.invoiceForm.dataset.changeOrderId = '';
     populateClientSelects();
     populateEstimateSelects();
   }

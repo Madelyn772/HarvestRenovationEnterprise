@@ -308,12 +308,14 @@ async function pollDocumensoWebhooks() {
         (i.invoiceNumber && title.includes(i.invoiceNumber)) || docId === i.documensoDocId
       );
       if (invoice && invoice.status === 'Sent') {
-        invoice.status = 'Paid';
-        invoice.paidAt = webhook.signed_at;
-        saveStore('Invoice auto-marked Paid via Documenso');
+        // A signature is NOT a payment — mark "Signed", keep the balance owed.
+        invoice.status = 'Signed';
+        invoice.signedAt = webhook.signed_at;
+        invoice.signedBy = webhook.signer_email;
+        saveStore('Invoice signed via Documenso');
         renderInvoices();
         renderDashboard();
-        showToast(`Invoice ${invoice.invoiceNumber || invoice.id} signed \u2014 auto-marked Paid!`, 'success');
+        showToast(`Invoice ${invoice.invoiceNumber || invoice.id} signed — record payment when funds arrive.`, 'success');
       }
 
       await state.supabase.from('documenso_webhooks').update({ processed: true }).eq('id', webhook.id);

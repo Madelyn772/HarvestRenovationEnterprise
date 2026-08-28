@@ -24,17 +24,17 @@ ALTER TABLE public.documenso_webhooks
 
 ALTER TABLE public.documenso_webhooks ENABLE ROW LEVEL SECURITY;
 
--- The portal (anon key) polls for unprocessed webhooks and marks them processed.
+-- Only active portal users may read/mark webhooks. The serverless handler inserts
+-- with the service_role key, which bypasses RLS — so there is deliberately NO
+-- anon INSERT policy. A public INSERT policy would let anyone with the anon key
+-- forge a "signed" webhook and auto-approve estimates / sign invoices.
 DROP POLICY IF EXISTS "portal read documenso webhooks" ON public.documenso_webhooks;
 CREATE POLICY "portal read documenso webhooks" ON public.documenso_webhooks
-  FOR SELECT USING (true);
+  FOR SELECT USING (public.is_active_user());
 
 DROP POLICY IF EXISTS "portal update documenso webhooks" ON public.documenso_webhooks;
 CREATE POLICY "portal update documenso webhooks" ON public.documenso_webhooks
-  FOR UPDATE USING (true) WITH CHECK (true);
+  FOR UPDATE USING (public.is_active_user()) WITH CHECK (public.is_active_user());
 
--- Inserts come from the serverless webhook handler using the service_role key,
--- which bypasses RLS. This explicit policy is a harmless belt-and-suspenders.
+-- Remove any previously-created permissive anon INSERT policy (security fix).
 DROP POLICY IF EXISTS "service insert documenso webhooks" ON public.documenso_webhooks;
-CREATE POLICY "service insert documenso webhooks" ON public.documenso_webhooks
-  FOR INSERT WITH CHECK (true);

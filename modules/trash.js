@@ -42,8 +42,27 @@ export function restoreTrashItem(trashId) {
   const index = state.store.trash.findIndex(item => item.trashId === trashId);
   if (index < 0) return;
   const entry = state.store.trash[index];
-  if (Array.isArray(state.store[entry.collection])) {
-    state.store[entry.collection].unshift(entry.record);
+  const list = state.store[entry.collection];
+  if (Array.isArray(list)) {
+    // Restore must never recreate a duplicate the save path would have blocked.
+    if (list.some(item => item.id === entry.record.id)) {
+      showToast(`A ${collectionLabels[entry.collection] || 'record'} with this ID already exists. Restore cancelled — delete the newer one first.`, 'error');
+      return;
+    }
+    if (entry.collection === 'clients') {
+      const digits = (entry.record.phone || '').replace(/\D/g, '');
+      const clash = digits && list.find(c => (c.phone || '').replace(/\D/g, '') === digits);
+      if (clash) { showToast(`Phone number already in use by ${clash.name || 'another client'}. Restore cancelled.`, 'error'); return; }
+    }
+    if (entry.collection === 'estimates' || entry.collection === 'invoices') {
+      const numField = entry.collection === 'invoices' ? 'invoiceNumber' : 'estimateNumber';
+      const numVal = String(entry.record[numField] || '').trim().toLowerCase();
+      if (numVal && list.some(r => String(r[numField] || '').trim().toLowerCase() === numVal)) {
+        showToast(`That ${entry.collection === 'invoices' ? 'invoice' : 'estimate'} number was reissued. Restore cancelled.`, 'error');
+        return;
+      }
+    }
+    list.unshift(entry.record);
   }
   state.store.trash.splice(index, 1);
   addActivity(`Restored ${collectionLabels[entry.collection] || 'item'} "${entry.label}" from Trash.`, 'Trash');

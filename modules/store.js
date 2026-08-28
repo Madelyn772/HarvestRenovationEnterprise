@@ -13,6 +13,7 @@ let cloudInitialized = false;   // true once the cloud row holds real data (migr
 let cloudPushTimer = null;
 let applyingRemote = false;     // guards against re-pushing data we just received
 let cloudChannel = null;
+let lastCloudUpdatedAt = null;  // updated_at we last saw, for optimistic-concurrency conflict detection
 
 export function storageKey() {
   const userId = state.session?.user?.id || 'guest';
@@ -55,15 +56,17 @@ export async function loadStore() {
     try {
       const { data, error } = await state.supabase
         .from(CLOUD_TABLE)
-        .select('data')
+        .select('data, updated_at')
         .eq('id', CLOUD_ROW_ID)
         .maybeSingle();
       if (!error && data && storeHasContent(data.data)) {
         cloudData = data.data;
         cloudInitialized = true;
+        lastCloudUpdatedAt = data.updated_at || null;
       } else if (!error && data) {
         // Row exists but is empty — cloud is ready to receive this device's data.
         cloudInitialized = storeHasContent(data.data);
+        lastCloudUpdatedAt = data.updated_at || null;
       }
     } catch (e) {
       console.warn('cloud load failed; using local cache', e);
@@ -115,10 +118,24 @@ async function pushCloud() {
   cloudPushTimer = null;
   if (!state.supabase) return;
   try {
+    // Optimistic-concurrency check: if the cloud row is newer than what we based
+    // our edits on, a teammate saved in between — warn and abort, don't overwrite.
+    const { data: current } = await state.supabase
+      .from(CLOUD_TABLE)
+      .select('updated_at, updated_by')
+      .eq('id', CLOUD_ROW_ID)
+      .maybeSingle();
+    if (current && current.updated_by !== CLIENT_ID && lastCloudUpdatedAt && new Date(current.updated_at) > new Date(lastCloudUpdatedAt)) {
+      showToast('Another teammate just saved changes. Refresh to load their edits before saving yours. Your local changes are kept but not pushed.', 'error');
+      updateChip(el.saveStateChip, 'Sync conflict — refresh');
+      return;
+    }
+    const stamp = new Date().toISOString();
     const { error } = await state.supabase
       .from(CLOUD_TABLE)
-      .upsert({ id: CLOUD_ROW_ID, data: state.store, updated_at: new Date().toISOString(), updated_by: CLIENT_ID }, { onConflict: 'id' });
+      .upsert({ id: CLOUD_ROW_ID, data: state.store, updated_at: stamp, updated_by: CLIENT_ID }, { onConflict: 'id' });
     if (error) throw error;
+    lastCloudUpdatedAt = stamp;
   } catch (e) {
     console.warn('cloud push failed (data is safe locally)', e);
   }
@@ -138,6 +155,7 @@ function subscribeCloud() {
       applyingRemote = true;
       state.store = normalizeStoreShape(row.data);
       cloudInitialized = true;
+      lastCloudUpdatedAt = row.updated_at || lastCloudUpdatedAt;
       writeLocal();
       applyingRemote = false;
       renderAll();

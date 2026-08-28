@@ -26,11 +26,17 @@ export async function handleProfileSave(event) {
 export async function handlePasswordSave(event) {
   event.preventDefault();
   const fd = new FormData(el.passwordForm);
+  const current = String(fd.get('current_password') || '');
   const password = String(fd.get('password') || '');
   const confirm = String(fd.get('confirm_password') || '');
+  if (!current) return showToast('Enter your current password to confirm the change.', 'error');
   if (password !== confirm) return showToast('Passwords do not match.', 'error');
   if (password.length < 10) return showToast('Password must be at least 10 characters.', 'error');
+  const email = state.session?.user?.email || state.profile?.email || '';
   try {
+    // Re-authenticate: verify the current password before allowing a change.
+    const { error: reauthError } = await state.supabase.auth.signInWithPassword({ email, password: current });
+    if (reauthError) { showToast('Current password is incorrect.', 'error'); return; }
     const { error } = await state.supabase.auth.updateUser({ password });
     if (error) throw error;
     el.passwordForm.reset();

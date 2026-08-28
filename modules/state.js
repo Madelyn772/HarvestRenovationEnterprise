@@ -333,8 +333,11 @@ export function uid(prefix) {
   return `${prefix}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
 
+let _autoNumCounter = 0;
+// Timestamp + a rolling 2-digit counter so same-millisecond calls never collide.
 export function autoNumber(prefix) {
-  return `${prefix}${Date.now().toString().slice(-6)}`;
+  _autoNumCounter = (_autoNumCounter + 1) % 100;
+  return `${prefix}${Date.now().toString().slice(-6)}${String(_autoNumCounter).padStart(2, '0')}`;
 }
 
 export function num(value) {
@@ -398,6 +401,9 @@ export function migrateEstimate(record) {
   if (r.permitsFees == null) r.permitsFees = 0;
   if (r.subtotal == null) r.subtotal = r.items.reduce((s, it) => s + num(it && it.amount), 0) || legacySubtotal;
   if (r.taxAmount == null) r.taxAmount = num(r.subtotal) * num(r.taxPercent) / 100;
+  if (r.finalPercent == null) r.finalPercent = 0;
+  if (r.finalPay == null) r.finalPay = 0;
+  if (r.estimatedCost == null) r.estimatedCost = num(r.subtotal) + num(r.taxAmount) + num(r.permitsFees) + num(r.finalPay);
   if (!r.validUntil) r.validUntil = addDaysISO(r.date, 30);
   if (r.termsAndConditions == null) r.termsAndConditions = DEFAULT_ESTIMATE_TERMS;
   if (r.signatureBlockEnabled == null) r.signatureBlockEnabled = true;
@@ -434,7 +440,10 @@ export function migrateInvoice(record) {
   if (r.depositPercent == null) r.depositPercent = 0;
   if (r.createdBy == null) r.createdBy = '';
   if (r.terms == null) r.terms = DEFAULT_INVOICE_TERMS;
-  if (r.total == null) r.total = r.items.reduce((s, it) => s + num(it && it.amount), 0);
+  if (r.total == null) {
+    const sub = r.items.reduce((s, it) => s + num(it && it.amount), 0);
+    r.total = sub + sub * num(r.taxPercent) / 100 + num(r.permitsFees);
+  }
   return r;
 }
 
