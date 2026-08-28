@@ -585,7 +585,7 @@ export function emailEstimate(estimateId) {
   const client = record.clientId ? findClient(record.clientId) : null;
   const name = record.clientName || record.user || 'there';
   const signoff = state.profile?.full_name || 'Harvest Renovation';
-  const body = `Hi ${name},\n\nHere is your estimate from Harvest Renovation.\nEstimate ${record.estimateNumber || ''}: ${money.format(num(record.estimatedCost))}\nDeposit: ${money.format(num(record.depositAmount))}\nTrade: ${record.trade || ''}\nScope: ${record.scope || 'Project scope to be confirmed.'}\n\nThe PDF has opened in a separate window — please save it and attach it to this email.\n\nThank you,\n${signoff}`;
+  const body = `Hi ${name},\n\nHere is your estimate from Harvest Renovation.\nEstimate ${record.estimateNumber || ''}: ${money.format(num(record.estimatedCost))}\nDeposit: ${money.format(num(record.depositAmount))}\nTrade: ${record.trade || ''}\nScope: ${record.scope || 'Project scope to be confirmed.'}\n\nIf you have any questions, don't hesitate to reach out.\n\nThank you,\n${signoff}`;
   window.location.href = buildMailto(client?.email || '', `Harvest Renovation Estimate ${record.estimateNumber || ''}`.trim(), body);
   showToast('PDF opened — save it and attach to the email draft.', 'info');
 }

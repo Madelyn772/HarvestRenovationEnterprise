@@ -512,7 +512,7 @@ export function emailInvoice(invoiceId) {
   // Open the PDF so the user can save and attach it to the draft.
   printInvoice(invoice);
   const signoff = state.profile?.full_name || 'Harvest Renovation';
-  const body = `Hi ${invoice.clientName || 'there'},\n\nAttached is invoice ${invoice.invoiceNumber || ''} from Harvest Renovation for ${money.format(num(invoice.total))}.\n\nThe PDF has opened in a separate window — please save it and attach it to this email.\n\nThank you,\n${signoff}`;
+  const body = `Hi ${invoice.clientName || 'there'},\n\nAttached is invoice ${invoice.invoiceNumber || ''} from Harvest Renovation for ${money.format(num(invoice.total))}.\n\nIf you have any questions, don't hesitate to reach out.\n\nThank you,\n${signoff}`;
   window.location.href = buildMailto(invoice.email || '', `Harvest Renovation Invoice ${invoice.invoiceNumber || ''}`.trim(), body);
   showToast('PDF opened — save it and attach to the email draft.', 'info');
 }
