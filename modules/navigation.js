@@ -45,6 +45,14 @@ export function bindAppUi() {
     el.clientSearch.focus();
   });
   if (el.pipelineRange) el.pipelineRange.addEventListener('change', e => { state.filters.pipelineRange = e.target.value; renderLeads(); });
+  const tradeFilters = document.getElementById('tradeFilters');
+  if (tradeFilters) tradeFilters.addEventListener('click', e => {
+    const chip = e.target.closest('.trade-chip');
+    if (!chip) return;
+    state.filters.tradeCategory = chip.dataset.category;
+    tradeFilters.querySelectorAll('.trade-chip').forEach(c => c.classList.toggle('active', c === chip));
+    renderLeads();
+  });
   el.employeeSearch.addEventListener('input', debounce(e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); }));
 
   document.querySelectorAll('[data-doc-filter]').forEach(btn => btn.addEventListener('click', () => {

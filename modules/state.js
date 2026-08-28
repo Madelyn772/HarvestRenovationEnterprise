@@ -207,7 +207,8 @@ export const state = {
     clientSearch: '',
     employeeSearch: '',
     documentType: 'all',
-    pipelineRange: 'month'
+    pipelineRange: 'month',
+    tradeCategory: 'all'
   }
 };
 

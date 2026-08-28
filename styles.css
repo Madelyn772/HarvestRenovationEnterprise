@@ -2721,6 +2721,29 @@ html:not(.theme-light) .sidebar {
 .crm-stat span { display: block; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .crm-stat strong { display: block; font-size: 1.6rem; margin-top: .3rem; }
 
+/* Trade-category filter chips above the pipeline board. */
+.trade-filters { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
+.trade-chip {
+  padding: .3rem .7rem;
+  border-radius: 16px;
+  font-size: .78rem;
+  font-weight: 500;
+  border: 1px solid var(--border, #e2e0d8);
+  background: transparent;
+  color: var(--text-muted, #8a8275);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.trade-chip:hover { border-color: #c9a227; color: #c9a227; }
+.trade-chip.active { background: #c9a227; border-color: #c9a227; color: #fff; }
+.theme-light .trade-chip { border-color: #e2e0d8; color: #666; }
+.theme-light .trade-chip.active { background: #c9a227; color: #fff; }
+@media (max-width: 768px) {
+  .trade-filters { gap: .3rem; }
+  .trade-chip { font-size: .72rem; padding: .25rem .55rem; }
+}
+
 .pipeline-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
 /* The CRM view is a CSS grid; grid items default to min-width:auto, so the
    horizontal pipeline scroller (esp. 85vw columns on mobile) would stretch the

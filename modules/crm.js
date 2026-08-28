@@ -1,4 +1,4 @@
-import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, tradeOptionsHtml } from './state.js';
+import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, tradeOptionsHtml, TRADE_CATEGORIES } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
@@ -492,6 +492,18 @@ function pipelineRangeStart(range) {
   return new Date(now.getFullYear(), now.getMonth(), 1); // month (default)
 }
 
+function getTradesForCategory(category) {
+  const cat = TRADE_CATEGORIES.find(c => c.category === category);
+  return cat ? cat.trades : [];
+}
+
+// True when a lead's trade/service belongs to the active trade-category chip.
+function leadMatchesTradeFilter(lead) {
+  const cat = state.filters.tradeCategory || 'all';
+  if (cat === 'all') return true;
+  return getTradesForCategory(cat).includes(lead.trade || lead.service || '');
+}
+
 export function renderPipelineBoard() {
   const board = el.dealPipelineBoard;
   if (!board) return;
@@ -500,6 +512,7 @@ export function renderPipelineBoard() {
   if (el.pipelineRange && el.pipelineRange.value !== range) el.pipelineRange.value = range;
   const allLeads = state.store.leads;
   let leads = allLeads.filter(l => leadMatchesQuery(l, query));
+  leads = leads.filter(leadMatchesTradeFilter);
   // HubSpot-style close-date view: nothing is deleted. When not actively
   // searching, CLOSED deals (Won/Lost) only appear if they closed within the
   // selected range; open/active deals always stay on the board.
@@ -594,6 +607,7 @@ export function renderContactsTable() {
   const query = state.filters.clientSearch || '';
   const clients = [...state.store.clients]
     .filter(c => [c.name, c.phone, c.email, c.tags, c.source].join(' ').toLowerCase().includes(query))
+    .filter(c => state.filters.tradeCategory === 'all' || state.store.leads.some(l => l.clientId === c.id && leadMatchesTradeFilter(l)))
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const header = '<tr class="contacts-head"><th>Name</th><th>Phone</th><th>Email</th><th>Deals</th><th>Last contact</th><th></th></tr>';
   if (!clients.length) {
