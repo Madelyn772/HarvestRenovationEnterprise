@@ -1,4 +1,4 @@
-import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, PIPELINE_STAGES, normalizeLeadStatus } from './state.js';
+import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
@@ -195,6 +195,9 @@ export async function handleLeadSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.leadForm);
   if (!data.source) { showToast('Please choose a lead source.', 'error'); return; }
+  const today = todayInputValue();
+  if (data.leadDate && data.leadDate > today) { showToast('Lead date can’t be in the future. Choose today or a past date.', 'error'); return; }
+  const leadIso = leadDateToIso(data.leadDate);
   const editingId = el.leadForm.dataset.leadId || '';
   const existing = editingId ? state.store.leads.find(l => l.id === editingId) : null;
   const newStatus = normalizeLeadStatus(data.status || 'New Lead');
@@ -216,8 +219,8 @@ export async function handleLeadSave(event) {
     preferredDate: data.preferredDate,
     followUpDate: data.followUpDate || '',
     notes: data.notes,
-    stageChangedAt: stageChanged ? new Date().toISOString() : (existing.stageChangedAt || new Date().toISOString()),
-    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+    stageChangedAt: existing ? (stageChanged ? new Date().toISOString() : (existing.stageChangedAt || leadIso)) : leadIso,
+    createdAt: leadIso,
     lastContactedAt: existing ? (existing.lastContactedAt || '') : '',
     owner: existing?.owner || state.profile?.full_name || ''
   };
@@ -255,6 +258,10 @@ export function loadLeadIntoForm(id) {
   el.leadForm.preferredDate.value = lead.preferredDate || '';
   el.leadForm.followUpDate.value = lead.followUpDate || '';
   el.leadForm.notes.value = lead.notes || '';
+  if (el.leadForm.leadDate) {
+    el.leadForm.leadDate.max = todayInputValue();
+    el.leadForm.leadDate.value = (lead.createdAt || '').slice(0, 10) || todayInputValue();
+  }
 }
 
 // Load a lead's details into the estimate builder.
@@ -482,8 +489,19 @@ export function openDealDialog(leadId) {
   } else {
     el.leadForm.reset();
     el.leadForm.dataset.leadId = '';
+    if (el.leadForm.leadDate) {
+      el.leadForm.leadDate.max = todayInputValue();
+      el.leadForm.leadDate.value = todayInputValue();
+    }
   }
   el.dealDialog?.showModal();
+}
+
+// Anchor a YYYY-MM-DD lead date at local noon so KPI attribution lands on that day.
+function leadDateToIso(dateStr) {
+  if (!dateStr) return new Date().toISOString();
+  const d = new Date(`${dateStr}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
 }
 
 export function openQuickYelpDialog() {

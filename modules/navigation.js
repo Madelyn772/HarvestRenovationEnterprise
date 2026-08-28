@@ -627,7 +627,10 @@ export function clearFormForButton(id) {
   const form = map[id];
   if (!form) return;
   form.reset();
-  if (form === el.leadForm) el.leadForm.dataset.leadId = '';
+  if (form === el.leadForm) {
+    el.leadForm.dataset.leadId = '';
+    if (el.leadForm.leadDate) { el.leadForm.leadDate.max = todayInputValue(); el.leadForm.leadDate.value = todayInputValue(); }
+  }
   if (form === el.invoiceForm) {
     el.invoiceItems.innerHTML = '';
     addInvoiceRow();
