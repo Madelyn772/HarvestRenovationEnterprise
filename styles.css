@@ -242,15 +242,9 @@ textarea { resize: vertical; min-height: 120px; }
   background: rgba(10, 9, 8, .94);
   backdrop-filter: blur(20px);
 }
-/* Desktop: give the sidebar its own viewport-bounded scroll (mobile uses a
-   static/drawer layout below 960px, so scope this above that breakpoint). */
-@media (min-width: 961px) {
-  .sidebar {
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-}
+/* Desktop: the sidebar is sticky (top:0) and as tall as its natural content,
+   so it scrolls with the page instead of trapping its own scroll. Mobile uses
+   a drawer/transform layout below 960px, handled separately. */
 .brand-block, .sidebar-user {
   display: grid;
   grid-template-columns: auto 1fr;
