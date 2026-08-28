@@ -3728,15 +3728,49 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .wip-banner strong { color: #8a6520; }
 .theme-light .main .wip-banner { background: #fbf3e4; color: #8a6520; border-color: #ecd9b3; border-left-color: #caa05a; }
 
-/* ── Service Desk: filters, ticket comments, reply notifications ── */
-.bug-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .9rem; }
+/* ── Service Desk: filter toolbar, ticket rows, comments ── */
+.bug-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .9rem;
+  padding: .6rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+}
 .bug-filters select { flex: 1 1 auto; min-width: 8rem; }
+.theme-light .main .bug-filters { background: #f6f3ec; border-color: rgba(31,26,20,.08); }
 
-/* Reports spread across the screen as responsive cards. */
-#bugReportList { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
-@media (max-width: 560px) { #bugReportList { grid-template-columns: 1fr; } }
+/* Reports as compact, collapsible rows. */
+#bugReportList { display: flex; flex-direction: column; gap: .5rem; }
+.bug-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.03);
+  overflow: hidden;
+}
+.bug-row.has-unread { border-color: var(--gold, #caa05a); box-shadow: 0 0 0 1px rgba(202,160,90,.35); }
+.bug-row-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  padding: .75rem 1rem;
+}
+.bug-row-summary::-webkit-details-marker { display: none; }
+.bug-row-title { display: flex; align-items: center; gap: .5rem; flex: 1 1 12rem; min-width: 0; }
+.bug-row-title strong { font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bug-chevron { flex: none; color: var(--muted); font-size: 1.1rem; line-height: 1; transition: transform .18s ease; }
+.bug-row[open] .bug-chevron { transform: rotate(90deg); }
+.bug-row-tags { display: flex; gap: .35rem; flex-wrap: wrap; }
+.bug-row-body { padding: .1rem 1rem 1rem; border-top: 1px solid var(--line); }
+.bug-row-body .bug-desc { margin-top: .7rem; }
+.theme-light .main .bug-row { background: #ffffff; border-color: rgba(31,26,20,.10); }
+.theme-light .main .bug-row-body { border-top-color: rgba(31,26,20,.08); }
 
-.bug-card.has-unread { border-color: var(--gold, #caa05a); box-shadow: 0 0 0 1px rgba(202,160,90,.35); }
 .bug-new-reply {
   display: inline-block;
   padding: .1rem .5rem;

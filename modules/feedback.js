@@ -124,24 +124,24 @@ export function renderBugReports() {
       return `<div class="bug-comment${c.author === me ? ' mine' : ''}${c.internal ? ' internal' : ''}"><div class="bc-head"><span class="bc-author">${escapeHtml(c.author || 'User')}${c.internal ? ' <span class="bc-internal-tag">Internal</span>' : ''}</span><span class="muted tiny">${escapeHtml(formatDateTime(c.at))}</span></div><p>${escapeHtml(c.body || '')}</p></div>`;
     }).join('');
     const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Write a message…" /><button type="button" class="ghost-btn bug-comment-send" data-bug-id="${r.id}" data-internal="false" title="Send a reply that notifies the person who created this ticket">Reply to reporter</button><button type="button" class="ghost-btn bug-comment-note" data-bug-id="${r.id}" data-internal="true" title="Add a private note for workflow/documentation — the reporter is not notified">Internal note</button></div></div>`;
-    return `<div class="bug-card stack-item${isMine && unread ? ' has-unread' : ''}">
-      <div class="bug-card-top">
-        <strong>${escapeHtml(r.title)}</strong>
-        ${replyBadge}
+    return `<details class="bug-row${isMine && unread ? ' has-unread' : ''}">
+      <summary class="bug-row-summary">
+        <span class="bug-row-title"><span class="bug-chevron" aria-hidden="true">›</span><strong>${escapeHtml(r.title)}</strong>${replyBadge}</span>
+        <span class="bug-row-tags">
+          <span class="bug-pill bug-kind">${escapeHtml(r.kind || 'Bug')}</span>
+          <span class="bug-pill bug-area">${escapeHtml(r.area || 'Other')}</span>
+          <span class="bug-pill bug-sev bug-sev-${sevKey}">${escapeHtml(r.severity || 'Medium')}</span>
+        </span>
         <span class="bug-status bug-status-${statusKey}">${escapeHtml(r.status || 'New')}</span>
+      </summary>
+      <div class="bug-row-body">
+        <p class="bug-desc">${escapeHtml(r.description || '')}</p>
+        ${attHtml}
+        <p class="muted tiny">${escapeHtml(r.number || '')} · By ${escapeHtml(r.submittedBy || 'Unknown')} · ${escapeHtml(formatDateTime(r.submittedAt))}</p>
+        ${controls}
+        ${commentBox}
       </div>
-      <div class="bug-meta">
-        <span class="bug-pill bug-kind">${escapeHtml(r.kind || 'Bug')}</span>
-        <span class="bug-pill bug-area">${escapeHtml(r.area || 'Other')}</span>
-        <span class="bug-pill bug-sev bug-sev-${sevKey}">${escapeHtml(r.severity || 'Medium')}</span>
-        <span class="bug-num muted tiny">${escapeHtml(r.number || '')}</span>
-      </div>
-      <p class="bug-desc">${escapeHtml(r.description || '')}</p>
-      ${attHtml}
-      <p class="muted tiny">By ${escapeHtml(r.submittedBy || 'Unknown')} · ${escapeHtml(formatDateTime(r.submittedAt))}</p>
-      ${controls}
-      ${commentBox}
-    </div>`;
+    </details>`;
   }).join('');
   list.querySelectorAll('.bug-status-btn').forEach(btn => btn.addEventListener('click', () => updateBugStatus(btn.dataset.bugId, btn.dataset.status)));
   list.querySelectorAll('.bug-comment-send, .bug-comment-note').forEach(btn => btn.addEventListener('click', () => submitComment(btn.dataset.bugId, btn.dataset.internal === 'true')));
