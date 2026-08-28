@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-51" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-52" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -116,19 +116,31 @@
       </div>
 
       <nav class="nav">
-        <button class="nav-btn active" data-view="dashboard" title="Executive Dashboard"><span class="nav-icon"></span><span class="nav-label">Executive Dashboard</span></button>
-        <button class="nav-btn" data-view="crm" title="CRM"><span class="nav-icon"></span><span class="nav-label">CRM</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="estimating" title="Estimating"><span class="nav-icon"></span><span class="nav-label">Estimating</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="invoicing" title="Invoicing"><span class="nav-icon"></span><span class="nav-label">Invoicing</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="contracts" title="Contracts"><span class="nav-icon"></span><span class="nav-label">Contracts</span><span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="operations" title="Operations"><span class="nav-icon"></span><span class="nav-label">Operations</span><span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="documents" title="Documents"><span class="nav-icon"></span><span class="nav-label">Documents</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="marketing" title="KPIs"><span class="nav-icon"></span><span class="nav-label">KPIs</span></button>
-        <button class="nav-btn" data-view="calendars" title="Calendars"><span class="nav-icon"></span><span class="nav-label">Calendars</span></button>
-        <button class="nav-btn" data-view="team" title="Team"><span class="nav-icon"></span><span class="nav-label">Team</span></button>
-        <button class="nav-btn" data-view="feedback" title="Service Desk"><span class="nav-icon"></span><span class="nav-label">🛠️ Service Desk</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn admin-only hidden" data-view="admin" title="Admin"><span class="nav-icon"></span><span class="nav-label">Admin</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="trash" title="Trash"><span class="nav-icon"></span><span class="nav-label">Trash</span><span class="nav-count hidden"></span></button>
+        <div class="nav-group">
+          <span class="nav-group-label">Overview</span>
+          <button class="nav-btn active" data-view="dashboard" title="Executive Dashboard"><span class="nav-icon"></span><span class="nav-label">Executive Dashboard</span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-label">Sales</span>
+          <button class="nav-btn" data-view="crm" title="CRM"><span class="nav-icon"></span><span class="nav-label">CRM</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn" data-view="estimating" title="Estimating"><span class="nav-icon"></span><span class="nav-label">Estimating</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn" data-view="invoicing" title="Invoicing"><span class="nav-icon"></span><span class="nav-label">Invoicing</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn" data-view="contracts" title="Contracts"><span class="nav-icon"></span><span class="nav-label">Contracts</span><span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-label">Delivery</span>
+          <button class="nav-btn" data-view="operations" title="Operations"><span class="nav-icon"></span><span class="nav-label">Operations</span><span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn" data-view="documents" title="Documents"><span class="nav-icon"></span><span class="nav-label">Documents</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn" data-view="calendars" title="Calendars"><span class="nav-icon"></span><span class="nav-label">Calendars</span></button>
+          <button class="nav-btn" data-view="team" title="Team"><span class="nav-icon"></span><span class="nav-label">Team</span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-label">Insight &amp; Admin</span>
+          <button class="nav-btn" data-view="marketing" title="KPIs"><span class="nav-icon"></span><span class="nav-label">KPIs</span></button>
+          <button class="nav-btn" data-view="feedback" title="Service Desk"><span class="nav-icon"></span><span class="nav-label">Service Desk</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn admin-only hidden" data-view="admin" title="Admin"><span class="nav-icon"></span><span class="nav-label">Admin</span><span class="nav-count hidden"></span></button>
+          <button class="nav-btn" data-view="trash" title="Trash"><span class="nav-icon"></span><span class="nav-label">Trash</span><span class="nav-count hidden"></span></button>
+        </div>
       </nav>
 
       <div class="sidebar-card compact mobile-hide">
@@ -139,20 +151,17 @@
           <button class="ghost-btn" data-jump="estimateForm">New Estimate</button>
           <button class="ghost-btn" data-jump="campaignForm">Add KPI</button>
         </div>
-      </div>
-
-      <div class="sidebar-card compact mobile-hide">
-        <p class="eyebrow">System</p>
+        <div class="sidebar-foot-divider"></div>
         <div class="stack tiny-stack">
           <div class="mini-metric"><span>Auth</span><strong id="authStatusChip">Authenticated</strong></div>
           <div class="mini-metric"><span>Storage</span><strong id="saveStateChip">Connected</strong></div>
           <div class="mini-metric"><span>Calendar</span><strong id="calendarStatusChip">Loading</strong></div>
         </div>
-      </div>
-
-      <div class="sidebar-card compact">
-        <button class="ghost-btn full-width" id="openSettingsPanelBtn">Open settings</button>
-        <button class="danger-btn full-width" id="logoutBtn">Log out</button>
+        <div class="sidebar-foot-divider"></div>
+        <div class="stack tiny-stack">
+          <button class="ghost-btn full-width" id="openSettingsPanelBtn">Open settings</button>
+          <button class="danger-btn full-width" id="logoutBtn">Log out</button>
+        </div>
       </div>
     </aside>
 
