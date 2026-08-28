@@ -40,7 +40,7 @@ export function buildBrandedDocHtml(opts) {
     balanceLabel = 'BALANCE DUE', balance = 0, balanceColor = '',
     depositPercent = 0, depositAmount = 0,
     validUntil = '', dueDate = '', preparedBy = '',
-    subtotal = null, taxPercent = 0, taxAmount = 0, permitsFees = 0,
+    subtotal = null, taxPercent = 0, taxAmount = 0, permitsFees = 0, finalPay = 0,
     paymentsReceived = 0, paymentsRows = [],
     terms = '', signatureBlockEnabled = false
   } = opts;
@@ -66,6 +66,7 @@ export function buildBrandedDocHtml(opts) {
   const metaHtml = metaRows.map(([l, v]) => `<div class="mrow"><span class="ml">${l}</span><span class="mv">${v}</span></div>`).join('');
   const summaryRows = [];
   if (subtotal != null) summaryRows.push(['Subtotal', money.format(num(subtotal))]);
+  if (num(finalPay) > 0) summaryRows.push(['Final markup', money.format(num(finalPay))]);
   if (num(taxAmount) > 0) summaryRows.push([`Tax (${num(taxPercent)}%)`, money.format(num(taxAmount))]);
   if (num(permitsFees) > 0) summaryRows.push(['Permits & fees', money.format(num(permitsFees))]);
   if (num(paymentsReceived) > 0) summaryRows.push(['Payments received', '−' + money.format(num(paymentsReceived))]);
@@ -247,6 +248,7 @@ export function buildEstimateDocHtml(estimate) {
     taxPercent: num(estimate.taxPercent),
     taxAmount: num(estimate.taxAmount),
     permitsFees: num(estimate.permitsFees),
+    finalPay: num(estimate.finalPay),
     terms: estimate.termsAndConditions || DEFAULT_ESTIMATE_TERMS,
     signatureBlockEnabled: estimate.signatureBlockEnabled !== false
   });
@@ -266,7 +268,14 @@ export function buildInvoiceDocHtml(invoice) {
     const subHtml = q > 1 ? `<div class="line-sub">${q} ${escapeHtml(item.unit || '')} × ${money.format(num(item.unitPrice))}</div>` : '';
     return { descHtml: escapeHtml(item.description || ''), subHtml, amount: num(item.amount != null ? item.amount : q * num(item.unitPrice)) };
   });
-  const total = num(invoice.total != null ? invoice.total : items.reduce((s, it) => s + num(it.amount), 0));
+  const sub = items.reduce((s, it) => s + num(it.amount != null ? it.amount : num(it.quantity) * num(it.unitPrice)), 0);
+  const finalPercent = num(invoice.finalPercent);
+  const finalPay = finalPercent > 0 ? sub * (finalPercent / 100) : 0;
+  const taxPct = num(invoice.taxPercent);
+  const fees = num(invoice.permitsFees);
+  const taxBase = sub + finalPay;
+  const taxAmount = taxBase * (taxPct / 100);
+  const total = taxBase + taxAmount + fees;
   const payments = invoice.payments || [];
   const paid = payments.reduce((s, p) => s + num(p.amount), 0);
   const balance = total - paid;
@@ -282,7 +291,11 @@ export function buildInvoiceDocHtml(invoice) {
     balance,
     balanceColor: balance > 0.01 ? '#c62828' : '#2e7d32',
     preparedBy: invoice.user || currentUserName(),
-    subtotal: total,
+    subtotal: sub,
+    taxPercent: taxPct,
+    taxAmount,
+    permitsFees: fees,
+    finalPay,
     paymentsReceived: paid,
     paymentsRows: payments,
     terms: invoice.terms || DEFAULT_INVOICE_TERMS,

@@ -293,10 +293,12 @@ export function collectEstimateFromForm() {
   // Subtotal is always the sum of line items (no legacy lumped-pricing fallback).
   const subtotal = items.reduce((sum, it) => sum + num(it.amount), 0);
   const taxPercent = num(data.taxPercent);
-  const taxAmount = subtotal * taxPercent / 100;
   const permitsFees = num(data.permitsFees);
+  // Tax applies to the marked-up base (subtotal + final markup), matching invoicing.
   const finalPay = finalPercent > 0 ? subtotal * (finalPercent / 100) : 0;
-  const estimatedCost = subtotal + taxAmount + permitsFees + finalPay;
+  const taxBase = subtotal + finalPay;
+  const taxAmount = taxBase * taxPercent / 100;
+  const estimatedCost = taxBase + taxAmount + permitsFees;
   const depositPercent = getDepositPercent();
   const depositAmount = estimatedCost * (depositPercent / 100);
   const linkedClient = data.clientId && data.clientId !== '__new__' ? findClient(data.clientId) : null;
@@ -561,9 +563,12 @@ export function duplicateEstimate(id) {
 export function emailEstimate(estimateId) {
   const record = state.store.estimates.find(item => item.id === estimateId);
   if (!record) return;
+  // Open the PDF so the user can save and attach it to the draft.
+  printEstimate(record);
   const client = record.clientId ? findClient(record.clientId) : null;
   const name = record.clientName || record.user || 'there';
   const signoff = state.profile?.full_name || 'Harvest Renovation';
-  const body = `Hi ${name},\n\nHere is your estimate from Harvest Renovation.\nEstimate ${record.estimateNumber || ''}: ${money.format(num(record.estimatedCost))}\nDeposit: ${money.format(num(record.depositAmount))}\nTrade: ${record.trade || ''}\nScope: ${record.scope || 'Project scope to be confirmed.'}\n\nThank you,\n${signoff}`;
+  const body = `Hi ${name},\n\nHere is your estimate from Harvest Renovation.\nEstimate ${record.estimateNumber || ''}: ${money.format(num(record.estimatedCost))}\nDeposit: ${money.format(num(record.depositAmount))}\nTrade: ${record.trade || ''}\nScope: ${record.scope || 'Project scope to be confirmed.'}\n\nThe PDF has opened in a separate window — please save it and attach it to this email.\n\nThank you,\n${signoff}`;
   window.location.href = buildMailto(client?.email || '', `Harvest Renovation Estimate ${record.estimateNumber || ''}`.trim(), body);
+  showToast('PDF opened — save it and attach to the email draft.', 'info');
 }

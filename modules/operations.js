@@ -172,6 +172,7 @@ export function computeInvoiceBalances(invoice) {
 // True if the invoice's billable amounts (total or line items) changed.
 function invoiceAmountsChanged(a, b) {
   if (Math.round(num(a.total) * 100) !== Math.round(num(b.total) * 100)) return true;
+  if (num(a.finalPercent) !== num(b.finalPercent)) return true;
   const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice)]));
   return norm(a.items) !== norm(b.items);
 }
@@ -186,7 +187,12 @@ export function collectInvoiceFromForm() {
   const sub = items.reduce((s, item) => s + num(item.amount), 0);
   const taxPct = num(data.taxPercent);
   const fees = num(data.permitsFees);
-  const total = sub + sub * (taxPct / 100) + fees;
+  const finalPercent = num(data.finalPercent);
+  const finalPay = finalPercent > 0 ? sub * (finalPercent / 100) : 0;
+  // Tax applies to the marked-up base (subtotal + final markup), matching estimating.
+  const taxBase = sub + finalPay;
+  const taxAmount = taxBase * (taxPct / 100);
+  const total = taxBase + taxAmount + fees;
   const depositPercent = num(data.depositPercent);
   return {
     id: data.invoiceId || '',
@@ -206,6 +212,8 @@ export function collectInvoiceFromForm() {
     payments,
     permitsFees: fees,
     taxPercent: taxPct,
+    finalPercent,
+    finalPay,
     depositPercent,
     depositAmount: total * (depositPercent / 100),
     terms: data.terms != null ? data.terms : '',
@@ -299,8 +307,11 @@ export function renderInvoiceBalanceCallout() {
   const subtotal = items.reduce((s, it) => s + num(it.amount), 0);
   const fees = num(document.getElementById('invoicePermitsFees')?.value);
   const taxPct = num(document.getElementById('invoiceTaxPercent')?.value);
-  const tax = subtotal * (taxPct / 100);
-  const total = subtotal + tax + fees;
+  const finalPct = num(document.getElementById('invoiceFinalPercent')?.value);
+  const finalPay = finalPct > 0 ? subtotal * (finalPct / 100) : 0;
+  const taxBase = subtotal + finalPay;
+  const tax = taxBase * (taxPct / 100);
+  const total = taxBase + tax + fees;
   // Payments live on the saved invoice record (recorded via the payment dialog).
   const invId = el.invoiceForm?.invoiceId?.value || '';
   const savedInv = invId ? state.store.invoices.find(i => i.id === invId) : null;
@@ -314,8 +325,10 @@ export function renderInvoiceBalanceCallout() {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
     const taxLabel = Number.isInteger(taxPct) ? taxPct : taxPct.toFixed(2);
     const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
+    const finalRow = finalPay > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(finalPay)}</strong></div>` : '';
     summary.innerHTML = `
       <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
+      ${finalRow}
       <div class="isum-row"><span>Permit / Fees</span><strong>${money.format(fees)}</strong></div>
       <div class="isum-row isum-muted"><span>Tax (${taxLabel}%)</span><strong>${money.format(tax)}</strong></div>
       <div class="isum-divide"></div>
@@ -464,8 +477,10 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   if (termsInput && !termsInput.value) termsInput.value = DEFAULT_INVOICE_TERMS;
   const feesEl = document.getElementById('invoicePermitsFees');
   const taxEl = document.getElementById('invoiceTaxPercent');
+  const finalEl = document.getElementById('invoiceFinalPercent');
   if (feesEl) feesEl.value = num(estimate.permitsFees) || '';
   if (taxEl) taxEl.value = num(estimate.taxPercent) || '';
+  if (finalEl) finalEl.value = num(estimate.finalPercent) || '';
   setInvoiceDeposit(num(estimate.depositPercent) || 0);
   renderInvoiceCardViews();
   renderInvoiceBalanceCallout();
@@ -486,7 +501,10 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
 export function emailInvoice(invoiceId) {
   const invoice = state.store.invoices.find(item => item.id === invoiceId);
   if (!invoice) return;
+  // Open the PDF so the user can save and attach it to the draft.
+  printInvoice(invoice);
   const signoff = state.profile?.full_name || 'Harvest Renovation';
-  const body = `Hi ${invoice.clientName || 'there'},\n\nAttached is invoice ${invoice.invoiceNumber || ''} from Harvest Renovation for ${money.format(num(invoice.total))}.\n\nThank you,\n${signoff}`;
+  const body = `Hi ${invoice.clientName || 'there'},\n\nAttached is invoice ${invoice.invoiceNumber || ''} from Harvest Renovation for ${money.format(num(invoice.total))}.\n\nThe PDF has opened in a separate window — please save it and attach it to this email.\n\nThank you,\n${signoff}`;
   window.location.href = buildMailto(invoice.email || '', `Harvest Renovation Invoice ${invoice.invoiceNumber || ''}`.trim(), body);
+  showToast('PDF opened — save it and attach to the email draft.', 'info');
 }
