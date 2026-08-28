@@ -208,7 +208,8 @@ export const state = {
     employeeSearch: '',
     documentType: 'all',
     pipelineRange: 'month',
-    tradeCategory: 'all'
+    tradeCategory: 'all',
+    leadSource: 'all'
   }
 };
 

@@ -504,6 +504,13 @@ function leadMatchesTradeFilter(lead) {
   return getTradesForCategory(cat).includes(lead.trade || lead.service || '');
 }
 
+// True when a lead's source matches the active source chip (blank source = 'Other').
+function leadMatchesSourceFilter(lead) {
+  const src = state.filters.leadSource || 'all';
+  if (src === 'all') return true;
+  return (lead.source || 'Other') === src;
+}
+
 export function renderPipelineBoard() {
   const board = el.dealPipelineBoard;
   if (!board) return;
@@ -513,6 +520,7 @@ export function renderPipelineBoard() {
   const allLeads = state.store.leads;
   let leads = allLeads.filter(l => leadMatchesQuery(l, query));
   leads = leads.filter(leadMatchesTradeFilter);
+  leads = leads.filter(leadMatchesSourceFilter);
   // HubSpot-style close-date view: nothing is deleted. When not actively
   // searching, CLOSED deals (Won/Lost) only appear if they closed within the
   // selected range; open/active deals always stay on the board.
@@ -608,6 +616,7 @@ export function renderContactsTable() {
   const clients = [...state.store.clients]
     .filter(c => [c.name, c.phone, c.email, c.tags, c.source].join(' ').toLowerCase().includes(query))
     .filter(c => state.filters.tradeCategory === 'all' || state.store.leads.some(l => l.clientId === c.id && leadMatchesTradeFilter(l)))
+    .filter(c => state.filters.leadSource === 'all' || state.store.leads.some(l => l.clientId === c.id && leadMatchesSourceFilter(l)))
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   const header = '<tr class="contacts-head"><th>Name</th><th>Phone</th><th>Email</th><th>Deals</th><th>Last contact</th><th></th></tr>';
   if (!clients.length) {

@@ -53,6 +53,14 @@ export function bindAppUi() {
     tradeFilters.querySelectorAll('.trade-chip').forEach(c => c.classList.toggle('active', c === chip));
     renderLeads();
   });
+  const sourceFilters = document.getElementById('sourceFilters');
+  if (sourceFilters) sourceFilters.addEventListener('click', e => {
+    const chip = e.target.closest('.source-chip');
+    if (!chip) return;
+    state.filters.leadSource = chip.dataset.source;
+    sourceFilters.querySelectorAll('.source-chip').forEach(c => c.classList.toggle('active', c === chip));
+    renderLeads();
+  });
   el.employeeSearch.addEventListener('input', debounce(e => { state.filters.employeeSearch = e.target.value.toLowerCase(); renderEmployees(); }));
 
   document.querySelectorAll('[data-doc-filter]').forEach(btn => btn.addEventListener('click', () => {
