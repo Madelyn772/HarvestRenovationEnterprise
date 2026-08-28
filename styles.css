@@ -3507,6 +3507,42 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 
 /* Totals live in the summary panel, so hide the inline line-items total. */
 #invoiceLineTotals { display: none; }
+#estimateLineTotals { display: none; }
+
+/* Estimate summary rail: meta rows + signature toggle. */
+.estimate-summary-card .isum-meta { border-top: 1px solid #ece8de; margin-top: .2rem; }
+.estimate-summary-card .isum-meta .isum-row { padding: .5rem 0; font-size: .9rem; }
+.estimate-summary-card .isum-meta .isum-row span { color: #6f6552; }
+.estimate-summary-card .isum-meta .isum-row strong { color: #1f1a12; }
+.estimate-summary-card .isum-meta .dcv-status {
+  display: inline-block; padding: .12rem .5rem; border-radius: 999px;
+  background: #f4ede0; border: 1px solid #e3d7bf; color: #8a6520;
+  font-size: .74rem; font-weight: 700;
+}
+.isum-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: .7rem 0 .2rem; border-top: 1px solid #ece8de; margin-top: .2rem;
+}
+.isum-toggle-row > span:first-child { color: #1f1a12; font-weight: 600; font-size: .9rem; }
+.isum-sign-note { margin: 0 0 .1rem; }
+.switch { position: relative; display: inline-flex; flex: 0 0 auto; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch .switch-track {
+  width: 40px; height: 22px; border-radius: 999px; background: #cfc9bc;
+  transition: background .15s; position: relative;
+}
+.switch .switch-track::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s;
+}
+.switch input:checked + .switch-track { background: #c9a227; }
+.switch input:checked + .switch-track::after { transform: translateX(18px); }
+.theme-dark .estimate-summary-card .isum-meta,
+.theme-dark .isum-toggle-row { border-top-color: #3a342a; }
+.theme-dark .isum-toggle-row > span:first-child,
+.theme-dark .estimate-summary-card .isum-meta .isum-row strong { color: #f0e2c4; }
+.theme-dark .estimate-summary-card .isum-meta .dcv-status { background: #2c2318; border-color: #4a3d29; color: #e9d8b6; }
+.theme-dark .switch .switch-track { background: #4a4335; }
 
 /* ── Collapsible click-to-edit info cards (native <details>) ── */
 .doc-card-collapsible {

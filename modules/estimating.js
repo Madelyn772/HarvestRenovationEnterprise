@@ -331,21 +331,67 @@ export function collectEstimateFromForm() {
 
 export function renderEstimateSummary(estimate) {
   if (!estimate) return;
+  const subtotal = num(estimate.subtotal);
+  const fees = num(estimate.permitsFees);
+  const taxPct = num(estimate.taxPercent);
+  const tax = num(estimate.taxAmount);
+  const total = num(estimate.estimatedCost);
+  const taxLabel = Number.isInteger(taxPct) ? taxPct : taxPct.toFixed(2);
+  if (el.estimateSummary) {
+    const feesRow = fees > 0 ? `<div class="isum-row"><span>Permits / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
+    const finalRow = num(estimate.finalPay) > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>` : '';
+    el.estimateSummary.innerHTML = `
+      <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
+      ${feesRow}${finalRow}
+      <div class="isum-row isum-muted"><span>Tax (${taxLabel}%)</span><strong>${money.format(tax)}</strong></div>
+      <div class="isum-divide"></div>
+      <div class="isum-row isum-total"><span>Total</span><strong>${money.format(total)}</strong></div>`;
+  }
   const depPct = num(estimate.depositPercent);
-  const rows = [
-    `<div class="summary-tile"><span>Client</span><strong>${escapeHtml(estimate.clientName || 'Select a client')}</strong></div>`,
-    `<div class="summary-row"><span>Line items</span><strong>${(estimate.items || []).length}</strong></div>`,
-    `<div class="summary-row"><span>Subtotal</span><strong>${money.format(num(estimate.subtotal))}</strong></div>`
-  ];
-  if (num(estimate.taxAmount) > 0) rows.push(`<div class="summary-row"><span>Tax (${num(estimate.taxPercent)}%)</span><strong>${money.format(num(estimate.taxAmount))}</strong></div>`);
-  if (num(estimate.permitsFees) > 0) rows.push(`<div class="summary-row"><span>Permits &amp; fees</span><strong>${money.format(num(estimate.permitsFees))}</strong></div>`);
-  if (num(estimate.finalPay) > 0) rows.push(`<div class="summary-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>`);
-  rows.push(`<div class="summary-tile"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>`);
-  rows.push(`<div class="summary-tile"><span>${depPct > 0 ? `Deposit (${depPct}%)` : 'Deposit'}</span><strong>${depPct > 0 ? money.format(num(estimate.depositAmount)) : 'No deposit'}</strong></div>`);
-  if (estimate.validUntil) rows.push(`<div class="summary-row"><span>Valid until</span><strong>${escapeHtml(formatDate(estimate.validUntil))}</strong></div>`);
-  rows.push(`<div class="summary-row"><span>Status</span><strong>${escapeHtml(estimate.status || 'Draft')}</strong></div>`);
-  rows.push(`<div class="stack-item"><h4>Scope of work</h4><p>${escapeHtml(estimate.scope || 'Add scope details here.')}</p></div>`);
-  el.estimateSummary.innerHTML = rows.join('');
+  const depAmtEl = document.querySelector('[data-est-deposit-amount]');
+  if (depAmtEl) depAmtEl.textContent = depPct > 0 ? money.format(num(estimate.depositAmount)) : 'No deposit';
+  const depLabel = document.querySelector('.estimate-summary-card .idc-label');
+  if (depLabel) depLabel.textContent = depPct > 0 ? `Deposit (${depPct}%)` : 'Deposit';
+  const meta = document.getElementById('estimateRailMeta');
+  if (meta) {
+    const validRow = estimate.validUntil ? `<div class="isum-row"><span>Valid Until</span><strong>${escapeHtml(formatDate(estimate.validUntil))}</strong></div>` : '';
+    meta.innerHTML = `${validRow}<div class="isum-row"><span>Status</span><strong class="dcv-status">${escapeHtml(estimate.status || 'Draft')}</strong></div>`;
+  }
+  renderEstimateCardViews();
+}
+
+// Fill the collapsed read-only view of each estimate info card from the inputs.
+export function renderEstimateCardViews() {
+  const f = el.estimateForm;
+  if (!f) return;
+  const val = n => (f.querySelector(`[name="${n}"]`)?.value || '').trim();
+  const client = f.querySelector('[data-view="client"]');
+  if (client) {
+    const cid = val('clientId');
+    const name = (cid && cid !== '__new__' ? lookupClientName(cid) : '') || val('clientName') || '';
+    const lines = [val('billingAddress'), val('billingEmail'), (document.getElementById('estimateClientPhone')?.value || '').trim()].filter(Boolean);
+    client.innerHTML = name || lines.length
+      ? `<p class="dcv-strong">${escapeHtml(name || 'Client')}</p>${lines.map(l => `<p>${escapeHtml(l)}</p>`).join('')}`
+      : '<p class="dcv-empty">No client selected</p>';
+  }
+  const proj = f.querySelector('[data-view="project"]');
+  if (proj) {
+    const trade = val('trade');
+    const date = val('date');
+    proj.innerHTML = trade || date
+      ? `<p class="dcv-strong">${escapeHtml(trade || 'Project')}</p>${date ? `<p>${escapeHtml(formatDate(date))}</p>` : ''}`
+      : '<p class="dcv-empty">No project details</p>';
+  }
+  const scope = f.querySelector('[data-view="scope"]');
+  if (scope) {
+    const s = val('scope');
+    scope.innerHTML = s ? `<p>${escapeHtml(s)}</p>` : '<p class="dcv-empty">No scope added</p>';
+  }
+  const terms = f.querySelector('[data-view="terms"]');
+  if (terms) {
+    const t = (document.getElementById('estimateTerms')?.value || '').trim();
+    terms.innerHTML = t ? `<p>${escapeHtml(t.length > 120 ? t.slice(0, 120) + '…' : t)}</p>` : '<p class="dcv-empty">Standard terms</p>';
+  }
 }
 
 export function loadEstimateIntoForm(id) {

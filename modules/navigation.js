@@ -241,6 +241,8 @@ export function bindAppUi() {
   // Collapsible info cards use native <details>; no JS toggle needed.
   const addInvoiceBottom = document.getElementById('addInvoiceRowBottom');
   if (addInvoiceBottom) addInvoiceBottom.addEventListener('click', () => { addInvoiceRow(); renderInvoiceBalanceCallout(); });
+  const addEstimateBottom = document.getElementById('addEstimateRowBottom');
+  if (addEstimateBottom) addEstimateBottom.addEventListener('click', () => { addEstimateRow(); recomputeEstimateTotals(); });
   const invoiceDepositSelect = document.getElementById('invoiceDepositSelect');
   if (invoiceDepositSelect) invoiceDepositSelect.addEventListener('change', () => renderInvoiceBalanceCallout());
   const invoiceDepositCustom = document.getElementById('invoiceDepositCustom');

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-37" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-38" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -428,8 +428,7 @@
 
       <section class="view" id="estimatingView">
         <div class="section-head-row"><div><p class="eyebrow">Estimating Suite</p><h3>Build estimates, calculate totals, export to PDF, and prepare for signature workflows</h3></div></div>
-        <div class="grid two-strong">
-          <article class="card doc-editor-card">
+        <article class="card doc-editor-card estimate-doc-card">
             <form id="estimateForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="estimateId" />
 
@@ -451,10 +450,13 @@
                 </div>
               </div>
 
-              <!-- ── Info cards: Client + Project/Trade ── -->
+              <!-- ── Info cards: Client + Project/Trade (collapsible) ── -->
               <div class="doc-cards full">
-                <section class="doc-card">
-                  <div class="doc-card-head dh-client">Client</div>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-client"><span class="dch-label">Client</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="client"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
                     <label class="full"><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
@@ -470,73 +472,88 @@
                     <label><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS (optional)" /></label>
                     <label class="full inline-check"><input type="checkbox" id="useClientPhone" checked /><span>Use client&rsquo;s saved phone</span></label>
                   </div>
-                </section>
-                <section class="doc-card">
-                  <div class="doc-card-head dh-project">Project / Trade</div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-project"><span class="dch-label">Project / Trade</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="project"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><span>Trade</span><input name="trade" placeholder="e.g. Kitchen Remodeling" /></label>
                     <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
                     <label><span>Prepared by</span><input name="user" /></label>
                     <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
-                  </div>
-                </section>
-              </div>
-
-              <!-- ── Line items ── -->
-              <div class="estimate-items-shell full">
-                <div class="split-head"><strong>Line Items</strong>
-                  <div class="line-item-tools">
-                    <button type="button" class="ghost-btn" id="loadTemplateItems">Load template items</button>
-                    <button type="button" class="ghost-btn" id="addEstimateRow">+ Add line</button>
-                  </div>
-                </div>
-                <div class="line-items-head">
-                  <span>Description</span><span>Category</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
-                </div>
-                <div id="estimateItems" class="stack compact-stack"></div>
-                <div class="line-items-totals" id="estimateLineTotals"></div>
-              </div>
-
-              <!-- ── Scope + Terms cards ── -->
-              <div class="doc-cards full">
-                <section class="doc-card">
-                  <div class="doc-card-head dh-scope">Scope of Work</div>
-                  <div class="doc-card-body">
-                    <label class="full"><textarea name="scope" rows="5" data-autocap="sentence" autocapitalize="sentences" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
-                    <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" data-autocap="sentence" autocapitalize="sentences" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
-                  </div>
-                </section>
-                <section class="doc-card">
-                  <div class="doc-card-head dh-terms">Terms &amp; Conditions</div>
-                  <div class="doc-card-body">
-                    <label class="full"><textarea name="termsAndConditions" rows="8" id="estimateTerms"></textarea></label>
-                    <label class="full inline-check"><input type="checkbox" name="signatureBlockEnabled" checked /><span>Print signature block on PDF</span></label>
-                  </div>
-                </section>
-              </div>
-
-              <!-- ── Pricing ── -->
-              <div class="doc-cards full">
-                <section class="doc-card">
-                  <div class="doc-card-head dh-pricing">Pricing</div>
-                  <div class="doc-card-body">
-                    <label><span>Deposit</span>
-                      <select name="depositPercent" id="estimateDepositPercent">
-                        <option value="0">No deposit</option>
-                        <option value="10">10%</option>
-                        <option value="20">20%</option>
-                        <option value="30" selected>30%</option>
-                        <option value="40">40%</option>
-                        <option value="50">50%</option>
-                        <option value="custom">Custom…</option>
-                      </select>
-                    </label>
-                    <label id="estimateDepositCustomWrap" class="hidden"><span>Custom deposit %</span><input name="depositPercentCustom" type="number" min="0" max="100" step="1" /></label>
                     <label><span>Final markup %</span><input name="finalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
                     <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
                     <label><span>Permits &amp; fees ($)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
                   </div>
-                </section>
+                </details>
+              </div>
+
+              <!-- ── Line items (left) + summary rail (right) ── -->
+              <div class="doc-split full">
+                <div class="doc-split-main estimate-items-shell">
+                  <div class="split-head"><strong>Line Items</strong>
+                    <div class="line-item-tools">
+                      <button type="button" class="ghost-btn" id="loadTemplateItems">Load Template</button>
+                      <button type="button" class="gold-btn tiny" id="addEstimateRow">+ Add Item</button>
+                    </div>
+                  </div>
+                  <div class="line-items-head">
+                    <span>Description</span><span>Category</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
+                  </div>
+                  <div id="estimateItems" class="stack compact-stack"></div>
+                  <button type="button" class="add-item-row" id="addEstimateRowBottom">+ Add Another Item</button>
+                  <div class="line-items-totals" id="estimateLineTotals"></div>
+                </div>
+                <aside class="doc-split-side">
+                  <div class="invoice-summary-card estimate-summary-card">
+                    <div id="estimateSummary" class="invoice-summary"></div>
+                    <div class="isum-deposit-control">
+                      <span class="idc-label">Deposit</span>
+                      <span class="idc-pct">
+                        <select name="depositPercent" id="estimateDepositPercent" aria-label="Deposit percent">
+                          <option value="0">No deposit</option>
+                          <option value="10">10%</option>
+                          <option value="20">20%</option>
+                          <option value="30" selected>30%</option>
+                          <option value="40">40%</option>
+                          <option value="50">50%</option>
+                          <option value="custom">Custom…</option>
+                        </select>
+                        <span id="estimateDepositCustomWrap" class="hidden"><input name="depositPercentCustom" type="number" min="0" max="100" step="1" placeholder="%" aria-label="Custom deposit percent" /></span>
+                      </span>
+                      <strong class="idc-amount" data-est-deposit-amount>$0.00</strong>
+                      <em class="idc-note">Due at acceptance</em>
+                    </div>
+                    <div id="estimateRailMeta" class="isum-meta"></div>
+                    <label class="isum-toggle-row"><span>Signature Block</span><span class="switch"><input type="checkbox" name="signatureBlockEnabled" checked /><span class="switch-track" aria-hidden="true"></span></span></label>
+                    <p class="isum-sign-note muted tiny">Print signature block on the PDF</p>
+                  </div>
+                </aside>
+              </div>
+
+              <!-- ── Scope + Terms cards (collapsible) ── -->
+              <div class="doc-cards full">
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-scope"><span class="dch-label">Scope of Work</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="scope"></div>
+                  </summary>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="scope" rows="5" data-autocap="sentence" autocapitalize="sentences" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
+                    <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" data-autocap="sentence" autocapitalize="sentences" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
+                  </div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-terms"><span class="dch-label">Terms &amp; Conditions</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="terms"></div>
+                  </summary>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="termsAndConditions" rows="8" id="estimateTerms"></textarea></label>
+                  </div>
+                </details>
               </div>
 
               <!-- ── Secondary actions ── -->
@@ -546,16 +563,6 @@
               </div>
             </form>
           </article>
-          <article class="card sticky-card">
-            <div class="card-head"><div><p class="eyebrow">Estimate Summary</p><h3>Client-ready preview</h3></div></div>
-            <div id="estimateSummary" class="estimate-summary"></div>
-            <div class="signature-prep">
-              <p class="eyebrow">Documenso Ready</p>
-              <h4>E-Signature Workflow</h4>
-              <p class="muted">Click “Send” to email this estimate to the client for legally binding e-signature via Documenso. They get a signing link, sign on their phone or computer, and the estimate is auto-marked “Approved” when they finish. Free, unlimited, court-admissible.</p>
-            </div>
-          </article>
-        </div>
         <article class="card"><div class="card-head"><div><p class="eyebrow">Saved Estimates</p><h3>Proposal library</h3></div></div><div id="estimateList" class="stack"></div></article>
 
         <details class="card co-card" id="changeOrderCard">
