@@ -4315,6 +4315,16 @@ html:not(.theme-light) .followup-count-badge { background: rgba(220,38,38,.16); 
 .theme-light .main .funnel-empty { color: #5c5346; }
 .theme-light .main .kpi-tile-value { color: #b07d2a; }
 
+/* ── <details> info cards must be display:block so the native open/close works. ──
+   A <details> with display:flex/grid breaks the browser's toggle (blank on open).
+   Inner content keeps its own flex/grid wrapper; the <details> itself stays block. */
+details.doc-card,
+details.doc-card-collapsible,
+details.form-section,
+details.mobile-section.form-section {
+  display: block;
+}
+
 
 
 
