@@ -21,14 +21,22 @@ ON CONFLICT (id) DO NOTHING;
 
 ALTER TABLE public.portal_shared_data ENABLE ROW LEVEL SECURITY;
 
--- Any signed-in team member can read and write the shared company data.
+-- Only ACTIVE team members can read or write the shared company data.
+-- (public.is_active_user() is defined in portal-core-bootstrap.sql and returns
+-- true only when the caller's profile status = 'active'.) This blocks pending
+-- and denied accounts — which are still `authenticated` — from reading or
+-- overwriting the entire company JSON blob via a direct API call.
 DROP POLICY IF EXISTS "authenticated read shared data" ON public.portal_shared_data;
-CREATE POLICY "authenticated read shared data" ON public.portal_shared_data
-  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "active read shared data" ON public.portal_shared_data;
+CREATE POLICY "active read shared data" ON public.portal_shared_data
+  FOR SELECT TO authenticated USING (public.is_active_user());
 
 DROP POLICY IF EXISTS "authenticated write shared data" ON public.portal_shared_data;
-CREATE POLICY "authenticated write shared data" ON public.portal_shared_data
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "active write shared data" ON public.portal_shared_data;
+CREATE POLICY "active write shared data" ON public.portal_shared_data
+  FOR ALL TO authenticated
+  USING (public.is_active_user())
+  WITH CHECK (public.is_active_user());
 
 -- Enable realtime so teammates see each other's changes live.
 -- (Safe to run even if the table is already in the publication.)
