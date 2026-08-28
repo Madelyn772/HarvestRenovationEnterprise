@@ -3561,6 +3561,41 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-dark .invoice-summary .isum-deposit span { color: #9a8f78; }
 .theme-dark .invoice-summary .isum-deposit strong { color: #f0e2c4; }
 
+/* Editable deposit % control under Balance Due. */
+.isum-deposit-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .3rem .6rem;
+  margin-top: .6rem;
+  padding-top: .6rem;
+  border-top: 1px dashed #ece8de;
+  font-size: .84rem;
+}
+.isum-deposit-control .idc-label { color: #7a7060; }
+.isum-deposit-control .isum-lock { font-size: .82em; margin-right: .1rem; }
+.isum-deposit-control .idc-pct {
+  display: inline-flex;
+  align-items: center;
+  gap: .1rem;
+  color: #7a7060;
+}
+.isum-deposit-control .idc-pct input {
+  width: 3.4rem;
+  padding: .3rem .4rem;
+  text-align: right;
+  border: 1px solid #ddd9cf;
+  border-radius: 8px;
+  background: #faf9f6;
+}
+.isum-deposit-control .idc-amount { margin-left: auto; color: #1f1a12; font-weight: 700; }
+.isum-deposit-control .idc-note { flex-basis: 100%; font-style: normal; color: #9a917e; font-size: .75rem; text-align: right; }
+.theme-dark .isum-deposit-control { border-top-color: #3a342a; }
+.theme-dark .isum-deposit-control .idc-label,
+.theme-dark .isum-deposit-control .idc-pct { color: #9a8f78; }
+.theme-dark .isum-deposit-control .idc-pct input { background: #181410; border-color: #3a342a; color: #e9d8b6; }
+.theme-dark .isum-deposit-control .idc-amount { color: #f0e2c4; }
+
 
 
 

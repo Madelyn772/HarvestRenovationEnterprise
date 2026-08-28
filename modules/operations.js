@@ -169,6 +169,11 @@ export function collectInvoiceFromForm() {
   const payments = readPaymentsFromDom();
   // Invoice date shares the name "date" with payment rows — read it directly.
   const dateInput = document.getElementById('invoiceDate');
+  const sub = items.reduce((s, item) => s + num(item.amount), 0);
+  const taxPct = num(data.taxPercent);
+  const fees = num(data.permitsFees);
+  const total = sub + sub * (taxPct / 100) + fees;
+  const depositPercent = num(data.depositPercent);
   return {
     id: data.invoiceId || '',
     clientId: data.clientId,
@@ -185,14 +190,13 @@ export function collectInvoiceFromForm() {
     address: data.address,
     items,
     payments,
-    permitsFees: num(data.permitsFees),
-    taxPercent: num(data.taxPercent),
+    permitsFees: fees,
+    taxPercent: taxPct,
+    depositPercent,
+    depositAmount: total * (depositPercent / 100),
     terms: data.terms != null ? data.terms : '',
     depositAppliedFromEstimateId: el.invoiceForm.dataset.depositEstimateId || '',
-    total: (() => {
-      const sub = items.reduce((s, item) => s + num(item.amount), 0);
-      return sub + sub * (num(data.taxPercent) / 100) + num(data.permitsFees);
-    })()
+    total
   };
 }
 
@@ -258,17 +262,6 @@ export function renderInvoiceBalanceCallout() {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
     const taxLabel = Number.isInteger(taxPct) ? taxPct : taxPct.toFixed(2);
     const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
-    // Show the estimate deposit (locked) when this invoice is linked to one.
-    const estSel = document.getElementById('relatedEstimate');
-    const est = estSel && estSel.value ? state.store.estimates.find(e => e.id === estSel.value) : null;
-    let depositRow = '';
-    if (est && num(est.depositPercent) > 0) {
-      const depAmt = num(est.depositAmount) || (total * num(est.depositPercent) / 100);
-      const payments = readPaymentsFromDom();
-      const depPay = payments.find(p => /deposit/i.test(p.reference || '') || /deposit/i.test(p.note || '')) || payments[0];
-      const paidNote = depPay && depPay.date ? `Paid on ${formatDate(depPay.date)}` : 'Not yet paid';
-      depositRow = `<div class="isum-deposit"><span><span class="isum-lock" aria-hidden="true">🔒</span> Deposit (${num(est.depositPercent)}%)</span><strong>${money.format(depAmt)}</strong><em>${escapeHtml(paidNote)}</em></div>`;
-    }
     summary.innerHTML = `
       <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
       <div class="isum-row"><span>Permit / Fees</span><strong>${money.format(fees)}</strong></div>
@@ -276,8 +269,16 @@ export function renderInvoiceBalanceCallout() {
       <div class="isum-divide"></div>
       <div class="isum-row isum-total"><span>Total Due</span><strong>${money.format(total)}</strong></div>
       ${paidRow}
-      <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>
-      ${depositRow}`;
+      <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>`;
+  }
+  // Deposit control (persistent element under Balance Due): % of the total.
+  const depPct = num(document.getElementById('invoiceDepositPercent')?.value);
+  const depAmtEl = document.querySelector('[data-deposit-amount]');
+  if (depAmtEl) depAmtEl.textContent = money.format(total * (depPct / 100));
+  const depNoteEl = document.querySelector('[data-deposit-note]');
+  if (depNoteEl) {
+    const depPay = readPaymentsFromDom().find(p => /deposit/i.test(p.reference || '') || /deposit/i.test(p.note || ''));
+    depNoteEl.textContent = depPay && depPay.date ? `Paid on ${formatDate(depPay.date)}` : (depPct > 0 ? 'Not yet paid' : '');
   }
   // Back-compat: legacy inline balance callout, if present.
   const callout = document.getElementById('invoiceBalanceCallout');
@@ -392,6 +393,8 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   const taxEl = document.getElementById('invoiceTaxPercent');
   if (feesEl) feesEl.value = num(estimate.permitsFees) || '';
   if (taxEl) taxEl.value = num(estimate.taxPercent) || '';
+  const depEl = document.getElementById('invoiceDepositPercent');
+  if (depEl) depEl.value = num(estimate.depositPercent) || 0;
   renderInvoiceCardViews();
   renderInvoiceBalanceCallout();
   if (switchView) {

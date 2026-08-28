@@ -207,6 +207,8 @@ export function bindAppUi() {
   // Collapsible info cards use native <details>; no JS toggle needed.
   const addInvoiceBottom = document.getElementById('addInvoiceRowBottom');
   if (addInvoiceBottom) addInvoiceBottom.addEventListener('click', () => { addInvoiceRow(); renderInvoiceBalanceCallout(); });
+  const invoiceDeposit = document.getElementById('invoiceDepositPercent');
+  if (invoiceDeposit) invoiceDeposit.addEventListener('input', () => renderInvoiceBalanceCallout());
 
   // Line-item row ⋮ menu: toggle the clicked menu, close others / on outside click.
   document.addEventListener('click', e => {

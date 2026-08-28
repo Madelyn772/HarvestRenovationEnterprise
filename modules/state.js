@@ -398,6 +398,7 @@ export function migrateInvoice(record) {
   if (r.paymentTerms == null) r.paymentTerms = 'Net 15';
   if (r.permitsFees == null) r.permitsFees = 0;
   if (r.taxPercent == null) r.taxPercent = 0;
+  if (r.depositPercent == null) r.depositPercent = 0;
   if (r.terms == null) r.terms = DEFAULT_INVOICE_TERMS;
   if (r.total == null) r.total = r.items.reduce((s, it) => s + num(it && it.amount), 0);
   return r;
