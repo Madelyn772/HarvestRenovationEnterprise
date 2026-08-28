@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-54" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-55" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -711,9 +711,10 @@
                     <label class="full"><span>Issue date</span><input name="date" id="invoiceDate" type="date" /></label>
                     <label class="full"><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
                     <label class="full"><span>Payment terms</span><select name="paymentTerms" id="invoicePaymentTerms"><option value="Due on receipt">Due on receipt</option><option value="Net 15" selected>Net 15 — due in 15 days</option><option value="Net 30">Net 30 — due in 30 days</option><option value="Net 45">Net 45 — due in 45 days</option><option value="Net 60">Net 60 — due in 60 days</option></select></label>
-                    <label class="full"><span>Final markup %</span><input name="finalPercent" id="invoiceFinalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
-                    <label class="full"><span>Tax %</span><input name="taxPercent" id="invoiceTaxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
-                    <label class="full"><span>Permits &amp; fees ($)</span><input name="permitsFees" id="invoicePermitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
+                    <!-- Financials inherit from the signed estimate (populated by fillInvoiceFromEstimate); not editable on the invoice. -->
+                    <input type="hidden" name="finalPercent" id="invoiceFinalPercent" />
+                    <input type="hidden" name="taxPercent" id="invoiceTaxPercent" />
+                    <input type="hidden" name="permitsFees" id="invoicePermitsFees" />
                     <p class="full muted tiny">Invoice number &amp; status are edited in the header above.</p>
                   </div>
                 </details>
