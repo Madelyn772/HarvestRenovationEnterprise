@@ -2,7 +2,7 @@ import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdm
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
-import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave } from './crm.js';
+import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
@@ -65,6 +65,14 @@ export function bindAppUi() {
   el.leadForm.addEventListener('submit', handleLeadSave);
   if (el.newContactBtn) el.newContactBtn.addEventListener('click', () => openContactDialog());
   if (el.newDealBtn) el.newDealBtn.addEventListener('click', () => openDealDialog());
+  // Follow-up: log-contact dialog + overdue filter toggle.
+  if (el.logContactForm) el.logContactForm.addEventListener('submit', handleLogContactSubmit);
+  const cancelLogContact = document.getElementById('cancelLogContact');
+  if (cancelLogContact) cancelLogContact.addEventListener('click', () => el.logContactDialog?.close());
+  const followUpBadge = document.getElementById('followUpOverdueCount');
+  if (followUpBadge) followUpBadge.addEventListener('click', () => { state.filters.followUpOnly = !state.filters.followUpOnly; renderPipelineBoard(); });
+  const followUpShowAll = document.getElementById('followUpShowAll');
+  if (followUpShowAll) followUpShowAll.addEventListener('click', () => { state.filters.followUpOnly = false; renderPipelineBoard(); });
   if (el.quickYelpBtn) el.quickYelpBtn.addEventListener('click', () => openQuickYelpDialog());
   if (el.quickYelpForm) {
     el.quickYelpForm.addEventListener('submit', handleQuickAddSave);

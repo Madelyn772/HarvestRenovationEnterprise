@@ -23,6 +23,7 @@ export function cacheDom() {
     'feedbackForm','bugReportList',
     'tipText','tipCounter','tipPrev','tipNext','tipAddForm','tipDeleteBtn'
     ,'contractForm','contractClientSelect','contractLinkedEstimate','contractNumber','contractDate','contractAmount','contractSummary','contractList','printContract','contractPayments','contractTerms'
+    ,'logContactDialog','logContactForm'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }

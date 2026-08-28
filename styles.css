@@ -3903,6 +3903,75 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-light .main .bug-comment { background: #f6f3ec; border-color: rgba(31,26,20,.08); }
 .theme-light .main .bug-comment.mine { background: #faf3e4; border-color: #ecd9b3; }
 
+/* ── CRM follow-up reminders ── */
+.ghost-btn.tiny { padding: .3rem .55rem; font-size: .72rem; border-radius: 8px; }
+
+.followup-badge {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .45rem;
+  border-radius: 5px;
+  font-size: .72rem;
+  font-weight: 600;
+  margin-bottom: .45rem;
+  line-height: 1.25;
+}
+.followup-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.followup-overdue { background: rgba(220,38,38,.12); color: #dc2626; }
+.followup-overdue .followup-dot { background: #dc2626; animation: pulse-dot 1.5s ease-in-out infinite; }
+.followup-due { background: rgba(234,88,12,.14); color: #ea580c; }
+.followup-due .followup-dot { background: #ea580c; }
+.followup-soon { background: rgba(202,138,4,.12); color: #b8860b; }
+.followup-soon .followup-dot { background: #ca8a04; }
+.followup-ok { background: rgba(22,163,74,.1); color: #16a34a; }
+.followup-ok .followup-dot { background: #16a34a; }
+.followup-exhausted { background: rgba(124,110,150,.14); color: #7c6e96; }
+.followup-exhausted .followup-dot { background: #7c6e96; }
+.followup-none { display: none; }
+.deal-card-overdue { border-left: 2px solid #dc2626; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(1.3); }
+}
+
+/* Dark theme = no .theme-light on <html>: strengthen the tints. */
+html:not(.theme-light) .followup-overdue { background: rgba(220,38,38,.2); color: #f18b8b; }
+html:not(.theme-light) .followup-due { background: rgba(234,88,12,.2); color: #f4a266; }
+html:not(.theme-light) .followup-soon { background: rgba(202,138,4,.18); color: #e6c260; }
+html:not(.theme-light) .followup-ok { background: rgba(22,163,74,.16); color: #6fd39a; }
+html:not(.theme-light) .followup-exhausted { background: rgba(150,135,180,.18); color: #b3a6cc; }
+
+.log-contact-btn { width: 100%; margin-top: .5rem; }
+
+/* Overdue counter + follow-up filter (pipeline header). */
+.pipeline-head { flex-wrap: wrap; gap: .6rem; align-items: center; }
+.followup-summary { display: flex; align-items: center; gap: .5rem; }
+.followup-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .3rem .6rem;
+  border-radius: 6px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(220,38,38,.1);
+  color: #dc2626;
+  border: 1px solid rgba(220,38,38,.22);
+  transition: background .15s ease;
+}
+.followup-count-badge:hover { background: rgba(220,38,38,.18); }
+.followup-count-badge.active { background: rgba(220,38,38,.2); box-shadow: 0 0 0 1px rgba(220,38,38,.35); }
+.followup-overdue-dot { width: 8px; height: 8px; border-radius: 50%; background: #dc2626; animation: pulse-dot 1.5s ease-in-out infinite; }
+html:not(.theme-light) .followup-count-badge { background: rgba(220,38,38,.16); border-color: rgba(220,38,38,.32); color: #f18b8b; }
+
+@media (max-width: 640px) {
+  .followup-summary { order: 3; flex-basis: 100%; }
+  .log-contact-btn { font-size: .7rem; }
+}
+
 
 
 

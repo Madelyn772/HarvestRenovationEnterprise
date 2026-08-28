@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-29" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-30" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -282,6 +282,10 @@
         <article class="card">
           <div class="card-head pipeline-head">
             <div><p class="eyebrow">Deal Pipeline</p><h3>Drag deals between stages to advance them</h3></div>
+            <div id="followUpSummary" class="followup-summary">
+              <span class="followup-count-badge" id="followUpOverdueCount" hidden><span class="followup-dot followup-overdue-dot"></span><span id="followUpOverdueNum">0</span> need follow-up</span>
+              <button type="button" class="ghost-btn tiny" id="followUpShowAll" hidden>Show all</button>
+            </div>
             <label class="pipeline-range">Closed deals:
               <select id="pipelineRange">
                 <option value="month">This month</option>
@@ -377,6 +381,28 @@
             <div class="form-actions full">
               <button type="submit" class="primary-btn">Add Lead</button>
               <button type="button" class="ghost-btn" data-close-dialog="quickYelpDialog">Cancel</button>
+            </div>
+          </form>
+        </dialog>
+
+        <dialog id="logContactDialog" class="crm-dialog">
+          <button type="button" class="dialog-close" data-close-dialog="logContactDialog" aria-label="Close">×</button>
+          <div class="card-head"><div><p class="eyebrow">Follow-up</p><h3>Log Contact</h3></div></div>
+          <p class="muted tiny">Logging a contact updates the follow-up timer and auto-schedules the next reminder.</p>
+          <form method="dialog" id="logContactForm" class="form-grid">
+            <input type="hidden" name="leadId" />
+            <label class="full"><span>Contact method</span>
+              <select name="method" required>
+                <option value="call">Phone call</option>
+                <option value="text">Text message</option>
+                <option value="email">Email</option>
+                <option value="in-person">In person</option>
+              </select>
+            </label>
+            <label class="full"><span>Notes (optional)</span><textarea name="notes" rows="2" placeholder="What was discussed?"></textarea></label>
+            <div class="form-actions full">
+              <button type="button" class="ghost-btn" id="cancelLogContact">Cancel</button>
+              <button type="submit" class="primary-btn">Log it</button>
             </div>
           </form>
         </dialog>

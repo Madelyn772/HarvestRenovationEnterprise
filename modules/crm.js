@@ -347,15 +347,141 @@ export function renderCrmStats() {
   snap('snapPipelineValue', money.format(pipelineValue));
 }
 
+// Follow-up cadence (days) per pipeline stage. Null = no follow-up needed.
+const FOLLOW_UP_CADENCE = {
+  'New Lead': 1,
+  'Contacted': 3,
+  'Qualified': 5,
+  'Estimate Scheduled': 1,
+  'Estimate Completed': 2,
+  'Proposal Sent': 3,
+  'Won': null,
+  'Lost': null
+};
+// Proposal Sent uses a progressive 7-touch/30-day cadence.
+const PROPOSAL_SENT_CADENCE = [3, 7, 14, 21, 30];
+
+const startOfDay = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const DAY_MS = 86400000;
+
+// Count Proposal-Sent contact touches logged since the lead entered the stage.
+function proposalTouches(lead) {
+  const stageStart = lead.stageChangedAt ? new Date(lead.stageChangedAt).getTime() : 0;
+  return (lead.contactLog || []).filter(c => c.stage === 'Proposal Sent' && new Date(c.date).getTime() >= stageStart).length;
+}
+
+// Compute follow-up urgency for a lead. See FOLLOW_UP_CADENCE for the schedule.
+export function getFollowUpStatus(lead) {
+  const empty = { level: 'none', daysSinceContact: null, daysUntilDue: null, recommendedDate: null, label: '' };
+  const stage = normalizeLeadStatus(lead.status);
+  const cadence = FOLLOW_UP_CADENCE[stage];
+  if (stage === 'Won' || stage === 'Lost' || cadence == null) return empty;
+
+  const today = startOfDay(new Date());
+  const lastContact = lead.lastContactedAt ? startOfDay(lead.lastContactedAt) : null;
+  const daysSinceContact = lastContact && !Number.isNaN(lastContact.getTime())
+    ? Math.round((today - lastContact) / DAY_MS) : null;
+
+  // Progressive cadence + exhaustion for Proposal Sent.
+  let effectiveCadence = cadence;
+  if (stage === 'Proposal Sent') {
+    const touches = proposalTouches(lead);
+    if (!lead.followUpDate && touches >= PROPOSAL_SENT_CADENCE.length) {
+      return { level: 'exhausted', daysSinceContact, daysUntilDue: null, recommendedDate: null, label: 'No response in 30+ days — consider closing out?' };
+    }
+    effectiveCadence = PROPOSAL_SENT_CADENCE[Math.min(touches, PROPOSAL_SENT_CADENCE.length - 1)];
+  }
+
+  let target;
+  if (lead.followUpDate) {
+    target = startOfDay(lead.followUpDate);
+  } else {
+    const baseISO = lead.lastContactedAt || lead.stageChangedAt || '';
+    const base = baseISO ? startOfDay(baseISO) : null;
+    target = (base && !Number.isNaN(base.getTime()))
+      ? new Date(base.getTime() + effectiveCadence * DAY_MS)
+      : today;
+  }
+  const daysUntilDue = Math.round((target - today) / DAY_MS);
+  let level, label;
+  if (daysUntilDue < 0) { const n = Math.abs(daysUntilDue); level = 'overdue'; label = `${n} day${n === 1 ? '' : 's'} overdue — follow up now`; }
+  else if (daysUntilDue === 0) { level = 'due'; label = 'Follow up today'; }
+  else if (daysUntilDue === 1) { level = 'soon'; label = 'Follow up tomorrow'; }
+  else { level = 'ok'; label = `Follow up in ${daysUntilDue} days`; }
+  return { level, daysSinceContact, daysUntilDue, recommendedDate: target.toISOString(), label };
+}
+
+// Overdue counter + follow-up filter state (rendered in the pipeline header).
+export function renderFollowUpSummary() {
+  const badge = document.getElementById('followUpOverdueCount');
+  if (!badge) return;
+  const overdue = state.store.leads.filter(l => getFollowUpStatus(l).level === 'overdue').length;
+  const numEl = document.getElementById('followUpOverdueNum');
+  if (numEl) numEl.textContent = String(overdue);
+  const filtering = !!state.filters.followUpOnly;
+  badge.hidden = overdue === 0 && !filtering;
+  badge.classList.toggle('active', filtering);
+  const showAll = document.getElementById('followUpShowAll');
+  if (showAll) showAll.hidden = !filtering;
+}
+
+export function openLogContactDialog(leadId) {
+  const lead = state.store.leads.find(l => l.id === leadId);
+  if (!lead || !el.logContactForm) return;
+  el.logContactForm.reset();
+  el.logContactForm.leadId.value = lead.id;
+  el.logContactDialog?.showModal();
+}
+
+// Log a contact: stamp lastContactedAt, append to contactLog, auto-schedule next follow-up.
+export function handleLogContactSubmit(event) {
+  const data = objectFromForm(el.logContactForm);
+  const lead = state.store.leads.find(l => l.id === data.leadId);
+  if (!lead) return;
+  const now = new Date();
+  const stage = normalizeLeadStatus(lead.status);
+  lead.lastContactedAt = now.toISOString();
+  lead.contactLog = lead.contactLog || [];
+  lead.contactLog.unshift({ date: now.toISOString(), method: data.method || 'call', notes: (data.notes || '').trim(), stage });
+
+  let cadenceDays = FOLLOW_UP_CADENCE[stage];
+  let exhausted = false;
+  if (stage === 'Proposal Sent') {
+    const touches = proposalTouches(lead); // includes the touch just added
+    if (touches >= PROPOSAL_SENT_CADENCE.length) exhausted = true;
+    else cadenceDays = PROPOSAL_SENT_CADENCE[touches];
+  }
+  if (cadenceDays == null || exhausted) {
+    lead.followUpDate = '';
+  } else {
+    lead.followUpDate = new Date(now.getTime() + cadenceDays * DAY_MS).toISOString();
+  }
+  addActivity(`Logged ${data.method || 'contact'} with ${leadDisplayName(lead)}.`, 'CRM');
+  saveStore('Logged contact for ' + leadDisplayName(lead));
+  renderLeads();
+  const msg = exhausted
+    ? 'No more scheduled follow-ups — consider closing this deal out.'
+    : `next follow-up in ${cadenceDays} day${cadenceDays === 1 ? '' : 's'} (${formatDate(lead.followUpDate)}).`;
+  showToast(`Contact logged — ${msg}`, 'success');
+}
+
 function dealCardHtml(lead) {
   const name = leadDisplayName(lead);
   const days = daysInStage(lead.stageChangedAt);
   const src = lead.source || 'Other';
-  return `<div class="deal-card" draggable="true" data-lead-id="${lead.id}">
+  const fu = getFollowUpStatus(lead);
+  const badge = fu.level === 'none' ? ''
+    : `<div class="followup-badge followup-${fu.level}"><span class="followup-dot"></span><span class="followup-label">${escapeHtml(fu.label)}</span></div>`;
+  const overdueClass = fu.level === 'overdue' ? ' deal-card-overdue' : '';
+  const logBtn = fu.level === 'none' ? ''
+    : `<button type="button" class="ghost-btn tiny log-contact-btn" data-lead-id="${lead.id}">📞 Log contact</button>`;
+  return `<div class="deal-card${overdueClass}" draggable="true" data-lead-id="${lead.id}">
+    ${badge}
     <div class="deal-card-top"><strong>${escapeHtml(name)}</strong><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
     <p class="muted tiny deal-service">${escapeHtml(lead.service || 'General')}</p>
     <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span><span class="source-pill source-${sourceKey(src)}" title="${escapeHtml(src)}">${escapeHtml(src)}</span></div>
     <p class="deal-days muted tiny">${days} day${days === 1 ? '' : 's'} in stage</p>
+    ${logBtn}
   </div>`;
 }
 
@@ -392,6 +518,11 @@ export function renderPipelineBoard() {
     el.crmSearchCount.hidden = !query;
   }
   if (el.clearCrmSearch) el.clearCrmSearch.hidden = !query;
+  // Follow-up filter: show only leads needing attention (overdue or due).
+  if (state.filters.followUpOnly) {
+    leads = leads.filter(l => ['overdue', 'due'].includes(getFollowUpStatus(l).level));
+  }
+  renderFollowUpSummary();
   if (query && !leads.length) {
     board.innerHTML = `<p class="pipeline-no-match muted">No deals match “${escapeHtml(query)}”</p>`;
     return;
@@ -409,8 +540,9 @@ export function renderPipelineBoard() {
   board.querySelectorAll('.deal-card').forEach(card => {
     card.addEventListener('dragstart', e => { card.classList.add('dragging'); e.dataTransfer.setData('text/plain', card.dataset.leadId); e.dataTransfer.effectAllowed = 'move'; });
     card.addEventListener('dragend', () => card.classList.remove('dragging'));
-    card.addEventListener('click', e => { if (e.target.closest('.deal-move-btn')) return; openDealDialog(card.dataset.leadId); });
+    card.addEventListener('click', e => { if (e.target.closest('.deal-move-btn') || e.target.closest('.log-contact-btn')) return; openDealDialog(card.dataset.leadId); });
   });
+  board.querySelectorAll('.log-contact-btn').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openLogContactDialog(btn.dataset.leadId); }));
   board.querySelectorAll('.pipeline-col').forEach(col => {
     col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
     col.addEventListener('dragleave', () => col.classList.remove('drag-over'));

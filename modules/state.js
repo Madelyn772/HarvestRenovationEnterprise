@@ -423,6 +423,7 @@ export function migrateLead(record) {
   if (r.lastContactedAt == null) r.lastContactedAt = '';
   if (!r.stageChangedAt) r.stageChangedAt = r.preferredDate || '';
   if (r.owner == null) r.owner = '';
+  if (!Array.isArray(r.contactLog)) r.contactLog = [];
   return r;
 }
 
