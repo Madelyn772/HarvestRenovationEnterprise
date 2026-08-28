@@ -2140,7 +2140,18 @@ textarea:focus-visible,
   background: rgba(202, 160, 90, 0.12);
 }
 .decline-opt input {
-  accent-color: #caa05a;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #c9a227;
+}
+.decline-opt span {
+  margin: 0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.2;
 }
 .decline-other-wrap {
   display: flex;
