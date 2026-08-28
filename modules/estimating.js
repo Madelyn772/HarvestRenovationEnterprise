@@ -158,10 +158,11 @@ export function hydrateEstimateForm() {
   // Only auto-sync the phone on a fresh form; a loaded record keeps its saved value.
   if (!el.estimateForm.estimateId.value) syncEstimateClientPhone();
   if (!el.estimateForm.estimateId.value) applyEstimateLock(false);
-  // Fresh form (no record loaded) with no rows → give one blank row to type into.
+  // Fresh form (no record loaded) with no rows → seed one default row. Description
+  // stays empty so the "General Scope" placeholder shows; agent types the price.
   const wrap = getEstimateItemsEl();
   if (wrap && !el.estimateForm.estimateId.value && wrap.querySelectorAll('.line-item-row').length === 0) {
-    addEstimateRow();
+    addEstimateRow({ description: '', category: 'Other', quantity: 1, unit: 'EA', unitPrice: 0 });
   }
 }
 
@@ -202,9 +203,10 @@ export function readEstimateItemsFromDom() {
   return [...wrap.querySelectorAll('.line-item-row')].map(row => {
     const quantity = num(row.querySelector('[name="quantity"]').value);
     const unitPrice = num(row.querySelector('[name="unitPrice"]').value);
+    const description = row.querySelector('[name="description"]').value.trim();
     return {
       id: row.dataset.itemId || uid('ITM'),
-      description: row.querySelector('[name="description"]').value,
+      description: description || 'General Scope',
       category: row.querySelector('[name="category"]')?.value || 'Other',
       quantity,
       unit: row.querySelector('[name="unit"]')?.value || 'LS',

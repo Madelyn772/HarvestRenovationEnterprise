@@ -2749,6 +2749,7 @@ html:not(.theme-light) .sidebar {
   grid-template-columns: 2fr .7fr .6fr 1fr 1fr 2.2rem;
 }
 .line-item-row input, .line-item-row select { padding: .45rem .55rem; }
+.line-item-row input[name="description"]::placeholder { color: var(--muted); opacity: 0.5; }
 .line-item-row .line-amount { font-weight: 700; text-align: right; }
 .line-item-tools { display: flex; gap: .4rem; flex-wrap: wrap; }
 
