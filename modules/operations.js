@@ -393,6 +393,7 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   if (feesEl) feesEl.value = num(estimate.permitsFees) || '';
   if (taxEl) taxEl.value = num(estimate.taxPercent) || '';
   renderInvoiceCardViews();
+  renderInvoiceBalanceCallout();
   if (switchView) {
     const lineItems = estimate.items && estimate.items.length ? estimate.items : null;
     if (lineItems) {
