@@ -3795,16 +3795,16 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   background: #1c1811;
   box-shadow: 0 18px 44px rgba(0,0,0,.5);
 }
-.bug-filters select { min-width: 8.5rem; }
-.bf-group { display: flex; flex-direction: column; gap: .3rem; }
+.bug-filters select { min-width: 7rem; padding: .32rem .5rem; font-size: .8rem; border-radius: 8px; }
+.bf-group { display: flex; flex-direction: column; gap: .25rem; }
 .bf-label { font-size: .64rem; text-transform: uppercase; letter-spacing: .07em; color: #a89e88; font-weight: 700; }
 .bf-checks { display: flex; flex-wrap: wrap; gap: .5rem; }
 .bf-check { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; cursor: pointer; color: #f0e2c4; }
 .bf-check input { width: 15px; height: 15px; accent-color: #caa05a; }
 .bf-clear {
   align-self: flex-end;
-  padding: .35rem .7rem;
-  font-size: .78rem;
+  padding: .32rem .65rem;
+  font-size: .76rem;
   border-radius: 8px;
   border: 1px solid var(--line-strong);
   background: rgba(255,255,255,.06);
