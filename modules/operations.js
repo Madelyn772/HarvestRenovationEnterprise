@@ -44,6 +44,15 @@ export function renderCalendarItems() {
 
 export function saveInvoiceFromForm() {
   const data = objectFromForm(el.invoiceForm);
+  // Don't spawn a brand-new invoice from an empty form (accidental button clicks).
+  const isNew = !(data.invoiceId || '').trim();
+  if (isNew) {
+    const hasContent = (data.clientId || '').trim() || (data.clientName || '').trim() || readInvoiceItemsFromDom().length > 0;
+    if (!hasContent) {
+      showToast('Add a client or at least one line item before creating an invoice.', 'info');
+      return null;
+    }
+  }
   const typedNumber = (data.invoiceNumber || '').trim();
   if (typedNumber && numberInUse('invoice', typedNumber, data.invoiceId || '')) {
     showToast('That invoice number is already in use. Please enter a unique invoice number to continue.', 'error');
