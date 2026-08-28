@@ -559,8 +559,18 @@ export function renderPipelineBoard() {
   }).join('');
   // Drag + drop.
   board.querySelectorAll('.deal-card').forEach(card => {
-    card.addEventListener('dragstart', e => { card.classList.add('dragging'); e.dataTransfer.setData('text/plain', card.dataset.leadId); e.dataTransfer.effectAllowed = 'move'; });
-    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragstart', e => {
+      card.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', card.dataset.leadId);
+      e.dataTransfer.effectAllowed = 'move';
+      document.addEventListener('dragover', updateDragX);
+      startDragAutoScroll(board);
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.removeEventListener('dragover', updateDragX);
+      stopDragAutoScroll();
+    });
     card.addEventListener('click', e => { if (e.target.closest('.deal-move-btn') || e.target.closest('.log-contact-btn')) return; openDealDialog(card.dataset.leadId); });
   });
   board.querySelectorAll('.log-contact-btn').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openLogContactDialog(btn.dataset.leadId); }));
@@ -573,9 +583,47 @@ export function renderPipelineBoard() {
       const id = e.dataTransfer.getData('text/plain');
       moveDealToStage(id, col.dataset.stage);
     });
+    // Column header is always visible at the top, so make it a drop target too.
+    const head = col.querySelector('.pipeline-col-head');
+    if (head) {
+      head.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+      head.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        col.classList.remove('drag-over');
+        moveDealToStage(e.dataTransfer.getData('text/plain'), col.dataset.stage);
+      });
+    }
   });
   // Touch fallback: "Move ▸" menu.
   board.querySelectorAll('.deal-move-btn').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); openMoveMenu(btn.dataset.leadId, btn); }));
+}
+
+// ── Kanban drag auto-scroll: nudge the board horizontally when a dragged card
+// nears either edge, so off-screen columns (Won/Lost) become reachable. ──
+let dragScrollInterval = null;
+let currentDragClientX = 0;
+function updateDragX(e) { currentDragClientX = e.clientX; }
+
+function startDragAutoScroll(container) {
+  stopDragAutoScroll();
+  const edgeZone = 80;
+  const speed = 15;
+  dragScrollInterval = setInterval(() => {
+    const rect = container.getBoundingClientRect();
+    if (currentDragClientX < rect.left + edgeZone) {
+      container.scrollLeft = Math.max(0, container.scrollLeft - speed);
+    } else if (currentDragClientX > rect.right - edgeZone) {
+      container.scrollLeft += speed;
+    }
+  }, 16);
+}
+
+function stopDragAutoScroll() {
+  if (dragScrollInterval) {
+    clearInterval(dragScrollInterval);
+    dragScrollInterval = null;
+  }
 }
 
 let activeMoveMenu = null;
