@@ -263,7 +263,7 @@ function drawJobsWonChart(host, buckets) {
   const strong = isLight ? '#2c2419' : '#e9d8b6';
   const gold = '#caa05a';
 
-  const W = Math.max(280, Math.round(host.clientWidth || 600));
+  const W = Math.max(280, Math.round(host.clientWidth || host.offsetWidth || 600));
   const H = 300;
   const n = buckets.length;
   const axisL = 44, padR = 14, padT = 16;

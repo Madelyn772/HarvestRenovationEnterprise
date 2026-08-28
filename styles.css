@@ -2211,6 +2211,9 @@ textarea:focus-visible,
 }
 .jobs-tooltip strong { display: block; }
 .jobs-tooltip span { opacity: .82; }
+@media (max-width: 768px) {
+  #jobsWonChart, .jobs-chart { height: 240px; }
+}
 
 /* ── Decline Reasons summary bars ── */
 .decline-reason-row {
