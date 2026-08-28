@@ -2814,11 +2814,23 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 /* Helpful Tips carousel (dashboard) */
 .tips-card .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
 .tip-box { display: flex; align-items: center; gap: .6rem; margin: .3rem 0 .6rem; }
-.tip-text { flex: 1 1 auto; margin: 0; font-size: 1rem; line-height: 1.5; min-height: 2.6em; display: flex; align-items: center; }
-.tip-nav { flex: 0 0 auto; min-width: 40px; min-height: 40px; font-size: 1.3rem; line-height: 1; border-radius: 10px; }
+.tip-text { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 1rem; line-height: 1.5; min-height: 2.6em; display: flex; align-items: center; }
+.tip-nav { flex: 0 0 auto; width: 40px; height: 40px; min-width: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; line-height: 1; border-radius: 10px; }
 .tip-nav:disabled { opacity: .35; cursor: default; }
 .tip-admin { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .tip-admin .checklist-add { flex: 1 1 auto; }
+
+@media (max-width: 640px) {
+  .tips-card .card-head { flex-direction: column; gap: .35rem; }
+  .tip-counter { align-self: flex-start; }
+  .tip-box { gap: .4rem; }
+  .tip-nav { width: 34px; height: 34px; min-width: 34px; font-size: 1.15rem; }
+  .tip-text { font-size: .92rem; min-height: 0; }
+  .tip-admin { flex-direction: column; align-items: stretch; }
+  .tip-admin .checklist-add { display: flex; flex-direction: column; gap: .4rem; }
+  .tip-admin .checklist-add input,
+  .tip-admin .checklist-add button { width: 100%; }
+}
 
 /* ============================================================
    FORM SECTION CARDS — document-style layout for estimate and
