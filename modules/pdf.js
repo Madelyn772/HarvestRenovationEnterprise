@@ -286,7 +286,7 @@ export function buildInvoiceDocHtml(invoice) {
     paymentsReceived: paid,
     paymentsRows: payments,
     terms: invoice.terms || DEFAULT_INVOICE_TERMS,
-    signatureBlockEnabled: true
+    signatureBlockEnabled: false
   });
 }
 
