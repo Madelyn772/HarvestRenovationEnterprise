@@ -133,6 +133,8 @@ export function bindAppUi() {
   document.addEventListener('input', e => {
     if (e.target && e.target.dataset && e.target.dataset.autocap) autoCapitalizeField(e.target);
   });
+  // On blur, tidy flagged fields: trim/collapse spaces, format phone/email, uppercase states.
+  document.addEventListener('focusout', e => tidyField(e.target));
   const estDateInput = document.getElementById('estimateDate');
   if (estDateInput) estDateInput.addEventListener('change', () => syncEstimateValidUntil());
   const validUntilInput = document.getElementById('estimateValidUntil');
@@ -549,6 +551,33 @@ export function autoCapitalizeField(field) {
   const end = field.selectionEnd;
   field.value = next;
   if (start != null) { try { field.setSelectionRange(start, end); } catch {} }
+}
+
+const US_STATES = new Set(['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']);
+
+// Format a US phone as (123) 456-7890, tolerating a leading country code.
+function formatPhone(value) {
+  let digits = (value || '').replace(/\D/g, '').slice(0, 11);
+  let cc = '';
+  if (digits.length === 11 && digits[0] === '1') { cc = '+1 '; digits = digits.slice(1); }
+  const a = digits.slice(0, 3), b = digits.slice(3, 6), c = digits.slice(6, 10);
+  if (digits.length > 6) return `${cc}(${a}) ${b}-${c}`;
+  if (digits.length > 3) return `${cc}(${a}) ${b}`;
+  if (digits.length > 0) return `${cc}(${a}`;
+  return value || '';
+}
+
+// On blur: tidy fields — format phone/email by type, trim/collapse, uppercase states.
+export function tidyField(t) {
+  if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA')) return;
+  const name = (t.name || '').toLowerCase();
+  const type = (t.type || '').toLowerCase();
+  if (type === 'tel' || /phone/.test(name) || t.id === 'estimateClientPhone') { t.value = formatPhone(t.value); return; }
+  if (type === 'email' || /email/.test(name)) { t.value = (t.value || '').trim().toLowerCase(); return; }
+  if (!t.dataset.autocap && t.dataset.format !== 'address') return;
+  let v = (t.value || '').replace(/[^\S\n]+/g, ' ').replace(/ ?\n ?/g, '\n').trim();
+  if (t.dataset.format === 'address') v = v.replace(/\b([a-zA-Z]{2})\b/g, m => US_STATES.has(m.toUpperCase()) ? m.toUpperCase() : m);
+  t.value = v;
 }
 
 export function populateEstimateSelects() {

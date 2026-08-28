@@ -311,11 +311,11 @@
           <div class="card-head"><div><p class="eyebrow">Contact</p><h3>Create or update contact</h3></div></div>
           <form id="clientForm" class="form-grid">
             <input type="hidden" name="clientId" />
-            <label><span>Client name</span><input name="name" required /></label>
+            <label><span>Client name</span><input name="name" required data-autocap="words" autocapitalize="words" /></label>
             <label><span>Phone</span><input name="phone" required /></label>
             <label><span>Email</span><input name="email" type="email" /></label>
             <label><span>Service area / ZIP</span><input name="serviceArea" /></label>
-            <label class="full"><span>Address</span><input name="address" /></label>
+            <label class="full"><span>Address</span><input name="address" data-autocap="words" data-format="address" autocapitalize="words" /></label>
             <label><span>Referral source</span><input name="source" placeholder="Google, referral, repeat customer" /></label>
             <label><span>Tags</span><input name="tags" placeholder="Kitchen, repeat, commercial" /></label>
             <label class="full"><span>Client notes</span><textarea name="notes" rows="4"></textarea></label>
@@ -331,7 +331,7 @@
           <div class="card-head"><div><p class="eyebrow">Deal</p><h3>Create or update deal</h3></div></div>
           <form id="leadForm" class="form-grid">
             <label><span>Linked client</span><select name="clientId" id="leadClientSelect"></select></label>
-            <label><span>Client name</span><input name="clientName" /></label>
+            <label><span>Client name</span><input name="clientName" data-autocap="words" autocapitalize="words" /></label>
             <label><span>Phone</span><input name="phone" /></label>
             <label><span>Email</span><input name="email" type="email" /></label>
             <label><span>Service</span><select name="service">
@@ -362,7 +362,7 @@
           <div class="card-head"><div><p class="eyebrow">⚡ Quick Add</p><h3>Quick Add Lead</h3></div></div>
           <p class="muted tiny">Quickly add a lead with a source for accurate KPI attribution.</p>
           <form id="quickYelpForm" class="form-grid">
-            <label class="full"><span>Name *</span><input name="clientName" required /></label>
+            <label class="full"><span>Name *</span><input name="clientName" required data-autocap="words" autocapitalize="words" /></label>
             <label><span>Phone</span><input name="phone" /></label>
             <label><span>Lead date *</span><input name="leadDate" id="quickLeadDate" type="date" required /></label>
             <label><span>Source *</span><select name="source" required>
@@ -421,7 +421,7 @@
                       <label class="full"><span>New client email</span><input name="clientEmail" type="email" /></label>
                       <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
                     </div>
-                    <label class="full"><span>Project / billing address</span><input name="billingAddress" data-autocap="words" autocapitalize="words" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
+                    <label class="full"><span>Project / billing address</span><input name="billingAddress" data-autocap="words" data-format="address" autocapitalize="words" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
                     <label><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
                     <label><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS (optional)" /></label>
                     <label class="full inline-check"><input type="checkbox" id="useClientPhone" checked /><span>Use client&rsquo;s saved phone</span></label>
@@ -595,7 +595,7 @@
                     <label class="full"><span>Client name</span><input name="clientName" data-autocap="words" autocapitalize="words" /></label>
                     <label class="full"><span>Phone</span><input name="phone" /></label>
                     <label class="full"><span>Email</span><input name="email" type="email" /></label>
-                    <label class="full"><span>Address</span><input name="address" data-autocap="words" autocapitalize="words" /></label>
+                    <label class="full"><span>Address</span><input name="address" data-autocap="words" data-format="address" autocapitalize="words" /></label>
                     <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save as a new client record</span></label>
                   </div>
                 </details>
@@ -745,7 +745,7 @@
                   <div class="doc-card-body">
                     <label class="full"><span>Client</span><select name="clientId" id="contractClientSelect" required></select></label>
                     <label class="full"><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
-                    <label class="full"><span>Billing address</span><input name="billingAddress" data-autocap="words" autocapitalize="words" placeholder="Street, City, ST ZIP" /></label>
+                    <label class="full"><span>Billing address</span><input name="billingAddress" data-autocap="words" data-format="address" autocapitalize="words" placeholder="Street, City, ST ZIP" /></label>
                     <label><span>Client phone</span><input name="billingPhone" type="tel" /></label>
                     <label><span>Client email</span><input name="billingEmail" type="email" /></label>
                   </div>
