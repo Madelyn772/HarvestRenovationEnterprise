@@ -24,7 +24,8 @@ export function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
   el.openSettingsPanelBtn.addEventListener('click', () => setView('settings'));
 
-  document.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
+  // Scope to nav buttons: other elements (e.g. .doc-card-view) also carry data-view.
+  document.querySelectorAll('.nav-btn[data-view]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.view)));
   document.querySelectorAll('[data-view-trigger]').forEach(btn => btn.addEventListener('click', () => setView(btn.dataset.viewTrigger)));
   document.querySelectorAll('[data-jump]').forEach(btn => btn.addEventListener('click', () => {
     const target = document.getElementById(btn.dataset.jump);
