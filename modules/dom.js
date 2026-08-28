@@ -41,6 +41,17 @@ export function showToast(message, type = 'success') {
   setTimeout(() => toast.remove(), 3600);
 }
 
+// reportValidity() shows nothing when the invalid field sits inside a collapsed
+// <details> card, so open the ancestor card(s) first, then report.
+export function reportFormValidity(form) {
+  if (!form || typeof form.checkValidity !== 'function' || form.checkValidity()) return true;
+  const invalid = form.querySelector(':invalid');
+  let d = invalid && invalid.closest('details');
+  while (d) { d.open = true; d = d.parentElement && d.parentElement.closest('details'); }
+  form.reportValidity();
+  return false;
+}
+
 export function openPrintWindow(html) {
   const win = window.open('', '_blank', 'width=980,height=800');
   if (!win) return showToast('Popup blocked. Please allow popups to print.', 'error');

@@ -1,5 +1,5 @@
 import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, estimateTemplates, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate, todayISO } from './state.js';
-import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
+import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, updateNewClientFieldsVisibility, renderAll, setView } from './navigation.js';
 import { resolveFormClient } from './crm.js';
@@ -16,7 +16,7 @@ export function saveEstimateFromForm() {
     showToast('Select a client or enter a name before saving the estimate.', 'error');
     return null;
   }
-  if (el.estimateForm.reportValidity && !el.estimateForm.reportValidity()) return null;
+  if (!reportFormValidity(el.estimateForm)) return null;
   const typedNumber = (data.estimateNumber || '').trim();
   if (typedNumber && numberInUse('estimate', typedNumber, data.estimateId || '')) {
     showToast('That estimate number is already in use. Please enter a unique estimate number to continue.', 'error');

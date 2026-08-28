@@ -1,5 +1,5 @@
 import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, DEFAULT_CONTRACT_TERMS, currentUserName, formatDate, todayISO } from './state.js';
-import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
+import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { printContract } from './pdf.js';
@@ -165,8 +165,14 @@ export function renderContractCardViews(contract) {
 export function saveContractFromForm() {
   const form = el.contractForm;
   if (!form) return null;
-  if (form.reportValidity && !form.reportValidity()) return null;
   const data = objectFromForm(form);
+  // Client is required — block save (and therefore Preview) if none selected.
+  const hasClient = data.clientId && data.clientId !== '__new__' ? true : !!(data.clientName && data.clientName.trim());
+  if (!hasClient) {
+    showToast('Select a client before saving the contract.', 'error');
+    return null;
+  }
+  if (!reportFormValidity(form)) return null;
   const typedNumber = (data.contractNumber || '').trim();
   if (typedNumber && numberInUse('contract', typedNumber, data.contractId || '')) {
     showToast('That contract number is already in use. Please enter a unique number.', 'error');
