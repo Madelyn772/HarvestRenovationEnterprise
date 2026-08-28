@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-6" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-7" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -582,9 +582,11 @@
 
               <!-- ── Info cards: Bill To + Project/Service + Invoice Details ── -->
               <div class="doc-cards doc-cards-3 full">
-                <section class="doc-card doc-card-collapsible">
-                  <button type="button" class="doc-card-head dh-client doc-card-toggle" aria-expanded="false"><span class="dch-label">Bill To</span><span class="doc-card-chevron" aria-hidden="true">›</span></button>
-                  <div class="doc-card-view" data-view="bill"></div>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-client"><span class="dch-label">Bill To</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="bill"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
                     <label class="full"><span>Client name</span><input name="clientName" /></label>
@@ -593,25 +595,29 @@
                     <label class="full"><span>Address</span><input name="address" /></label>
                     <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save as a new client record</span></label>
                   </div>
-                </section>
-                <section class="doc-card doc-card-collapsible">
-                  <button type="button" class="doc-card-head dh-project doc-card-toggle" aria-expanded="false"><span class="dch-label">Project / Service</span><span class="doc-card-chevron" aria-hidden="true">›</span></button>
-                  <div class="doc-card-view" data-view="project"></div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-project"><span class="dch-label">Project / Service</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="project"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
                     <label class="full"><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
                   </div>
-                </section>
-                <section class="doc-card doc-card-collapsible">
-                  <button type="button" class="doc-card-head dh-details doc-card-toggle" aria-expanded="false"><span class="dch-label">Invoice Details</span><span class="doc-card-chevron" aria-hidden="true">›</span></button>
-                  <div class="doc-card-view" data-view="details"></div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-details"><span class="dch-label">Invoice Details</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="details"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><span>Issue date</span><input name="date" id="invoiceDate" type="date" /></label>
                     <label class="full"><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
-                    <label class="full"><span>Payment terms</span><select name="paymentTerms" id="invoicePaymentTerms"><option>Due on receipt</option><option selected>Net 15</option><option>Net 30</option><option>Net 45</option><option>Net 60</option></select></label>
+                    <label class="full"><span>Payment terms</span><select name="paymentTerms" id="invoicePaymentTerms"><option value="Due on receipt">Due on receipt</option><option value="Net 15" selected>Net 15 — due in 15 days</option><option value="Net 30">Net 30 — due in 30 days</option><option value="Net 45">Net 45 — due in 45 days</option><option value="Net 60">Net 60 — due in 60 days</option></select></label>
                     <p class="full muted tiny">Invoice number &amp; status are edited in the header above.</p>
                   </div>
-                </section>
+                </details>
               </div>
 
               <!-- ── Line items (left) + summary (right) ── -->
@@ -622,6 +628,7 @@
                     <span>Description</span><span>Qty</span><span>Unit</span><span>Rate</span><span>Total</span><span></span>
                   </div>
                   <div id="invoiceItems" class="stack compact-stack"></div>
+                  <button type="button" class="add-item-row" id="addInvoiceRowBottom">+ Add Another Item</button>
                   <div class="line-items-totals" id="invoiceLineTotals"></div>
                 </div>
                 <aside class="doc-split-side">

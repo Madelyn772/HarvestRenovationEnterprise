@@ -249,13 +249,25 @@ export function renderInvoiceBalanceCallout() {
   if (summary) {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
     const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
+    // Show the estimate deposit, if this invoice is linked to one.
+    const estSel = document.getElementById('relatedEstimate');
+    const est = estSel && estSel.value ? state.store.estimates.find(e => e.id === estSel.value) : null;
+    let depositRow = '';
+    if (est && num(est.depositPercent) > 0) {
+      const depAmt = num(est.depositAmount) || (total * num(est.depositPercent) / 100);
+      const payments = readPaymentsFromDom();
+      const depPay = payments.find(p => /deposit/i.test(p.reference || '') || /deposit/i.test(p.note || '')) || payments[0];
+      const paidNote = depPay && depPay.date ? `Paid ${formatDate(depPay.date)}` : 'Not yet paid';
+      depositRow = `<div class="isum-deposit"><span>Deposit (${num(est.depositPercent)}%)</span><strong>${money.format(depAmt)}</strong><em>${escapeHtml(paidNote)}</em></div>`;
+    }
     summary.innerHTML = `
       <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
       <div class="isum-row isum-muted"><span>Tax (0%)</span><strong>${money.format(0)}</strong></div>
       <div class="isum-divide"></div>
       <div class="isum-row isum-total"><span>Total Due</span><strong>${money.format(total)}</strong></div>
       ${paidRow}
-      <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>`;
+      <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>
+      ${depositRow}`;
   }
   // Back-compat: legacy inline balance callout, if present.
   const callout = document.getElementById('invoiceBalanceCallout');

@@ -3410,17 +3410,15 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 /* Totals live in the summary panel, so hide the inline line-items total. */
 #invoiceLineTotals { display: none; }
 
-/* ── Collapsible click-to-edit info cards ── */
-.doc-card-toggle {
-  width: 100%;
-  text-align: left;
+/* ── Collapsible click-to-edit info cards (native <details>) ── */
+.doc-card-summary {
+  list-style: none;
   cursor: pointer;
-  border: none;
-  border-bottom: 1px solid #eae6dc;
-  background: #faf8f3;
-  font: inherit;
+  display: block;
 }
-.doc-card-toggle .dch-label { flex: 1; }
+.doc-card-summary::-webkit-details-marker { display: none; }
+.doc-card-summary .doc-card-head { border-bottom: 1px solid #eae6dc; }
+.doc-card-summary .dch-label { flex: 1; }
 .doc-card-chevron {
   margin-left: auto;
   color: #b7ac96;
@@ -3428,10 +3426,10 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   line-height: 1;
   transition: transform .18s ease;
 }
-.doc-card-collapsible.editing .doc-card-chevron { transform: rotate(90deg); }
+.doc-card-collapsible[open] .doc-card-chevron { transform: rotate(90deg); }
 .doc-card-collapsible .doc-card-body { display: none; }
-.doc-card-collapsible.editing .doc-card-body { display: grid; }
-.doc-card-collapsible.editing .doc-card-view { display: none; }
+.doc-card-collapsible[open] .doc-card-body { display: grid; }
+.doc-card-collapsible[open] .doc-card-view { display: none; }
 
 .doc-card-view {
   display: flex;
@@ -3512,6 +3510,47 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-dark .line-row-menu { background: #211c15; border-color: #3a342a; }
 .theme-dark .line-row-menu-btn:hover { background: rgba(255,255,255,.06); color: #f0e2c4; }
 .theme-dark .line-row-menu-item:hover { background: #3a2420; }
+
+/* Align invoice line-items header labels with the input text below. */
+.line-items-head.invoice-line span { padding-left: .55rem; }
+.line-items-head.invoice-line span:nth-child(5) { padding-left: 0; padding-right: .55rem; text-align: right; }
+.line-item-row.invoice-line .line-amount { padding-right: .55rem; }
+
+/* Full-width dashed "add item" button under the line items. */
+.add-item-row {
+  width: 100%;
+  margin-top: .55rem;
+  padding: .7rem;
+  border: 1px dashed #d8d2c4;
+  border-radius: 10px;
+  background: transparent;
+  color: #8a6520;
+  font-weight: 600;
+  font-size: .88rem;
+  cursor: pointer;
+  transition: .15s ease;
+}
+.add-item-row:hover { background: #faf6ee; border-color: #caa05a; }
+.theme-dark .add-item-row { border-color: #4a4335; color: #caa05a; }
+.theme-dark .add-item-row:hover { background: #2a2419; }
+
+/* Deposit line in the invoice summary. */
+.invoice-summary .isum-deposit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .2rem 1rem;
+  margin-top: .6rem;
+  padding-top: .6rem;
+  border-top: 1px dashed #ece8de;
+  font-size: .84rem;
+}
+.invoice-summary .isum-deposit span { color: #7a7060; }
+.invoice-summary .isum-deposit strong { color: #1f1a12; font-weight: 700; }
+.invoice-summary .isum-deposit em { flex-basis: 100%; font-style: normal; color: #9a917e; font-size: .75rem; }
+.theme-dark .invoice-summary .isum-deposit span { color: #9a8f78; }
+.theme-dark .invoice-summary .isum-deposit strong { color: #f0e2c4; }
 
 
 

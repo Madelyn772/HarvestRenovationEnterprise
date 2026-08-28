@@ -204,17 +204,9 @@ export function bindAppUi() {
     form.addEventListener('change', update);
   });
 
-  // Collapsible info cards: click a card header to expand it for editing.
-  document.addEventListener('click', e => {
-    const toggle = e.target.closest('.doc-card-toggle');
-    if (!toggle) return;
-    const card = toggle.closest('.doc-card-collapsible');
-    if (!card) return;
-    const editing = card.classList.toggle('editing');
-    toggle.setAttribute('aria-expanded', editing ? 'true' : 'false');
-    if (editing) card.querySelector('.doc-card-body select, .doc-card-body input')?.focus();
-    else renderInvoiceCardViews();
-  });
+  // Collapsible info cards use native <details>; no JS toggle needed.
+  const addInvoiceBottom = document.getElementById('addInvoiceRowBottom');
+  if (addInvoiceBottom) addInvoiceBottom.addEventListener('click', () => { addInvoiceRow(); renderInvoiceBalanceCallout(); });
 
   // Line-item row ⋮ menu: toggle the clicked menu, close others / on outside click.
   document.addEventListener('click', e => {
