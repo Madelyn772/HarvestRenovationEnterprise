@@ -105,6 +105,34 @@ export const PIPELINE_STAGES = ['New Lead', 'Contacted', 'Qualified', 'Estimate 
 // Lead sources tracked for KPI attribution.
 export const LEAD_SOURCES = ['Yelp', 'Google', 'Referral', 'Website Form', 'Phone Call', 'Repeat Customer', 'Google Business Profile', 'Facebook', 'Other'];
 
+// Categorized trade list (alphabetized within each category) for service dropdowns.
+export const TRADE_CATEGORIES = [
+  { category: 'Interior Remodels', trades: ['Bathroom Remodel', 'Kitchen Remodel'] },
+  { category: 'Exterior Builds', trades: ['Patio Build'] },
+  { category: 'Rough Trades', trades: ['Carpentry', 'Foundation', 'Framing'] },
+  { category: 'Finish Trades', trades: ['Carpet', 'Countertops', 'Drywall', 'Epoxy', 'Flooring', 'FRP', 'Painting'] },
+  { category: 'Mechanical Trades', trades: ['Chimney', 'Electric', 'HVAC', 'Insulation', 'Plumbing'] },
+  { category: 'Exterior & Roofing', trades: ['Concrete', 'Fencing', 'Garage Doors', 'Glass', 'Gutters', 'Landscaping', 'Masonry', 'Roofing', 'Siding', 'Windows'] },
+  { category: 'Specialty / Other', trades: ['Interior Design', 'Trash Removal', 'Welding'] }
+];
+
+// Build the <optgroup> options for a service/trade <select>, preserving a legacy
+// value that isn't in the new list so old records still display + persist.
+export function tradeOptionsHtml(selected = '') {
+  const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const sel = v => (v === selected ? ' selected' : '');
+  let html = '<option value="">Select a trade…</option>';
+  for (const g of TRADE_CATEGORIES) {
+    html += `<optgroup label="${esc(g.category)}">`;
+    for (const t of g.trades) html += `<option value="${esc(t)}"${sel(t)}>${esc(t)}</option>`;
+    html += '</optgroup>';
+  }
+  html += `<option value="Other"${sel('Other')}>Other</option>`;
+  const known = TRADE_CATEGORIES.some(g => g.trades.includes(selected)) || selected === 'Other' || selected === '';
+  if (!known) html += `<optgroup label="Current"><option value="${esc(selected)}" selected>${esc(selected)}</option></optgroup>`;
+  return html;
+}
+
 export const seedStore = {
   clients: [],
   leads: [],

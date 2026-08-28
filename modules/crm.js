@@ -1,4 +1,4 @@
-import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus } from './state.js';
+import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, tradeOptionsHtml } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
@@ -262,7 +262,7 @@ export function loadLeadIntoForm(id) {
   el.leadForm.clientName.value = lead.clientName || '';
   el.leadForm.phone.value = lead.phone || '';
   el.leadForm.email.value = lead.email || '';
-  el.leadForm.service.value = lead.service || 'Kitchen Remodeling';
+  if (el.leadForm.service) el.leadForm.service.innerHTML = tradeOptionsHtml(lead.service || '');
   el.leadForm.source.value = lead.source || '';
   el.leadForm.status.value = normalizeLeadStatus(lead.status);
   el.leadForm.estimatedValue.value = lead.estimatedValue || '';
@@ -633,6 +633,7 @@ export function openDealDialog(leadId) {
   } else {
     el.leadForm.reset();
     el.leadForm.dataset.leadId = '';
+    if (el.leadForm.service) el.leadForm.service.innerHTML = tradeOptionsHtml('');
     if (el.leadForm.leadDate) {
       el.leadForm.leadDate.max = todayInputValue();
       el.leadForm.leadDate.value = todayInputValue();
@@ -650,6 +651,7 @@ function leadDateToIso(dateStr) {
 
 export function openQuickYelpDialog() {
   el.quickYelpForm?.reset();
+  if (el.quickYelpForm?.service) el.quickYelpForm.service.innerHTML = tradeOptionsHtml('');
   if (el.quickAddCustomSourceWrap) el.quickAddCustomSourceWrap.classList.add('is-hidden');
   const qd = document.getElementById('quickLeadDate');
   if (qd) { qd.max = todayInputValue(); qd.value = todayInputValue(); }

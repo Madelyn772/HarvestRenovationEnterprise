@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-33" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-34" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -338,9 +338,7 @@
             <label><span>Client name</span><input name="clientName" data-autocap="words" autocapitalize="words" /></label>
             <label><span>Phone</span><input name="phone" /></label>
             <label><span>Email</span><input name="email" type="email" /></label>
-            <label><span>Service</span><select name="service">
-              <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
-            </select></label>
+            <label><span>Service</span><select name="service" id="leadServiceSelect"></select></label>
             <label><span>Source *</span><select name="source" required>
               <option value="">Select source…</option>
               <option>Yelp</option><option>Google</option><option>Referral</option><option>Website Form</option><option>Phone Call</option><option>Repeat Customer</option><option>Google Business Profile</option><option>Facebook</option><option>Other</option>
@@ -373,9 +371,7 @@
               <option>Yelp</option><option>Google</option><option>Referral</option><option>Website Form</option><option>Phone Call</option><option>Repeat Customer</option><option>Google Business Profile</option><option>Facebook</option><option>Other</option>
               <option value="__custom__">Other (custom)…</option>
             </select></label>
-            <label><span>Service</span><select name="service">
-              <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
-            </select></label>
+            <label><span>Service</span><select name="service" id="quickServiceSelect"></select></label>
             <label class="full is-hidden" id="quickAddCustomSourceWrap"><span>Custom source</span><input name="customSource" placeholder="e.g. Nextdoor, trade show" /></label>
             <label class="full"><span>Notes</span><textarea name="notes" rows="3"></textarea></label>
             <div class="form-actions full">
