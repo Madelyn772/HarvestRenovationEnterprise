@@ -4,7 +4,7 @@ import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, hydrateInvoiceForm } from './operations.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { handleBugReportSave, renderBugReports, openBugReportCount } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
@@ -199,9 +199,49 @@ export function bindAppUi() {
   ['estimateForm', 'invoiceForm', 'contractForm'].forEach(fid => {
     const form = el[fid];
     if (!form) return;
-    const update = () => updateDocMeta(form);
+    const update = () => { updateDocMeta(form); if (fid === 'invoiceForm') renderInvoiceCardViews(); };
     form.addEventListener('input', update);
     form.addEventListener('change', update);
+  });
+
+  // Collapsible info cards: click a card header to expand it for editing.
+  document.addEventListener('click', e => {
+    const toggle = e.target.closest('.doc-card-toggle');
+    if (!toggle) return;
+    const card = toggle.closest('.doc-card-collapsible');
+    if (!card) return;
+    const editing = card.classList.toggle('editing');
+    toggle.setAttribute('aria-expanded', editing ? 'true' : 'false');
+    if (editing) card.querySelector('.doc-card-body select, .doc-card-body input')?.focus();
+    else renderInvoiceCardViews();
+  });
+
+  // Line-item row ⋮ menu: toggle the clicked menu, close others / on outside click.
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.line-row-menu-btn');
+    document.querySelectorAll('.line-row-actions.open').forEach(a => {
+      if (!btn || a !== btn.closest('.line-row-actions')) a.classList.remove('open');
+    });
+    if (btn) {
+      btn.closest('.line-row-actions')?.classList.toggle('open');
+      e.stopPropagation();
+    }
+  });
+
+  // Payment terms drives the due date (Net N = issue date + N days).
+  const paymentTermsSel = document.getElementById('invoicePaymentTerms');
+  if (paymentTermsSel) paymentTermsSel.addEventListener('change', () => {
+    const issue = document.getElementById('invoiceDate')?.value;
+    const due = document.getElementById('invoiceDueDate');
+    if (!issue || !due) return;
+    const match = /Net\s*(\d+)/i.exec(paymentTermsSel.value);
+    const days = match ? parseInt(match[1], 10) : 0;
+    const d = new Date(issue);
+    if (Number.isNaN(d.getTime())) return;
+    d.setDate(d.getDate() + days);
+    due.value = d.toISOString().slice(0, 10);
+    renderInvoiceCardViews();
+    updateDocMeta(el.invoiceForm);
   });
 
   // Autofill linked-client details when a saved client is chosen in a form.
@@ -366,6 +406,7 @@ export function renderCurrentView() {
       renderInvoices();
       renderReceipts();
       updateDocMeta(el.invoiceForm);
+      renderInvoiceCardViews();
     },
     contracts: () => {
       hydrateContractForm();

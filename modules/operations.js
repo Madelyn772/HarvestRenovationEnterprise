@@ -82,6 +82,44 @@ export async function handleInvoiceSave(event) {
   if (saveInvoiceFromForm()) showToast('Invoice saved.', 'success');
 }
 
+// Fill the collapsed read-only view of each invoice info card from the inputs.
+export function renderInvoiceCardViews() {
+  const f = el.invoiceForm;
+  if (!f) return;
+  const val = n => (f.querySelector(`[name="${n}"]`)?.value || '').trim();
+  const bill = f.querySelector('[data-view="bill"]');
+  if (bill) {
+    const name = val('clientName') || lookupClientName(val('clientId')) || '';
+    const lines = [val('address'), val('email'), val('phone')].filter(Boolean);
+    bill.innerHTML = name || lines.length
+      ? `<p class="dcv-strong">${escapeHtml(name || 'Client')}</p>${lines.map(l => `<p>${escapeHtml(l)}</p>`).join('')}`
+      : '<p class="dcv-empty">No client selected</p>';
+  }
+  const proj = f.querySelector('[data-view="project"]');
+  if (proj) {
+    const estSel = document.getElementById('relatedEstimate');
+    const estLabel = estSel && estSel.value && estSel.selectedOptions[0] ? estSel.selectedOptions[0].textContent : '';
+    const co = val('relatedChangeOrder');
+    proj.innerHTML = estLabel || (co && co !== '—')
+      ? `<p class="dcv-strong">${escapeHtml(estLabel || 'Linked estimate')}</p>${co && co !== '—' ? `<p>Change order: ${escapeHtml(co)}</p>` : ''}`
+      : '<p class="dcv-empty">No linked estimate</p>';
+  }
+  const det = f.querySelector('[data-view="details"]');
+  if (det) {
+    const number = document.getElementById('invoiceNumber')?.value || '—';
+    const issue = document.getElementById('invoiceDate')?.value;
+    const due = val('dueDate');
+    const terms = val('paymentTerms') || '—';
+    const status = f.querySelector('[name="status"]')?.value || 'Draft';
+    det.innerHTML = `
+      <div class="dcv-row"><span>Invoice Number</span><strong>${escapeHtml(number)}</strong></div>
+      <div class="dcv-row"><span>Issue Date</span><strong>${escapeHtml(issue ? formatDate(issue) : '—')}</strong></div>
+      <div class="dcv-row"><span>Due Date</span><strong>${escapeHtml(due ? formatDate(due) : '—')}</strong></div>
+      <div class="dcv-row"><span>Payment Terms</span><strong>${escapeHtml(terms)}</strong></div>
+      <div class="dcv-row"><span>Status</span><strong class="dcv-status">${escapeHtml(status)}</strong></div>`;
+  }
+}
+
 export function readInvoiceItemsFromDom() {
   if (!el.invoiceItems) return [];
   return [...el.invoiceItems.querySelectorAll('.line-item-row')].map(row => {
@@ -139,6 +177,7 @@ export function collectInvoiceFromForm() {
     invoiceNumber: data.invoiceNumber || autoNumber('INV'),
     date: dateInput ? dateInput.value : data.date,
     dueDate: data.dueDate || '',
+    paymentTerms: data.paymentTerms || '',
     clientName: data.clientName || lookupClientName(data.clientId),
     status: data.status,
     phone: data.phone,
@@ -327,6 +366,7 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   if (invDate && !invDate.value) invDate.value = todayISO();
   if (dueInput && !dueInput.value) dueInput.value = addDaysISO(invDate ? invDate.value : todayISO(), 15);
   if (termsInput && !termsInput.value) termsInput.value = DEFAULT_INVOICE_TERMS;
+  renderInvoiceCardViews();
   if (switchView) {
     const lineItems = estimate.items && estimate.items.length ? estimate.items : null;
     if (lineItems) {

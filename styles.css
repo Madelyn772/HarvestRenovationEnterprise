@@ -2657,6 +2657,7 @@ html:not(.theme-light) .sidebar {
   .line-item-row .line-amount { grid-column: 1 / -1; text-align: right; padding-top: .25rem; border-top: 1px dashed var(--line); }
   .line-item-row .remove-line-row,
   .line-item-row .remove-invoice-row,
+  .line-item-row .line-row-actions,
   .payment-row .remove-payment-row {
     position: absolute; top: .4rem; right: .5rem;
   }
@@ -3408,6 +3409,109 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 
 /* Totals live in the summary panel, so hide the inline line-items total. */
 #invoiceLineTotals { display: none; }
+
+/* ── Collapsible click-to-edit info cards ── */
+.doc-card-toggle {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: none;
+  border-bottom: 1px solid #eae6dc;
+  background: #faf8f3;
+  font: inherit;
+}
+.doc-card-toggle .dch-label { flex: 1; }
+.doc-card-chevron {
+  margin-left: auto;
+  color: #b7ac96;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.doc-card-collapsible.editing .doc-card-chevron { transform: rotate(90deg); }
+.doc-card-collapsible .doc-card-body { display: none; }
+.doc-card-collapsible.editing .doc-card-body { display: grid; }
+.doc-card-collapsible.editing .doc-card-view { display: none; }
+
+.doc-card-view {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  padding: .9rem 1.1rem;
+}
+.doc-card-view p { margin: 0; font-size: .84rem; color: #5c5346; line-height: 1.35; }
+.doc-card-view .dcv-strong { font-weight: 700; color: #1f1a12; font-size: .95rem; }
+.doc-card-view .dcv-empty { color: #a79e8c; font-style: italic; }
+.doc-card-view .dcv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  font-size: .82rem;
+}
+.doc-card-view .dcv-row span { color: #7a7060; }
+.doc-card-view .dcv-row strong { color: #1f1a12; font-weight: 600; text-align: right; }
+.doc-card-view .dcv-status {
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: .68rem;
+  font-weight: 800;
+  color: #8a6520;
+  background: #faf3e6;
+  border: 1px solid #e6d3ab;
+  border-radius: 999px;
+  padding: .12rem .55rem;
+}
+.theme-dark .doc-card-toggle { background: #261f17; border-bottom-color: #3a342a; }
+.theme-dark .doc-card-view p { color: #b7ad97; }
+.theme-dark .doc-card-view .dcv-strong,
+.theme-dark .doc-card-view .dcv-row strong { color: #f0e2c4; }
+.theme-dark .doc-card-view .dcv-status { background: #2c2318; border-color: #4a3d29; color: #e9d8b6; }
+
+/* ── Line-item row ⋮ menu ── */
+.line-row-actions { position: relative; display: flex; align-items: center; justify-content: center; }
+.line-row-menu-btn {
+  border: none;
+  background: transparent;
+  color: #9a917e;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: .25rem .4rem;
+  border-radius: 8px;
+}
+.line-row-menu-btn:hover { background: rgba(0,0,0,.05); color: #1f1a12; }
+.line-row-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 140px;
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.14);
+  padding: .35rem;
+}
+.line-row-actions.open .line-row-menu { display: block; }
+.line-row-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: #b3261e;
+  font: inherit;
+  font-size: .85rem;
+  padding: .5rem .6rem;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.line-row-menu-item:hover { background: #fbeaea; }
+.theme-dark .line-row-menu { background: #211c15; border-color: #3a342a; }
+.theme-dark .line-row-menu-btn:hover { background: rgba(255,255,255,.06); color: #f0e2c4; }
+.theme-dark .line-row-menu-item:hover { background: #3a2420; }
 
 
 

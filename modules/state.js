@@ -395,6 +395,7 @@ export function migrateInvoice(record) {
   });
   if (!Array.isArray(r.payments)) r.payments = [];
   if (!r.dueDate) r.dueDate = addDaysISO(r.date, 15);
+  if (r.paymentTerms == null) r.paymentTerms = 'Net 15';
   if (r.terms == null) r.terms = DEFAULT_INVOICE_TERMS;
   if (r.total == null) r.total = r.items.reduce((s, it) => s + num(it && it.amount), 0);
   return r;
