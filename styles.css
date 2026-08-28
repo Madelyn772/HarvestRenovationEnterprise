@@ -4326,6 +4326,20 @@ details.mobile-section.form-section {
   display: block;
 }
 
+/* Contract signature block: two signature lines side by side. */
+.sig-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.sig-col { display: flex; flex-direction: column; gap: .4rem; }
+.sig-role { font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sig-role em { font-style: normal; color: #b07d2a; }
+.sig-line {
+  min-height: 2.6rem; display: flex; align-items: flex-end; padding: .3rem .2rem;
+  border-bottom: 2px solid var(--line-strong, #caa05a);
+  font-family: "Segoe Script", "Brush Script MT", cursive; font-size: 1.35rem; color: var(--text);
+}
+.sig-line.sig-required { color: #b07d2a; opacity: .8; }
+.sig-sub { font-size: .74rem; color: var(--muted); }
+@media (max-width: 640px) { .sig-grid { grid-template-columns: 1fr; } }
+
 
 
 

@@ -117,21 +117,49 @@ export function recomputeContractTotals() {
 
 export function renderContractSummary(contract) {
   if (!contract || !el.contractSummary) return;
-  const rows = [
-    `<div class="summary-tile"><span>Client</span><strong>${escapeHtml(contract.clientName || 'Select a client')}</strong></div>`,
-    `<div class="summary-tile"><span>Contract Amount</span><strong>${money.format(num(contract.contractAmount))}</strong></div>`,
-    `<div class="summary-row"><span>Deposit (${num(contract.depositPercent)}%)</span><strong>${money.format(num(contract.depositAmount))}</strong></div>`,
-    `<div class="summary-row"><span>Balance</span><strong>${money.format(num(contract.balance))}</strong></div>`
-  ];
-  if (contract.paymentSchedule && contract.paymentSchedule.length) {
-    rows.push(`<div class="stack-item"><h4>Payment Schedule</h4>`);
-    contract.paymentSchedule.forEach((p, i) => {
-      rows.push(`<p class="muted">${i + 1}. ${escapeHtml(p.label)} — ${num(p.percent)}% (${money.format(num(p.amount))})<br/>${escapeHtml(p.dueDescription)}</p>`);
-    });
-    rows.push(`</div>`);
+  const depPct = num(contract.depositPercent);
+  el.contractSummary.innerHTML = `
+    <div class="isum-row"><span>Contract Amount</span><strong>${money.format(num(contract.contractAmount))}</strong></div>
+    <div class="isum-row isum-muted"><span>Deposit (${depPct}%)</span><strong>${money.format(num(contract.depositAmount))}</strong></div>
+    <div class="isum-divide"></div>
+    <div class="isum-row isum-total"><span>Balance Due</span><strong>${money.format(num(contract.balance))}</strong></div>
+    <div class="isum-row"><span>Status</span><strong class="dcv-status">${escapeHtml(contract.status || 'Draft')}</strong></div>`;
+  renderContractCardViews(contract);
+}
+
+// Fill the collapsed read-only view of each contract info card from the inputs.
+export function renderContractCardViews(contract) {
+  const f = el.contractForm;
+  if (!f) return;
+  const c = contract || collectContractFromForm();
+  const client = f.querySelector('[data-view="client"]');
+  if (client) {
+    const lines = [c.billingAddress, c.billingEmail, c.billingPhone].filter(Boolean);
+    client.innerHTML = c.clientName || lines.length
+      ? `<p class="dcv-strong">${escapeHtml(c.clientName || 'Client')}</p>${lines.map(l => `<p>${escapeHtml(l)}</p>`).join('')}`
+      : '<p class="dcv-empty">No client selected</p>';
   }
-  rows.push(`<div class="summary-row"><span>Status</span><strong>${escapeHtml(contract.status || 'Draft')}</strong></div>`);
-  el.contractSummary.innerHTML = rows.join('');
+  const proj = f.querySelector('[data-view="project"]');
+  if (proj) {
+    const estSel = document.getElementById('contractLinkedEstimate');
+    const estLabel = estSel && estSel.value && estSel.selectedOptions[0] ? estSel.selectedOptions[0].textContent : '';
+    proj.innerHTML = c.date || estLabel
+      ? `<p class="dcv-strong">${escapeHtml(estLabel || 'Project')}</p>${c.date ? `<p>${escapeHtml(formatDate(c.date))}</p>` : ''}`
+      : '<p class="dcv-empty">No project details</p>';
+  }
+  const pricing = f.querySelector('[data-view="pricing"]');
+  if (pricing) {
+    pricing.innerHTML = `<div class="dcv-row"><span>Contract Amount</span><strong>${money.format(num(c.contractAmount))}</strong></div><div class="dcv-row"><span>Deposit</span><strong>${num(c.depositPercent)}%</strong></div>`;
+  }
+  const scope = f.querySelector('[data-view="scope"]');
+  if (scope) scope.innerHTML = c.scope ? `<p>${escapeHtml(c.scope)}</p>` : '<p class="dcv-empty">No scope added</p>';
+  const terms = f.querySelector('[data-view="terms"]');
+  if (terms) {
+    const t = (document.getElementById('contractTerms')?.value || '').trim();
+    terms.innerHTML = t ? `<p>${escapeHtml(t.length > 120 ? t.slice(0, 120) + '…' : t)}</p>` : '<p class="dcv-empty">Standard terms</p>';
+  }
+  const sig = f.querySelector('[data-sig="contractor"]');
+  if (sig) sig.textContent = c.user || currentUserName() || '';
 }
 
 export function saveContractFromForm() {
@@ -214,15 +242,16 @@ export function renderContracts() {
     const status = item.status || 'Draft';
     const statusColor = status === 'Signed' ? '#2e7d32' : (status === 'Sent' || status === 'Ready for Signature') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
-    const signedInfo = item.signedAt ? `<p class="muted">Signed ${formatDate(item.signedAt)} by ${escapeHtml(item.signedBy || 'client')}</p>` : '';
-    return `<div class="stack-item">
-      <div class="split-head">
-        <div><h4>${escapeHtml(item.contractNumber || item.id)}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div>
-        <div class="invoice-amount-cell"><strong>${money.format(num(item.contractAmount))}</strong></div>
+    const signedInfo = item.signedAt ? `<p class="muted tiny">Signed ${formatDate(item.signedAt)} by ${escapeHtml(item.signedBy || 'client')}</p>` : '';
+    const meta = [escapeHtml(item.clientName || 'Client'), formatDate(item.date)].filter(Boolean).join(' • ');
+    return `<div class="invoice-row">
+      <div class="invoice-row-info">
+        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${statusBadge}</div>
+        <p class="muted tiny">${meta}</p>
+        ${signedInfo}
       </div>
-      ${statusBadge ? `<p class="muted">${statusBadge}</p>` : ''}
-      ${signedInfo}
-      <div class="form-actions">
+      <div class="invoice-row-amount"><strong>${money.format(num(item.contractAmount))}</strong></div>
+      <div class="invoice-row-actions">
         <button class="ghost-btn contract-edit" data-contract-id="${item.id}">Edit</button>
         <button class="ghost-btn contract-print" data-contract-id="${item.id}">Print / PDF</button>
         ${deleteBtn('contracts', item.id)}

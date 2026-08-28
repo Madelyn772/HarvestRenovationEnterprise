@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-62" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-63" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -812,8 +812,7 @@
       <!-- ── Contracts view ── -->
       <section class="view" id="contractsView">
         <div class="wip-banner">🚧 <strong>Under construction.</strong> We&rsquo;re still building the Contracts feature — some things may not work yet.</div>
-        <div class="grid two-strong">
-          <article class="card doc-editor-card">
+        <article class="card doc-editor-card contract-doc-card">
             <form id="contractForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="contractId" />
 
@@ -834,25 +833,39 @@
                 </div>
               </div>
 
-              <!-- ── Info cards: Client + Contract Details ── -->
-              <div class="doc-cards full">
-                <section class="doc-card">
-                  <div class="doc-card-head dh-client">Client &amp; Project</div>
+              <!-- ── Info cards: Client + Project + Contract Terms (collapsible) ── -->
+              <div class="doc-cards doc-cards-3 full">
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-client"><span class="dch-label">Client</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="client"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><span>Client</span><select name="clientId" id="contractClientSelect" required></select></label>
-                    <label class="full"><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
                     <label class="full"><span>Billing address</span><input name="billingAddress" data-autocap="words" data-format="address" autocapitalize="words" placeholder="Street, City, ST ZIP" /></label>
-                    <label><span>Client phone</span><input name="billingPhone" type="tel" /></label>
-                    <label><span>Client email</span><input name="billingEmail" type="email" /></label>
+                    <label class="full"><span>Client phone</span><input name="billingPhone" type="tel" /></label>
+                    <label class="full"><span>Client email</span><input name="billingEmail" type="email" /></label>
                   </div>
-                </section>
-                <section class="doc-card">
-                  <div class="doc-card-head dh-details">Contract Details</div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-project"><span class="dch-label">Project</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="project"></div>
+                  </summary>
                   <div class="doc-card-body">
-                    <label><span>Date</span><input name="date" id="contractDate" type="date" /></label>
-                    <label><span>Prepared by</span><input name="user" /></label>
+                    <label class="full"><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
+                    <label class="full"><span>Date</span><input name="date" id="contractDate" type="date" /></label>
+                    <label class="full"><span>Prepared by</span><input name="user" /></label>
+                  </div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-pricing"><span class="dch-label">Contract Terms</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="pricing"></div>
+                  </summary>
+                  <div class="doc-card-body">
                     <label class="full"><span>Contract amount ($)</span><input name="contractAmount" id="contractAmount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-                    <label><span>Deposit %</span>
+                    <label class="full"><span>Deposit %</span>
                       <select name="depositPercent" id="contractDepositPercent">
                         <option value="0">No deposit</option>
                         <option value="10">10%</option>
@@ -863,31 +876,65 @@
                       </select>
                     </label>
                   </div>
-                </section>
+                </details>
               </div>
 
-              <!-- ── Payment schedule ── -->
-              <div class="contract-payments-shell full">
-                <div class="split-head"><strong>Payment Schedule</strong><button type="button" class="ghost-btn" id="addContractPayment">+ Add milestone</button></div>
-                <div class="payment-schedule-head">
-                  <span>Milestone</span><span>%</span><span>When due</span><span>Amount</span><span></span>
+              <!-- ── Payment schedule (left) + summary rail (right) ── -->
+              <div class="doc-split full">
+                <div class="doc-split-main contract-payments-shell">
+                  <div class="split-head"><strong>Payment Schedule</strong><button type="button" class="ghost-btn" id="addContractPayment">+ Add milestone</button></div>
+                  <div class="payment-schedule-head">
+                    <span>Milestone</span><span>%</span><span>When due</span><span>Amount</span><span></span>
+                  </div>
+                  <div id="contractPayments" class="stack compact-stack"></div>
                 </div>
-                <div id="contractPayments" class="stack compact-stack"></div>
+                <aside class="doc-split-side">
+                  <div class="invoice-summary-card">
+                    <div id="contractSummary" class="invoice-summary"></div>
+                  </div>
+                </aside>
               </div>
 
-              <!-- ── Scope + Terms cards ── -->
+              <!-- ── Scope + Terms cards (collapsible) ── -->
               <div class="doc-cards full">
-                <section class="doc-card">
-                  <div class="doc-card-head dh-scope">Scope of Work</div>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-scope"><span class="dch-label">Scope of Work</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="scope"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="scope" rows="5" data-autocap="sentence" autocapitalize="sentences" placeholder="Describe the work to be performed under this contract"></textarea></label>
                     <label class="full"><span>Internal notes (not printed)</span><textarea name="notes" rows="2" data-autocap="sentence" autocapitalize="sentences" placeholder="Optional internal notes"></textarea></label>
                   </div>
-                </section>
-                <section class="doc-card">
-                  <div class="doc-card-head dh-terms">Terms &amp; Conditions</div>
+                </details>
+                <details class="doc-card doc-card-collapsible">
+                  <summary class="doc-card-summary">
+                    <span class="doc-card-head dh-terms"><span class="dch-label">Terms &amp; Conditions</span><span class="doc-card-chevron" aria-hidden="true">›</span></span>
+                    <div class="doc-card-view" data-view="terms"></div>
+                  </summary>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="terms" rows="8" id="contractTerms"></textarea></label>
+                  </div>
+                </details>
+              </div>
+
+              <!-- ── Signature block ── -->
+              <div class="doc-cards full">
+                <section class="doc-card sig-card">
+                  <div class="doc-card-head dh-terms">Signature Block</div>
+                  <div class="doc-card-body">
+                    <div class="sig-grid full">
+                      <div class="sig-col">
+                        <span class="sig-role">Contractor</span>
+                        <div class="sig-line" data-sig="contractor"></div>
+                        <span class="sig-sub">Harvest Renovation</span>
+                      </div>
+                      <div class="sig-col">
+                        <span class="sig-role">Client <em>(required)</em></span>
+                        <div class="sig-line sig-required">Signature Required</div>
+                        <span class="sig-sub">Signed electronically via Documenso when sent</span>
+                      </div>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -898,11 +945,6 @@
               </div>
             </form>
           </article>
-          <article class="card sticky-card">
-            <div class="card-head"><div><p class="eyebrow">Contract Summary</p><h3>Client-ready preview</h3></div></div>
-            <div id="contractSummary" class="estimate-summary"></div>
-          </article>
-        </div>
         <article class="card"><div class="card-head"><div><p class="eyebrow">Saved Contracts</p><h3>Contract library</h3></div></div><div id="contractList" class="stack"></div></article>
       </section>
 
