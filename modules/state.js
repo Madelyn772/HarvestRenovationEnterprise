@@ -209,7 +209,10 @@ export const state = {
     documentType: 'all',
     pipelineRange: 'month',
     tradeCategory: 'all',
-    leadSource: 'all'
+    leadSource: 'all',
+    docSearch: '',
+    docDateRange: '',
+    docGroupByClient: false
   }
 };
 

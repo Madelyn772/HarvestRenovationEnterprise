@@ -25,18 +25,58 @@ export function saveDocument(type, number, clientName, total, html, preparedBy) 
 
 export function renderDocuments() {
   const filter = state.filters.documentType || 'all';
-  const items = [...state.store.documents]
+  const search = (state.filters.docSearch || '').trim().toLowerCase();
+  const range = num(state.filters.docDateRange);
+  const cutoff = range > 0 ? Date.now() - range * 86400000 : 0;
+  const filtered = [...state.store.documents]
     .filter(doc => filter === 'all' || doc.type === filter)
+    .filter(doc => {
+      if (!search) return true;
+      return [doc.clientName, doc.number, doc.title].some(v => String(v || '').toLowerCase().includes(search));
+    })
+    .filter(doc => {
+      if (!cutoff) return true;
+      const t = new Date(doc.date || doc.createdAt || doc.updatedAt || '').getTime();
+      return !Number.isNaN(t) && t >= cutoff;
+    })
     .sort((a, b) => sortDateDesc(a.updatedAt || a.createdAt, b.updatedAt || b.createdAt));
-  el.documentList.innerHTML = items.length ? items.map(doc => {
-    const badge = doc.type === 'invoice' ? 'Invoice' : (doc.type === 'estimate' ? 'Estimate' : (doc.type === 'contract' ? 'Contract' : 'Document'));
-    const sourceTag = doc.uploaded ? '<span class="doc-source-tag">Uploaded</span>' : '';
-    const preparedBy = doc.preparedBy ? `${doc.uploaded ? 'Added' : 'Prepared'} by ${doc.preparedBy}` : `${doc.uploaded ? 'Added' : 'Prepared'} by —`;
-    const stamp = formatDateTime(doc.createdAt || doc.updatedAt);
-    const info = escapeHtml(`${preparedBy}${stamp ? ` • ${stamp}` : ''}${doc.uploaded && doc.fileName ? ` • ${doc.fileName}` : ''}`);
-    const openLabel = doc.uploaded ? 'Open' : 'Open / Print';
-    return `<div class="stack-item doc-item"><div class="split-head"><div><h4>${escapeHtml(doc.title || badge)} ${sourceTag}</h4><p class="muted">${escapeHtml(badge)} • ${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.date || doc.updatedAt || doc.createdAt))}</p></div><div class="doc-head-right"><span class="doc-info" tabindex="0" role="img" aria-label="${info}" title="${info}">i</span><strong>${money.format(num(doc.total))}</strong></div></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">${openLabel}</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
-  }).join('') : emptyHtml('No saved documents yet. Print an estimate or invoice, or upload a past document, to save it here.');
+
+  if (!filtered.length) {
+    const anyDocs = state.store.documents.length > 0;
+    const filtersActive = filter !== 'all' || !!search || range > 0;
+    el.documentList.innerHTML = emptyHtml(anyDocs && filtersActive
+      ? 'No documents match your search. Try clearing the filters.'
+      : 'No saved documents yet. Print an estimate or invoice, or upload a past document, to save it here.');
+    return;
+  }
+
+  if (state.filters.docGroupByClient) {
+    const groups = {};
+    filtered.forEach(doc => { const name = doc.clientName || 'Unassigned'; (groups[name] = groups[name] || []).push(doc); });
+    el.documentList.innerHTML = Object.keys(groups).sort((a, b) => a.localeCompare(b)).map(name => {
+      const docs = groups[name].sort((a, b) => sortDateDesc(a.updatedAt || a.createdAt, b.updatedAt || b.createdAt));
+      return `<details class="doc-group" open><summary class="doc-group-head"><strong>${escapeHtml(name)}</strong><span class="muted tiny">${docs.length} document${docs.length !== 1 ? 's' : ''}</span></summary><div class="doc-group-body">${docs.map(docItemHtml).join('')}</div></details>`;
+    }).join('');
+  } else {
+    el.documentList.innerHTML = filtered.map(docItemHtml).join('');
+  }
+  bindDocumentActions();
+}
+
+// One document card: colored type border + short type badge + actions.
+function docItemHtml(doc) {
+  const type = ['estimate', 'invoice', 'contract'].includes(doc.type) ? doc.type : 'other';
+  const badge = doc.type === 'invoice' ? 'Invoice' : (doc.type === 'estimate' ? 'Estimate' : (doc.type === 'contract' ? 'Contract' : 'Document'));
+  const badgeShort = { estimate: 'EST', invoice: 'INV', contract: 'CON', other: 'DOC' }[type];
+  const sourceTag = doc.uploaded ? '<span class="doc-source-tag">Uploaded</span>' : '';
+  const preparedBy = doc.preparedBy ? `${doc.uploaded ? 'Added' : 'Prepared'} by ${doc.preparedBy}` : `${doc.uploaded ? 'Added' : 'Prepared'} by —`;
+  const stamp = formatDateTime(doc.createdAt || doc.updatedAt);
+  const info = escapeHtml(`${preparedBy}${stamp ? ` • ${stamp}` : ''}${doc.uploaded && doc.fileName ? ` • ${doc.fileName}` : ''}`);
+  const openLabel = doc.uploaded ? 'Open' : 'Open / Print';
+  return `<div class="stack-item doc-item doc-type-${type}"><div class="split-head"><div><h4><span class="doc-type-badge doc-type-badge-${type}">${badgeShort}</span>${escapeHtml(doc.title || badge)} ${sourceTag}</h4><p class="muted">${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.date || doc.updatedAt || doc.createdAt))}</p></div><div class="doc-head-right"><span class="doc-info" tabindex="0" role="img" aria-label="${info}" title="${info}">i</span><strong>${money.format(num(doc.total))}</strong></div></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">${openLabel}</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
+}
+
+function bindDocumentActions() {
   el.documentList.querySelectorAll('.doc-open').forEach(btn => btn.addEventListener('click', () => {
     const doc = state.store.documents.find(item => item.id === btn.dataset.docId);
     if (!doc) return;
@@ -147,6 +187,9 @@ export function handleDocumentUpload(event) {
     addActivity(`Uploaded ${type} document ${number || file.name}.`, 'Documents');
     saveStore();
     form.reset();
+    // Collapse the upload panel back to the launcher after a successful upload.
+    if (el.uploadPanel) el.uploadPanel.classList.add('hidden');
+    if (el.toggleUploadBtn) { el.toggleUploadBtn.setAttribute('aria-expanded', 'false'); el.toggleUploadBtn.textContent = 'Upload Document'; }
     renderDocuments();
     renderReservedNumbers();
     showToast('Document uploaded.', 'success');

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-52" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-53" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -956,8 +956,24 @@
       <section class="view" id="documentsView">
         <article class="card">
           <div class="card-head split-head">
-            <div><p class="eyebrow">Upload</p><h3>Add a past estimate or invoice</h3></div>
-            <button type="button" class="primary-btn" id="toggleUploadBtn" aria-expanded="false" aria-controls="uploadPanel">Upload document</button>
+            <div><p class="eyebrow">Documents</p><h3>Saved estimates, invoices &amp; contracts</h3></div>
+            <button type="button" class="primary-btn" id="toggleUploadBtn" aria-expanded="false" aria-controls="uploadPanel">Upload Document</button>
+          </div>
+          <div class="doc-search-row">
+            <input type="text" id="docSearchInput" placeholder="Search by client, number, or title…" />
+            <select id="docDateFilter" aria-label="Filter by date">
+              <option value="">All time</option>
+              <option value="30">Past 30 days</option>
+              <option value="90">Past 90 days</option>
+              <option value="365">This year</option>
+            </select>
+            <div class="doc-type-chips">
+              <button class="chip-btn active" data-doc-filter="all">All</button>
+              <button class="chip-btn" data-doc-filter="estimate">Estimates</button>
+              <button class="chip-btn" data-doc-filter="invoice">Invoices</button>
+              <button class="chip-btn" data-doc-filter="contract">Contracts</button>
+            </div>
+            <button type="button" class="ghost-btn" id="docGroupToggle" title="Group documents by client">Group by Client</button>
           </div>
           <div id="uploadPanel" class="hidden">
             <p class="muted tiny">Upload a PDF or photo of a document you already have. Files are stored in this browser, so keep each one small (2&nbsp;MB max). The number you enter is also reserved so it can&rsquo;t be reused.</p>
@@ -971,9 +987,11 @@
               <div class="form-actions full"><button type="submit" class="primary-btn">Upload document</button><button type="button" class="ghost-btn" id="clearUploadDocForm">Clear</button></div>
             </form>
           </div>
+          <p class="muted tiny">Generated documents are saved automatically whenever you print/export an estimate or invoice. Uploaded documents appear here too. Open to view or print to PDF, download an offline copy, or move to Trash.</p>
+          <div id="documentList" class="stack doc-stack"></div>
         </article>
-        <article class="card hidden" id="reservedNumberCard">
-          <div class="card-head"><div><p class="eyebrow">Number Registry</p><h3>Reserved estimate &amp; invoice numbers</h3></div></div>
+        <details class="card" id="reservedNumberCard">
+          <summary class="card-head reserved-summary"><div><p class="eyebrow">Number Registry</p><h3>Reserved estimate &amp; invoice numbers</h3></div></summary>
           <p class="muted tiny">Numbers from uploaded documents are reserved here automatically so they can&rsquo;t be reused. You can also add another legacy number by hand.</p>
           <form id="reservedNumberForm" class="form-grid">
             <label><span>Type</span><select name="type"><option value="estimate">Estimate</option><option value="invoice">Invoice</option></select></label>
@@ -983,20 +1001,7 @@
           </form>
           <div class="divider"></div>
           <div id="reservedNumberList" class="stack"></div>
-        </article>
-        <article class="card">
-          <div class="card-head split-head">
-            <div><p class="eyebrow">Saved Documents <span class="doc-info" tabindex="0" role="img" aria-label="Saved PDF estimates and invoices generated from the portal. These are copies of what was sent to clients — stored here for your records. Click any document to reopen, print, or download it." title="Saved PDF estimates and invoices generated from the portal. These are copies of what was sent to clients — stored here for your records. Click any document to reopen, print, or download it.">i</span></p><h3>Generated &amp; uploaded estimate &amp; invoice files</h3></div>
-            <div class="doc-filter-row">
-              <button class="chip-btn active" data-doc-filter="all">All</button>
-              <button class="chip-btn" data-doc-filter="estimate">Estimates</button>
-              <button class="chip-btn" data-doc-filter="invoice">Invoices</button>
-              <button class="chip-btn" data-doc-filter="contract">Contracts</button>
-            </div>
-          </div>
-          <p class="muted tiny">Generated documents are saved automatically whenever you print/export an estimate or invoice. Uploaded documents appear here too. Open to view or print to PDF, download an offline copy, or move to Trash.</p>
-          <div id="documentList" class="stack doc-stack"></div>
-        </article>
+        </details>
       </section>
 
       <section class="view" id="marketingView">

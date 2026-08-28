@@ -359,10 +359,20 @@ export function bindAppUi() {
       el.uploadPanel.classList.toggle('hidden');
       const open = !el.uploadPanel.classList.contains('hidden');
       el.toggleUploadBtn.setAttribute('aria-expanded', String(open));
-      el.toggleUploadBtn.textContent = open ? 'Close' : 'Upload document';
+      el.toggleUploadBtn.textContent = open ? 'Close' : 'Upload Document';
       if (open) el.uploadPanel.querySelector('select, input, button')?.focus();
     });
   }
+  const docSearchInput = document.getElementById('docSearchInput');
+  if (docSearchInput) docSearchInput.addEventListener('input', debounce(e => { state.filters.docSearch = e.target.value.trim().toLowerCase(); renderDocuments(); }, 200));
+  const docDateFilter = document.getElementById('docDateFilter');
+  if (docDateFilter) docDateFilter.addEventListener('change', e => { state.filters.docDateRange = e.target.value; renderDocuments(); });
+  const docGroupToggle = document.getElementById('docGroupToggle');
+  if (docGroupToggle) docGroupToggle.addEventListener('click', () => {
+    state.filters.docGroupByClient = !state.filters.docGroupByClient;
+    docGroupToggle.classList.toggle('active', state.filters.docGroupByClient);
+    renderDocuments();
+  });
   applyTheme(getStoredTheme());
   initMobileNav();
   initSidebarState();

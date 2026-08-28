@@ -1559,6 +1559,48 @@ textarea:disabled {
 .trash-item .muted { color: #4b5563; }
 .doc-item strong { color: #14110d; }
 
+/* Documents: search row, type indicators, client groups. */
+.doc-search-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .75rem 0; }
+.doc-search-row input[type="text"] { flex: 1; min-width: 180px; }
+.doc-type-chips { display: flex; gap: .3rem; flex-wrap: wrap; }
+#docGroupToggle.active { background: var(--gold, #c9a227); color: #fff; border-color: var(--gold, #c9a227); }
+
+.doc-item { border-left: 4px solid transparent; padding-left: 1rem; }
+.doc-type-estimate { border-left-color: #c9a227; }
+.doc-type-invoice { border-left-color: #5b8def; }
+.doc-type-contract { border-left-color: #16a34a; }
+.doc-type-other { border-left-color: #9ca3af; }
+.doc-type-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-right: .4rem;
+}
+.doc-type-badge-estimate { background: rgba(201,162,39,.15); color: #a5811c; }
+.doc-type-badge-invoice { background: rgba(91,141,239,.15); color: #3f6fd0; }
+.doc-type-badge-contract { background: rgba(22,163,74,.15); color: #16a34a; }
+.doc-type-badge-other { background: rgba(156,163,175,.15); color: #6b7280; }
+
+.doc-group { margin-bottom: .75rem; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.doc-group-head {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  padding: .75rem 1rem; cursor: pointer; background: var(--panel, #211c15);
+  border-bottom: 1px solid var(--line); list-style: none;
+}
+.doc-group-head::-webkit-details-marker { display: none; }
+.doc-group-head::before { content: '▸'; margin-right: .5rem; transition: transform .15s; color: var(--muted); }
+.doc-group[open] .doc-group-head::before { transform: rotate(90deg); }
+.doc-group-body { padding: .5rem; display: grid; gap: .5rem; }
+.theme-light .doc-group-head { background: #f5f3ee; }
+
+/* Reserved-numbers card is a <details>; hide the native marker. */
+.reserved-summary { cursor: pointer; list-style: none; }
+.reserved-summary::-webkit-details-marker { display: none; }
+
+@media (max-width: 640px) {
+  .doc-search-row { flex-direction: column; align-items: stretch; }
+  .doc-search-row input[type="text"] { min-width: 0; }
+  .doc-type-chips { flex-wrap: wrap; }
+}
+
 .client-row { display: grid; gap: .5rem; }
 .client-row .client-select { width: 100%; text-align: left; }
 .client-row .form-actions { display: flex; gap: .5rem; }
