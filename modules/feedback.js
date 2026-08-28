@@ -92,15 +92,30 @@ export function renderBugReports() {
   const fArea = state.filters.bugArea || '';
   const fType = state.filters.bugType || '';
   const fSev = state.filters.bugSeverity || '';
-  const fStatus = state.filters.bugStatus || '';
-  let reports = [...(state.store.bugReports || [])].sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+  // Default view: everything except Resolved.
+  const statuses = state.filters.bugStatuses || ['New', 'In Progress'];
+  const activeStatuses = statuses.length ? statuses : STATUSES;
+  const range = state.filters.bugRange || '';
+  const sort = state.filters.bugSort || 'desc';
+  let reports = [...(state.store.bugReports || [])];
+  if (range) {
+    const cutoff = range === 'today'
+      ? (() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); })()
+      : Date.now() - Number(range) * 86400000;
+    reports = reports.filter(r => { const t = new Date(r.submittedAt || '').getTime(); return !Number.isNaN(t) && t >= cutoff; });
+  }
   reports = reports.filter(r =>
+    activeStatuses.includes(r.status || 'New') &&
     (!fArea || (r.area || 'Other') === fArea) &&
     (!fType || (r.kind || 'Bug') === fType) &&
-    (!fSev || (r.severity || 'Medium') === fSev) &&
-    (!fStatus || (r.status || 'New') === fStatus));
+    (!fSev || (r.severity || 'Medium') === fSev));
+  reports.sort((a, b) => {
+    const c = (a.submittedAt || '').localeCompare(b.submittedAt || '');
+    return sort === 'asc' ? c : -c;
+  });
   if (!reports.length) {
-    list.innerHTML = emptyHtml((fArea || fType || fSev || fStatus) ? 'No reports match these filters.' : 'No reports yet. Use the form to submit one.');
+    const filtering = fArea || fType || fSev || range || statuses.length !== 2 || statuses.includes('Resolved');
+    list.innerHTML = emptyHtml(filtering ? 'No reports match these filters.' : 'No open reports. Use the form to submit one.');
     return;
   }
   const admin = isAdmin();

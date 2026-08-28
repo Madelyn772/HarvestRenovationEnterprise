@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-24" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-25" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -1092,31 +1092,63 @@
           </article>
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Reports</p><h3>Submitted reports</h3></div></div>
-            <details class="bug-filter-menu">
-              <summary class="bug-filter-toggle">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
-                <span>Filters</span><span class="filter-count hidden" id="bugFilterCount"></span>
-              </summary>
-              <div class="bug-filters">
-                <select id="bugFilterStatus" aria-label="Filter by status">
-                  <option value="">All statuses</option>
-                  <option>New</option><option>In Progress</option><option>Resolved</option>
+            <div class="bug-toolbar">
+              <details class="bug-filter-menu">
+                <summary class="bug-filter-toggle">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+                  <span>Filters</span><span class="filter-count hidden" id="bugFilterCount"></span>
+                </summary>
+                <div class="bug-filters">
+                  <div class="bf-group bf-status">
+                    <span class="bf-label">Status</span>
+                    <div class="bf-checks">
+                      <label class="bf-check"><input type="checkbox" class="bug-status-check" value="New" /><span>New</span></label>
+                      <label class="bf-check"><input type="checkbox" class="bug-status-check" value="In Progress" /><span>In Progress</span></label>
+                      <label class="bf-check"><input type="checkbox" class="bug-status-check" value="Resolved" /><span>Resolved</span></label>
+                    </div>
+                  </div>
+                  <div class="bf-group">
+                    <span class="bf-label">Date</span>
+                    <select id="bugFilterRange" aria-label="Filter by date range">
+                      <option value="">All time</option>
+                      <option value="today">Today</option>
+                      <option value="7">Past 7 days</option>
+                      <option value="30">Past 30 days</option>
+                      <option value="90">Past 90 days</option>
+                    </select>
+                  </div>
+                  <div class="bf-group">
+                    <span class="bf-label">Area</span>
+                    <select id="bugFilterArea" aria-label="Filter by area">
+                      <option value="">All areas</option>
+                      <option>CRM</option><option>Estimating</option><option>Invoicing</option><option>Operations</option><option>Documents</option><option>KPIs</option><option>Calendars</option><option>Team</option><option>Dashboard</option><option>Login / Access</option><option>Other</option>
+                    </select>
+                  </div>
+                  <div class="bf-group">
+                    <span class="bf-label">Type</span>
+                    <select id="bugFilterType" aria-label="Filter by type">
+                      <option value="">All types</option>
+                      <option>Bug</option><option>Change request</option><option>Idea</option><option>Question</option>
+                    </select>
+                  </div>
+                  <div class="bf-group">
+                    <span class="bf-label">Severity</span>
+                    <select id="bugFilterSeverity" aria-label="Filter by severity">
+                      <option value="">All severities</option>
+                      <option>Low</option><option>Medium</option><option>High</option><option>Blocking</option>
+                    </select>
+                  </div>
+                  <button type="button" class="bf-clear" id="bugFilterClear">Clear</button>
+                </div>
+              </details>
+              <label class="bug-sort">
+                <span class="bf-label">Sort</span>
+                <select id="bugFilterSort" aria-label="Sort by date">
+                  <option value="desc">Newest first</option>
+                  <option value="asc">Oldest first</option>
                 </select>
-                <select id="bugFilterArea" aria-label="Filter by area">
-                  <option value="">All areas</option>
-                  <option>CRM</option><option>Estimating</option><option>Invoicing</option><option>Operations</option><option>Documents</option><option>KPIs</option><option>Calendars</option><option>Team</option><option>Dashboard</option><option>Login / Access</option><option>Other</option>
-                </select>
-                <select id="bugFilterType" aria-label="Filter by type">
-                  <option value="">All types</option>
-                  <option>Bug</option><option>Change request</option><option>Idea</option><option>Question</option>
-                </select>
-                <select id="bugFilterSeverity" aria-label="Filter by severity">
-                  <option value="">All severities</option>
-                  <option>Low</option><option>Medium</option><option>High</option><option>Blocking</option>
-                </select>
-                <button type="button" class="ghost-btn" id="bugFilterClear">Clear filters</button>
-              </div>
-            </details>
+              </label>
+            </div>
             <div id="bugReportList" class="stack"></div>
           </article>
       </section>

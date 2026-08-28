@@ -283,24 +283,41 @@ export function bindAppUi() {
     if (clearFeedback) clearFeedback.addEventListener('click', () => el.feedbackForm.reset());
   }
   // Service Desk filters.
-  const bugFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity'], ['bugFilterStatus', 'bugStatus']];
+  if (!state.filters.bugStatuses) state.filters.bugStatuses = ['New', 'In Progress']; // default: hide Resolved
+  if (!state.filters.bugSort) state.filters.bugSort = 'desc';
+  const singleFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity'], ['bugFilterRange', 'bugRange']];
   const updateBugFilterCount = () => {
     const badge = document.getElementById('bugFilterCount');
     if (!badge) return;
-    const n = bugFilters.filter(([, key]) => state.filters[key]).length;
+    let n = singleFilters.filter(([, key]) => state.filters[key]).length;
+    if ((state.filters.bugStatuses || []).includes('Resolved')) n += 1; // showing Resolved is a non-default choice
     badge.textContent = n ? String(n) : '';
     badge.classList.toggle('hidden', !n);
   };
-  bugFilters.forEach(([id, key]) => {
+  // Multi-select status checkboxes (reflect defaults, then track changes).
+  document.querySelectorAll('.bug-status-check').forEach(cb => {
+    cb.checked = (state.filters.bugStatuses || []).includes(cb.value);
+    cb.addEventListener('change', () => {
+      state.filters.bugStatuses = [...document.querySelectorAll('.bug-status-check:checked')].map(x => x.value);
+      updateBugFilterCount();
+      renderBugReports();
+    });
+  });
+  const bugSortSel = document.getElementById('bugFilterSort');
+  if (bugSortSel) { bugSortSel.value = state.filters.bugSort; bugSortSel.addEventListener('change', () => { state.filters.bugSort = bugSortSel.value; renderBugReports(); }); }
+  singleFilters.forEach(([id, key]) => {
     const sel = document.getElementById(id);
     if (sel) sel.addEventListener('change', () => { state.filters[key] = sel.value; updateBugFilterCount(); renderBugReports(); });
   });
   const bugFilterClear = document.getElementById('bugFilterClear');
   if (bugFilterClear) bugFilterClear.addEventListener('click', () => {
-    bugFilters.forEach(([id, key]) => { const sel = document.getElementById(id); if (sel) sel.value = ''; state.filters[key] = ''; });
+    singleFilters.forEach(([id, key]) => { const sel = document.getElementById(id); if (sel) sel.value = ''; state.filters[key] = ''; });
+    state.filters.bugStatuses = ['New', 'In Progress'];
+    document.querySelectorAll('.bug-status-check').forEach(cb => cb.checked = cb.value !== 'Resolved');
     updateBugFilterCount();
     renderBugReports();
   });
+  updateBugFilterCount();
   const clearUploadBtn = document.getElementById('clearUploadDocForm');
   if (clearUploadBtn && el.uploadDocForm) clearUploadBtn.addEventListener('click', () => el.uploadDocForm.reset());
   if (el.toggleUploadBtn && el.uploadPanel) {
