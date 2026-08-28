@@ -3752,6 +3752,20 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .bug-comments { margin-top: .75rem; padding-top: .6rem; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: .5rem; }
 .bug-comment { padding: .5rem .65rem; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
 .bug-comment.mine { background: rgba(202,160,90,.10); border-color: rgba(202,160,90,.3); }
+.bug-comment.internal { background: rgba(120,120,140,.10); border-style: dashed; }
+.bug-comment .bc-internal-tag {
+  display: inline-block;
+  margin-left: .4rem;
+  padding: .02rem .35rem;
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  vertical-align: middle;
+}
 .bug-comment .bc-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
 .bug-comment .bc-author { font-weight: 700; font-size: .82rem; }
 .bug-comment p { margin: .25rem 0 0; font-size: .88rem; }
