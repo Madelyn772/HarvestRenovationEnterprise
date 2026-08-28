@@ -1,4 +1,4 @@
-import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice, migrateLead, migrateChangeOrder, migrateReceipt, isAdmin } from './state.js';
+import { state, STORAGE_KEY, seedStore, uid, todayInputValue, formatDateTime, currentUserName, migrateEstimate, migrateInvoice, migrateLead, migrateChangeOrder, migrateReceipt, migrateContract, isAdmin } from './state.js';
 import { el, updateChip, showToast } from './dom.js';
 import { defaultChecklistItems, defaultTips } from './dashboard.js';
 import { purgeExpiredTrash } from './trash.js';
@@ -31,6 +31,7 @@ export function normalizeStoreShape(raw) {
   base.leads = base.leads.map(migrateLead);
   base.changeOrders = base.changeOrders.map(migrateChangeOrder);
   base.receipts = base.receipts.map(migrateReceipt);
+  base.contracts = base.contracts.map(migrateContract);
   return base;
 }
 

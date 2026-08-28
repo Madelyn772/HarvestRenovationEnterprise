@@ -2923,4 +2923,61 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   }
 }
 
+/* ── Contract payment schedule ── */
+.contract-payments-shell {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.payment-schedule-head,
+.payment-schedule-row {
+  display: grid;
+  grid-template-columns: 2fr .7fr 1.6fr 1fr auto;
+  gap: .6rem;
+  align-items: center;
+}
+.payment-schedule-head {
+  margin: .6rem 0 .35rem;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.payment-schedule-row { margin-bottom: .5rem; }
+.payment-schedule-row input {
+  width: 100%;
+  padding: .5rem .6rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface, transparent);
+  color: inherit;
+}
+.payment-schedule-row .pay-amount {
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.payment-schedule-row .remove-pay-row {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.payment-schedule-row .remove-pay-row:hover { color: #c0392b; }
+
+@media (max-width: 960px) {
+  .payment-schedule-head { display: none; }
+  .payment-schedule-row {
+    grid-template-columns: 1fr 1fr;
+    padding: .6rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .payment-schedule-row .pay-amount { text-align: left; }
+}
+
+
 

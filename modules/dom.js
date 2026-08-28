@@ -22,6 +22,7 @@ export function cacheDom() {
     'recordPaymentDialog','recordPaymentForm','receiptList','receiptsCard',
     'feedbackForm','bugReportList',
     'tipText','tipCounter','tipPrev','tipNext','tipAddForm','tipDeleteBtn'
+    ,'contractForm','contractClientSelect','contractLinkedEstimate','contractNumber','contractDate','contractAmount','contractSummary','contractList','printContract','contractPayments','contractTerms'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }

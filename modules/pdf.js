@@ -1,4 +1,4 @@
-import { money, num, formatDate, currentUserName, autoNumber, BRAND, BRAND_LOGO_PATH, DEFAULT_ESTIMATE_TERMS, DEFAULT_INVOICE_TERMS } from './state.js';
+import { money, num, formatDate, currentUserName, autoNumber, BRAND, BRAND_LOGO_PATH, DEFAULT_ESTIMATE_TERMS, DEFAULT_INVOICE_TERMS, DEFAULT_CONTRACT_TERMS } from './state.js';
 import { escapeHtml, openPrintWindow } from './dom.js';
 import { saveDocument, renderDocuments } from './documents.js';
 
@@ -294,6 +294,46 @@ export function printInvoice(invoice) {
   saveDocument('invoice', invoice.invoiceNumber || invoice.id || autoNumber('INV'), invoice.clientName, invoice.total, html, invoice.user || currentUserName());
   renderDocuments();
   openPrintWindow(html);
+}
+
+export function buildContractDocHtml(contract) {
+  return buildBrandedDocHtml({
+    kind: 'CONTRACT',
+    number: contract.contractNumber || '',
+    date: contract.date,
+    status: contract.status,
+    bill: {
+      name: contract.clientName,
+      address: contract.billingAddress,
+      phone: contract.billingPhone,
+      email: contract.billingEmail
+    },
+    scope: contract.scope,
+    comments: contract.notes || '',
+    rows: [],
+    balanceLabel: 'CONTRACT TOTAL',
+    balance: num(contract.contractAmount),
+    depositPercent: num(contract.depositPercent),
+    depositAmount: num(contract.depositAmount),
+    preparedBy: contract.user || currentUserName(),
+    subtotal: num(contract.contractAmount),
+    terms: contract.terms || DEFAULT_CONTRACT_TERMS,
+    signatureBlockEnabled: true
+  });
+}
+
+export function printContract(contract) {
+  const baseHtml = buildContractDocHtml(contract);
+  const payRows = (contract.paymentSchedule || []).map((p, i) => {
+    return `<div class="item-row"><div class="desc">${i + 1}. ${escapeHtml(p.label || '')}<div class="line-sub">${escapeHtml(p.dueDescription || '')}</div></div><div class="amt">${num(p.percent)}% — ${money.format(num(p.amount))}</div></div>`;
+  }).join('');
+  const paySection = payRows
+    ? `<div class="items" style="margin-top:18px"><div class="ihead"><span>Payment Schedule</span><span>Amount</span></div><div class="ibody" style="min-height:0">${payRows}</div></div>`
+    : '';
+  const finalHtml = baseHtml.replace('<div class="terms"><div class="band">Terms', paySection + '<div class="terms"><div class="band">Terms');
+  saveDocument('contract', contract.contractNumber || contract.id || autoNumber('CON'), contract.clientName, contract.contractAmount, finalHtml, contract.user || currentUserName());
+  renderDocuments();
+  openPrintWindow(finalHtml);
 }
 
 export function buildChangeOrderDocHtml(co) {

@@ -4,7 +4,8 @@ import { upsertArray, saveStore, addActivity } from './store.js';
 import { softDelete } from './trash.js';
 
 export function saveDocument(type, number, clientName, total, html, preparedBy) {
-  const title = `${type === 'invoice' ? 'Invoice' : 'Estimate'} ${number || ''}`.trim();
+  const kindLabel = type === 'invoice' ? 'Invoice' : type === 'contract' ? 'Contract' : 'Estimate';
+  const title = `${kindLabel} ${number || ''}`.trim();
   const existing = state.store.documents.find(doc => doc.type === type && doc.number === number);
   const payload = {
     id: existing?.id || uid('DOC'),
@@ -28,7 +29,7 @@ export function renderDocuments() {
     .filter(doc => filter === 'all' || doc.type === filter)
     .sort((a, b) => sortDateDesc(a.updatedAt || a.createdAt, b.updatedAt || b.createdAt));
   el.documentList.innerHTML = items.length ? items.map(doc => {
-    const badge = doc.type === 'invoice' ? 'Invoice' : (doc.type === 'estimate' ? 'Estimate' : 'Document');
+    const badge = doc.type === 'invoice' ? 'Invoice' : (doc.type === 'estimate' ? 'Estimate' : (doc.type === 'contract' ? 'Contract' : 'Document'));
     const sourceTag = doc.uploaded ? '<span class="doc-source-tag">Uploaded</span>' : '';
     const preparedBy = doc.preparedBy ? `${doc.uploaded ? 'Added' : 'Prepared'} by ${doc.preparedBy}` : `${doc.uploaded ? 'Added' : 'Prepared'} by —`;
     const stamp = formatDateTime(doc.createdAt || doc.updatedAt);
@@ -115,11 +116,11 @@ export function handleDocumentUpload(event) {
     return;
   }
   const data = objectFromForm(form);
-  const type = ['estimate', 'invoice', 'other'].includes(data.type) ? data.type : 'other';
+  const type = ['estimate', 'invoice', 'contract', 'other'].includes(data.type) ? data.type : 'other';
   const reader = new FileReader();
   reader.onload = () => {
     const number = (data.number || '').trim();
-    const kindLabel = type === 'invoice' ? 'Invoice' : (type === 'estimate' ? 'Estimate' : 'Document');
+    const kindLabel = type === 'invoice' ? 'Invoice' : (type === 'contract' ? 'Contract' : (type === 'estimate' ? 'Estimate' : 'Document'));
     const payload = {
       id: uid('DOC'),
       type,

@@ -85,6 +85,20 @@ export const DEFAULT_INVOICE_TERMS = [
   'Make checks payable to Harvest Renovation. For ACH, Zelle, or card options, contact us.'
 ].join('\n');
 
+export const DEFAULT_CONTRACT_TERMS = [
+  '1. This agreement is between Harvest Renovation ("Contractor") and the client ("Owner") named above.',
+  '2. The Contractor agrees to perform the work described in the Scope of Work in a workmanlike manner, in accordance with applicable building codes and industry standards.',
+  '3. The contract amount and payment schedule are as stated above. The Owner agrees to make payments according to the schedule.',
+  '4. A deposit is due upon signing this agreement to secure the project on the schedule and cover initial material costs. Work begins once the deposit is received.',
+  '5. Any changes to the agreed-upon scope will be documented in a written Change Order and may result in a price adjustment.',
+  '6. The Owner is responsible for obtaining any HOA approvals unless explicitly included in the scope. The Contractor will obtain city permits if included in the scope.',
+  '7. Materials or fixtures supplied by the Owner are at the Owner\u2019s risk; the Contractor is not responsible for defects, delays, or breakage of Owner-supplied items.',
+  '8. Warranty: 1 year on workmanship from date of substantial completion. Manufacturer warranties apply to materials.',
+  '9. Either party may terminate this agreement in writing. The Owner is responsible for work completed and materials purchased up to the date of termination.',
+  '10. Balances 30+ days past due accrue 1.5% monthly interest.',
+  '11. This agreement constitutes the entire understanding between the parties. No oral modifications are binding.'
+].join('\n');
+
 // HubSpot-style deal pipeline stages (order = left→right on the board).
 export const PIPELINE_STAGES = ['New Lead', 'Contacted', 'Qualified', 'Estimate Scheduled', 'Estimate Completed', 'Proposal Sent', 'Won', 'Lost'];
 
@@ -106,6 +120,7 @@ export const seedStore = {
   reservedNumbers: [],
   changeOrders: [],
   receipts: [],
+  contracts: [],
   bugReports: [],
   tips: [],
   trash: []
@@ -135,6 +150,7 @@ export const collectionLabels = {
   documents: 'Document',
   changeOrders: 'Change Order',
   receipts: 'Receipt',
+  contracts: 'Contract',
   bugReports: 'Bug report'
 };
 
@@ -253,15 +269,16 @@ export function isDuplicateNumber(collection, field, number, currentId) {
 export function numberInUse(type, number, currentId = '') {
   const target = String(number || '').trim().toLowerCase();
   if (!target) return false;
-  const collection = type === 'invoice' ? 'invoices' : 'estimates';
-  const field = type === 'invoice' ? 'invoiceNumber' : 'estimateNumber';
+  const collection = type === 'invoice' ? 'invoices' : type === 'contract' ? 'contracts' : 'estimates';
+  const field = type === 'invoice' ? 'invoiceNumber' : type === 'contract' ? 'contractNumber' : 'estimateNumber';
   const inRecords = (state.store[collection] || []).some(row => row.id !== currentId && String(row[field] || '').trim().toLowerCase() === target);
   // Only uploaded documents count; generated documents mirror an existing record.
   const inUploads = (state.store.documents || []).some(doc => doc.uploaded && doc.type === type && String(doc.number || '').trim().toLowerCase() === target);
   const inReserved = (state.store.reservedNumbers || []).some(row => row.type === type && String(row.number || '').trim().toLowerCase() === target);
   const inChangeOrders = (state.store.changeOrders || []).some(c => String(c.changeOrderNumber || '').trim().toLowerCase() === target);
   const inReceipts = (state.store.receipts || []).some(r => String(r.receiptNumber || '').trim().toLowerCase() === target);
-  return inRecords || inUploads || inReserved || inChangeOrders || inReceipts;
+  const inContracts = (state.store.contracts || []).some(c => String(c.contractNumber || '').trim().toLowerCase() === target);
+  return inRecords || inUploads || inReserved || inChangeOrders || inReceipts || inContracts;
 }
 
 export function buildMailto(to, subject, body) {
@@ -429,5 +446,24 @@ export function migrateReceipt(record) {
   if (r.balanceRemaining == null) r.balanceRemaining = 0;
   if (r.notes == null) r.notes = '';
   if (r.issuedBy == null) r.issuedBy = '';
+  return r;
+}
+
+// Backwards-compatibility defaults for contract records.
+export function migrateContract(record) {
+  if (!record || typeof record !== 'object') return record;
+  const r = { ...record };
+  if (!Array.isArray(r.paymentSchedule)) r.paymentSchedule = [];
+  if (r.status == null) r.status = 'Draft';
+  if (r.sentAt == null) r.sentAt = '';
+  if (r.signedAt == null) r.signedAt = '';
+  if (r.signedBy == null) r.signedBy = '';
+  if (r.contractorSignedAt == null) r.contractorSignedAt = '';
+  if (r.terms == null) r.terms = DEFAULT_CONTRACT_TERMS;
+  if (r.depositPercent == null) r.depositPercent = 30;
+  if (r.linkedEstimateId == null) r.linkedEstimateId = '';
+  if (r.owner == null) r.owner = '';
+  if (r.scope == null) r.scope = '';
+  if (r.notes == null) r.notes = '';
   return r;
 }

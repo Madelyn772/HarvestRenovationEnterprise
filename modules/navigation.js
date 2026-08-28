@@ -18,6 +18,7 @@ import { handleLogout } from './auth.js';
 import { sendEstimate, sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
 import { renderReceipts, handlePaymentDialogSubmit } from './receipts.js';
+import { saveContractFromForm, handleContractSave, hydrateContractForm, renderContracts, addPaymentScheduleRow, recomputeContractTotals, fillContractFromEstimate } from './contracts.js';
 
 export function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
@@ -160,6 +161,40 @@ export function bindAppUi() {
   if (clearCoBtn) clearCoBtn.addEventListener('click', () => { el.changeOrderForm.reset(); const w = document.getElementById('changeOrderItems'); if (w) w.innerHTML = ''; });
   if (el.recordPaymentForm) el.recordPaymentForm.addEventListener('submit', handlePaymentDialogSubmit);
 
+  // Contract bindings.
+  if (el.contractForm) el.contractForm.addEventListener('submit', handleContractSave);
+  const contractNumInput = document.getElementById('contractNumber');
+  if (contractNumInput) contractNumInput.addEventListener('focus', () => { if (!contractNumInput.value) contractNumInput.value = autoNumber('CON'); });
+  const addContractPayBtn = document.getElementById('addContractPayment');
+  if (addContractPayBtn) addContractPayBtn.addEventListener('click', () => addPaymentScheduleRow());
+  if (el.printContract) el.printContract.addEventListener('click', () => {
+    const saved = saveContractFromForm();
+    if (!saved) return;
+    import('./pdf.js').then(({ printContract: pc }) => {
+      pc(saved);
+      showToast(`Contract ${saved.contractNumber || saved.id} saved & sent to print.`, 'success');
+    });
+  });
+  const contractDepositSel = document.getElementById('contractDepositPercent');
+  if (contractDepositSel) contractDepositSel.addEventListener('change', () => recomputeContractTotals());
+  if (el.contractForm) {
+    el.contractForm.addEventListener('input', debounce(() => recomputeContractTotals(), 150));
+    el.contractForm.addEventListener('change', () => recomputeContractTotals());
+  }
+  const contractLinkedEst = document.getElementById('contractLinkedEstimate');
+  if (contractLinkedEst) contractLinkedEst.addEventListener('change', e => { if (e.target.value) fillContractFromEstimate(e.target.value); });
+  const clearContractBtn = document.getElementById('clearContractForm');
+  if (clearContractBtn && el.contractForm) clearContractBtn.addEventListener('click', () => {
+    el.contractForm.reset();
+    const payWrap = document.getElementById('contractPayments');
+    if (payWrap) payWrap.innerHTML = '';
+    hydrateContractForm();
+  });
+  el.contractClientSelect?.addEventListener('change', e => {
+    const client = e.target.value && e.target.value !== '__new__' ? findClient(e.target.value) : null;
+    if (client) autofillClientFields(el.contractForm, client, { billingEmail: 'email', billingAddress: 'address', billingPhone: 'phone' });
+  });
+
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
   el.jobClientSelect?.addEventListener('change', e => autofillClientFields(el.jobForm, findClient(e.target.value), { client: 'name' }));
@@ -277,6 +312,7 @@ export function setView(view) {
     crm: ['CRM', 'Contacts, deal pipeline, and relationship history.'],
     estimating: ['Estimating', 'Create proposal-ready estimates and PDF exports.'],
     invoicing: ['Invoicing', 'Create, send, and track invoices with e-signature.'],
+    contracts: ['Contracts', 'Create, send, and track signed agreements.'],
     operations: ['Operations', 'Run projects, schedule visits, and keep notes organized.'],
     documents: ['Documents', 'Saved PDF estimates and invoices, ready to reopen, print, or download.'],
     marketing: ['KPIs', 'Track traffic, ad spend, campaign performance, and lead sources.'],
@@ -319,6 +355,11 @@ export function renderCurrentView() {
       renderInvoiceBalanceCallout();
       renderInvoices();
       renderReceipts();
+    },
+    contracts: () => {
+      hydrateContractForm();
+      recomputeContractTotals();
+      renderContracts();
     },
     operations: () => {
       renderJobs();
@@ -393,6 +434,7 @@ export function hydrateForms() {
   el.companyCalendarForm.company_calendar_embed_url.value = state.portalSettings.company_calendar_embed_url || '';
   if (el.estimateForm.user && !el.estimateForm.user.value) el.estimateForm.user.value = fullName;
   if (el.estimateForm.date) el.estimateForm.date.max = todayInputValue();
+  if (el.contractForm && el.contractForm.user && !el.contractForm.user.value) el.contractForm.user.value = fullName;
   applyAdminViewMode();
   populateTemplateSelect();
   populateClientSelects();
@@ -419,7 +461,8 @@ export function populateClientSelects() {
     jobClientSelect: baseOptions,
     calendarClientSelect: baseOptions,
     invoiceClientSelect: baseOptions,
-    noteClientSelect: baseOptions
+    noteClientSelect: baseOptions,
+    contractClientSelect: baseOptions
   };
   Object.entries(optionMap).forEach(([id, html]) => {
     if (!el[id]) return;
@@ -437,7 +480,10 @@ export function updateNewClientFieldsVisibility() {
 }
 
 export function populateEstimateSelects() {
-  el.relatedEstimate.innerHTML = ['<option value="">None</option>'].concat(state.store.estimates.map(item => `<option value="${item.id}">${escapeHtml(item.estimateNumber || item.id)} · ${escapeHtml(item.user || item.clientName || 'Client')}</option>`)).join('');
+  const estOptions = ['<option value="">None</option>'].concat(state.store.estimates.map(item => `<option value="${item.id}">${escapeHtml(item.estimateNumber || item.id)} · ${escapeHtml(item.user || item.clientName || 'Client')}</option>`)).join('');
+  el.relatedEstimate.innerHTML = estOptions;
+  const contractEst = document.getElementById('contractLinkedEstimate');
+  if (contractEst) contractEst.innerHTML = estOptions;
 }
 
 export function renderAll() {
@@ -454,6 +500,7 @@ export function renderAll() {
   renderInvoices();
   renderNotes();
   renderReceipts();
+  renderContracts();
   renderCampaigns();
   renderScorecard();
   renderJobsWonChart();
@@ -485,6 +532,7 @@ export function renderNavCounts() {
   const counts = {
     crm: openLeads,
     estimating: state.store.estimates.length,
+    contracts: state.store.contracts.length,
     operations: activeJobs,
     documents: state.store.documents.length,
     feedback: isAdmin() ? openBugReportCount() : 0,

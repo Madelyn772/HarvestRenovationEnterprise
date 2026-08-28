@@ -117,6 +117,7 @@
         <button class="nav-btn" data-view="crm">CRM<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="estimating">Estimating<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="invoicing">Invoicing<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="contracts">Contracts<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="operations">Operations<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="documents">Documents<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="marketing">KPIs</button>
@@ -619,6 +620,79 @@
         </dialog>
       </section>
 
+      <!-- ── Contracts view ── -->
+      <section class="view" id="contractsView">
+        <div class="section-head-row"><div><p class="eyebrow">Contracts</p><h3>Create, send, and track signed agreements</h3></div></div>
+        <div class="grid two-strong">
+          <article class="card">
+            <div class="card-head"><div><p class="eyebrow">Contract Builder</p><h3>Create agreement</h3></div></div>
+            <form id="contractForm" class="form-grid form-doc">
+              <input type="hidden" name="contractId" />
+
+              <div class="form-section full">
+              <div class="form-section-head">Client &amp; Project</div>
+              <div class="form-section-body">
+              <label class="full"><span>Client</span><select name="clientId" id="contractClientSelect" required></select></label>
+              <label><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
+              <label><span>Contract number</span><input name="contractNumber" id="contractNumber" /></label>
+              <label><span>Date</span><input name="date" id="contractDate" type="date" /></label>
+              <label><span>Prepared by</span><input name="user" /></label>
+              <label><span>Status</span><select name="status"><option>Draft</option><option>Ready for Signature</option><option>Sent</option><option>Signed</option></select></label>
+              <label class="full"><span>Billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP" /></label>
+              <label><span>Client phone</span><input name="billingPhone" type="tel" /></label>
+              <label><span>Client email</span><input name="billingEmail" type="email" /></label>
+              </div>
+              </div>
+
+              <div class="form-section full">
+              <div class="form-section-head">Contract Amount &amp; Deposit</div>
+              <div class="form-section-body">
+              <label class="full"><span>Contract amount ($)</span><input name="contractAmount" id="contractAmount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+              <label><span>Deposit %</span>
+                <select name="depositPercent" id="contractDepositPercent">
+                  <option value="0">No deposit</option>
+                  <option value="10">10%</option>
+                  <option value="20">20%</option>
+                  <option value="30" selected>30%</option>
+                  <option value="40">40%</option>
+                  <option value="50">50%</option>
+                </select>
+              </label>
+              </div>
+              </div>
+
+              <div class="contract-payments-shell full">
+                <div class="split-head"><strong>Payment Schedule</strong><button type="button" class="ghost-btn" id="addContractPayment">+ Add milestone</button></div>
+                <div class="payment-schedule-head">
+                  <span>Milestone</span><span>%</span><span>When due</span><span>Amount</span><span></span>
+                </div>
+                <div id="contractPayments" class="stack compact-stack"></div>
+              </div>
+
+              <div class="form-section full">
+              <div class="form-section-head">Scope &amp; Terms</div>
+              <div class="form-section-body">
+              <label class="full"><span>Scope of work</span><textarea name="scope" rows="4" placeholder="Describe the work to be performed under this contract"></textarea></label>
+              <label class="full"><span>Terms &amp; conditions (prints on contract)</span><textarea name="terms" rows="6" id="contractTerms"></textarea></label>
+              <label class="full"><span>Internal notes (not printed)</span><textarea name="notes" rows="2" placeholder="Optional internal notes"></textarea></label>
+              </div>
+              </div>
+
+              <div class="form-actions full">
+                <button type="submit" class="primary-btn">Save Contract</button>
+                <button type="button" class="ghost-btn" id="printContract">Print / PDF</button>
+                <button type="button" class="ghost-btn" id="clearContractForm">Clear</button>
+              </div>
+            </form>
+          </article>
+          <article class="card sticky-card">
+            <div class="card-head"><div><p class="eyebrow">Contract Summary</p><h3>Client-ready preview</h3></div></div>
+            <div id="contractSummary" class="estimate-summary"></div>
+          </article>
+        </div>
+        <article class="card"><div class="card-head"><div><p class="eyebrow">Saved Contracts</p><h3>Contract library</h3></div></div><div id="contractList" class="stack"></div></article>
+      </section>
+
       <section class="view" id="operationsView">
         <div class="section-head-row"><div><p class="eyebrow">Operations</p><h3>Projects, calendar events, and client documents</h3></div></div>
         <div class="grid two">
@@ -678,7 +752,7 @@
           <div id="uploadPanel" class="hidden">
             <p class="muted tiny">Upload a PDF or photo of a document you already have. Files are stored in this browser, so keep each one small (2&nbsp;MB max). The number you enter is also reserved so it can&rsquo;t be reused.</p>
             <form id="uploadDocForm" class="form-grid">
-              <label><span>Type</span><select name="type"><option value="estimate">Estimate</option><option value="invoice">Invoice</option><option value="other">Other</option></select></label>
+              <label><span>Type</span><select name="type"><option value="estimate">Estimate</option><option value="invoice">Invoice</option><option value="contract">Contract</option><option value="other">Other</option></select></label>
               <label><span>Document number</span><input name="number" placeholder="e.g. EST123456" /></label>
               <label><span>Client name</span><input name="clientName" /></label>
               <label><span>Date</span><input name="date" type="date" /></label>
@@ -707,6 +781,7 @@
               <button class="chip-btn active" data-doc-filter="all">All</button>
               <button class="chip-btn" data-doc-filter="estimate">Estimates</button>
               <button class="chip-btn" data-doc-filter="invoice">Invoices</button>
+              <button class="chip-btn" data-doc-filter="contract">Contracts</button>
             </div>
           </div>
           <p class="muted tiny">Generated documents are saved automatically whenever you print/export an estimate or invoice. Uploaded documents appear here too. Open to view or print to PDF, download an offline copy, or move to Trash.</p>
