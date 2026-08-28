@@ -3662,6 +3662,16 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .invoice-row-actions { flex-basis: 100%; justify-content: flex-start; }
 }
 
+/* Clickable phone/email contact links (call & email). */
+.contact-link {
+  color: var(--gold-2, #caa05a);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color .15s ease, color .15s ease;
+}
+.contact-link:hover { border-bottom-color: currentColor; }
+.theme-light .main .contact-link { color: #b07d2a; }
+
 
 
 

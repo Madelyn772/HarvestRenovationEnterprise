@@ -5,6 +5,18 @@ import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { applyEstimateTemplate, renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
 import { promptDeclineReason } from './documenso.js';
 
+// Clickable contact links: tel: opens the dialer/call prompt, mailto: the email app.
+function phoneLink(phone) {
+  const p = (phone || '').trim();
+  if (!p) return '—';
+  return `<a class="contact-link" href="tel:${p.replace(/[^\d+]/g, '')}">${escapeHtml(p)}</a>`;
+}
+function emailLink(email) {
+  const e = (email || '').trim();
+  if (!e) return '—';
+  return `<a class="contact-link" href="mailto:${escapeHtml(e)}">${escapeHtml(e)}</a>`;
+}
+
 // Ask for (and store) the reason a deal was lost — reuses the estimate
 // decline-reason modal so CRM losses feed the same "why we lost" data.
 function captureLostReason(lead) {
@@ -82,8 +94,8 @@ export function renderClientDetail() {
         ${stats.map(([label, value]) => `<div class="client-stat"><span>${escapeHtml(label)}</span><strong>${integer.format(value)}</strong></div>`).join('')}
       </div>
       <div class="client-detail-rows">
-        <div class="summary-row"><span>Phone</span><strong>${escapeHtml(client.phone || '—')}</strong></div>
-        <div class="summary-row"><span>Email</span><strong>${escapeHtml(client.email || '—')}</strong></div>
+        <div class="summary-row"><span>Phone</span><strong>${phoneLink(client.phone)}</strong></div>
+        <div class="summary-row"><span>Email</span><strong>${emailLink(client.email)}</strong></div>
         <div class="summary-row"><span>Location</span><strong>${escapeHtml(location)}</strong></div>
         <div class="summary-row"><span>Source</span><strong>${escapeHtml(client.source || '—')}</strong></div>
         <div class="summary-row"><span>Tags</span><strong>${escapeHtml(client.tags || '—')}</strong></div>
@@ -461,8 +473,8 @@ export function renderContactsTable() {
     const lastIso = linked.map(l => l.lastContactedAt || l.stageChangedAt).filter(Boolean).sort().slice(-1)[0] || '';
     return `<tr>
       <td data-label="Name"><button type="button" class="link-card contact-select" data-client-id="${c.id}">${escapeHtml(c.name || 'Unnamed')}</button></td>
-      <td data-label="Phone">${escapeHtml(c.phone || '—')}</td>
-      <td data-label="Email">${escapeHtml(c.email || '—')}</td>
+      <td data-label="Phone">${phoneLink(c.phone)}</td>
+      <td data-label="Email">${emailLink(c.email)}</td>
       <td data-label="Deals">${linked.length}</td>
       <td data-label="Last contact">${lastIso ? escapeHtml(formatDate(lastIso)) : '—'}</td>
       <td data-label="Actions"><button type="button" class="ghost-btn contact-edit" data-client-id="${c.id}">Edit</button>${deleteBtn('clients', c.id)}</td>
