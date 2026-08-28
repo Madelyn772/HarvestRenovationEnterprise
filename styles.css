@@ -3580,57 +3580,81 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .isum-deposit-control .idc-pct {
   display: inline-flex;
   align-items: center;
-  gap: .1rem;
+  gap: .35rem;
   color: #7a7060;
 }
+.isum-deposit-control .idc-pct select,
 .isum-deposit-control .idc-pct input {
-  width: 3.4rem;
-  padding: .3rem .4rem;
-  text-align: right;
+  padding: .32rem .5rem;
   border: 1px solid #ddd9cf;
   border-radius: 8px;
   background: #faf9f6;
+  color: #1f1a12;
+  font-size: .82rem;
 }
+.isum-deposit-control .idc-pct input { width: 3.6rem; text-align: right; }
+.isum-deposit-control .idc-pct input.is-hidden { display: none; }
 .isum-deposit-control .idc-amount { margin-left: auto; color: #1f1a12; font-weight: 700; }
 .isum-deposit-control .idc-note { flex-basis: 100%; font-style: normal; color: #9a917e; font-size: .75rem; text-align: right; }
 .theme-dark .isum-deposit-control { border-top-color: #3a342a; }
 .theme-dark .isum-deposit-control .idc-label,
 .theme-dark .isum-deposit-control .idc-pct { color: #9a8f78; }
+.theme-dark .isum-deposit-control .idc-pct select,
 .theme-dark .isum-deposit-control .idc-pct input { background: #181410; border-color: #3a342a; color: #e9d8b6; }
 .theme-dark .isum-deposit-control .idc-amount { color: #f0e2c4; }
 
-/* ── Compact invoice library rows ── */
-#invoiceList { display: flex; flex-direction: column; }
+/* ── Saved invoices: corporate card rows matching the page ── */
+#invoiceList { display: flex; flex-direction: column; gap: .65rem; }
 .invoice-row {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: .6rem .25rem;
-  border-bottom: 1px solid var(--line);
+  padding: .95rem 1.1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid rgba(202, 160, 90, .55);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .03);
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-.invoice-row:last-child { border-bottom: none; }
+.invoice-row:hover {
+  border-color: var(--line-strong);
+  border-left-color: var(--gold, #caa05a);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .18);
+}
 .invoice-row-info { flex: 1; min-width: 0; }
-.invoice-row-top { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-.invoice-row-top strong { font-size: .95rem; }
-.invoice-row-info p { margin: .15rem 0 0; }
+.invoice-row-top { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+.invoice-row-top strong { font-size: 1rem; letter-spacing: -.01em; }
+.invoice-row-info p { margin: .2rem 0 0; }
 .invoice-row-amount {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: .1rem;
+  gap: .12rem;
   white-space: nowrap;
 }
-.invoice-row-amount strong { font-size: 1rem; }
-.invoice-row-amount .invoice-bal { font-size: .72rem; color: #b07d2a; }
-.invoice-row-actions { display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; justify-content: flex-end; }
+.invoice-row-amount strong { font-size: 1.05rem; }
+.invoice-row-amount .invoice-bal { font-size: .72rem; font-weight: 700; color: #caa05a; }
+.invoice-row-actions { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
 .invoice-row-actions .ghost-btn,
 .invoice-row-actions .danger-btn {
-  padding: .35rem .6rem;
+  padding: .4rem .7rem;
   font-size: .78rem;
   border-radius: 8px;
 }
-.invoice-row .status-pill { font-size: .62rem; padding: .12rem .5rem; }
-.theme-dark .invoice-row-amount .invoice-bal { color: #e0b878; }
+.invoice-row .status-pill { font-size: .62rem; padding: .14rem .55rem; }
+
+.theme-light .main .invoice-row {
+  background: #ffffff;
+  border-color: rgba(31, 26, 20, .10);
+  border-left-color: rgba(202, 160, 90, .6);
+  box-shadow: 0 1px 3px rgba(31, 26, 20, .05);
+}
+.theme-light .main .invoice-row:hover {
+  border-color: rgba(31, 26, 20, .16);
+  border-left-color: #caa05a;
+  box-shadow: 0 10px 26px rgba(31, 26, 20, .08);
+}
+.theme-light .main .invoice-row-amount .invoice-bal { color: #b07d2a; }
 
 @media (max-width: 720px) {
   .invoice-row { flex-wrap: wrap; align-items: flex-start; }

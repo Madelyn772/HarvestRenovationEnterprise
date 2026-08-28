@@ -248,6 +248,40 @@ export function addPaymentRow(payment = {}) {
   renderInvoiceBalanceCallout();
 }
 
+// Read the deposit % from the select/custom control and sync the hidden field.
+export function readInvoiceDeposit() {
+  const sel = document.getElementById('invoiceDepositSelect');
+  const custom = document.getElementById('invoiceDepositCustom');
+  const hidden = document.getElementById('invoiceDepositPercent');
+  if (!hidden) return 0;
+  let pct;
+  if (sel && sel.value === 'custom') {
+    custom?.classList.remove('is-hidden');
+    pct = num(custom?.value);
+  } else {
+    custom?.classList.add('is-hidden');
+    pct = num(sel ? sel.value : hidden.value);
+  }
+  hidden.value = pct;
+  return pct;
+}
+
+// Set the deposit control from a numeric percent (selects a preset or Custom).
+export function setInvoiceDeposit(pct) {
+  const sel = document.getElementById('invoiceDepositSelect');
+  const custom = document.getElementById('invoiceDepositCustom');
+  const hidden = document.getElementById('invoiceDepositPercent');
+  if (!hidden) return;
+  const p = num(pct);
+  hidden.value = p;
+  const preset = ['0', '10', '20', '30', '40', '50'].includes(String(p)) ? String(p) : 'custom';
+  if (sel) sel.value = preset;
+  if (custom) {
+    if (preset === 'custom') { custom.classList.remove('is-hidden'); custom.value = p || ''; }
+    else { custom.classList.add('is-hidden'); custom.value = ''; }
+  }
+}
+
 export function renderInvoiceBalanceCallout() {
   const items = readInvoiceItemsFromDom();
   const subtotal = items.reduce((s, it) => s + num(it.amount), 0);
@@ -274,7 +308,7 @@ export function renderInvoiceBalanceCallout() {
       <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>`;
   }
   // Deposit control (persistent element under Balance Due): % of the total.
-  const depPct = num(document.getElementById('invoiceDepositPercent')?.value);
+  const depPct = readInvoiceDeposit();
   const depAmtEl = document.querySelector('[data-deposit-amount]');
   if (depAmtEl) depAmtEl.textContent = money.format(total * (depPct / 100));
   const depNoteEl = document.querySelector('[data-deposit-note]');
@@ -403,8 +437,7 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   const taxEl = document.getElementById('invoiceTaxPercent');
   if (feesEl) feesEl.value = num(estimate.permitsFees) || '';
   if (taxEl) taxEl.value = num(estimate.taxPercent) || '';
-  const depEl = document.getElementById('invoiceDepositPercent');
-  if (depEl) depEl.value = num(estimate.depositPercent) || 0;
+  setInvoiceDeposit(num(estimate.depositPercent) || 0);
   renderInvoiceCardViews();
   renderInvoiceBalanceCallout();
   if (switchView) {
