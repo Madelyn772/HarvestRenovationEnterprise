@@ -507,6 +507,8 @@ function leadDateToIso(dateStr) {
 export function openQuickYelpDialog() {
   el.quickYelpForm?.reset();
   if (el.quickAddCustomSourceWrap) el.quickAddCustomSourceWrap.classList.add('is-hidden');
+  const qd = document.getElementById('quickLeadDate');
+  if (qd) { qd.max = todayInputValue(); qd.value = todayInputValue(); }
   el.quickYelpDialog?.showModal();
 }
 
@@ -520,7 +522,8 @@ export async function handleQuickAddSave(event) {
     source = (data.customSource || '').trim();
     if (!source) { showToast('Enter a custom source name.', 'error'); return; }
   }
-  const now = new Date().toISOString();
+  if (data.leadDate && data.leadDate > todayInputValue()) { showToast('Lead date can’t be in the future. Choose today or a past date.', 'error'); return; }
+  const now = leadDateToIso(data.leadDate);
   const contactId = findOrCreateContact({ name: data.clientName, phone: data.phone, email: '', source });
   state.store.leads.unshift({
     id: uid('L'),
