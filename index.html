@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-44" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-45" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -256,10 +256,6 @@
 
       <section class="view" id="crmView">
         <div class="section-head-row crm-head-row">
-          <div>
-            <p class="eyebrow">CRM Workspace</p>
-            <h3>Contacts &amp; Deal Pipeline</h3>
-          </div>
           <div class="crm-head-actions">
             <div class="crm-search-wrap">
               <input id="clientSearch" class="search-input" placeholder="Search contacts &amp; deals" />
@@ -764,7 +760,6 @@
 
       <!-- ── Contracts view ── -->
       <section class="view" id="contractsView">
-        <div class="section-head-row"><div><p class="eyebrow">Contracts</p><h3>Create, send, and track signed agreements</h3></div></div>
         <div class="wip-banner">🚧 <strong>Under construction.</strong> We&rsquo;re still building the Contracts feature — some things may not work yet.</div>
         <div class="grid two-strong">
           <article class="card doc-editor-card">
@@ -861,7 +856,6 @@
       </section>
 
       <section class="view" id="operationsView">
-        <div class="section-head-row"><div><p class="eyebrow">Operations</p><h3>Projects, calendar events, and client documents</h3></div></div>
         <div class="wip-banner">🚧 <strong>Under construction.</strong> We&rsquo;re still building the Operations feature — some things may not work yet.</div>
         <div class="grid two">
           <article class="card">
@@ -911,7 +905,6 @@
       </section>
 
       <section class="view" id="documentsView">
-        <div class="section-head-row"><div><p class="eyebrow">Document Vault</p><h3>Saved PDF estimates and invoices</h3></div></div>
         <article class="card">
           <div class="card-head split-head">
             <div><p class="eyebrow">Upload</p><h3>Add a past estimate or invoice</h3></div>
@@ -958,7 +951,6 @@
       </section>
 
       <section class="view" id="marketingView">
-        <div class="section-head-row"><div><p class="eyebrow">Marketing Intelligence</p><h3>Track ad performance, website traffic, landing page visibility, and lead sources</h3></div></div>
         <details class="kpi-info-box">
           <summary>How to read this page — click to expand</summary>
           <div class="kpi-info-content">
@@ -1092,7 +1084,6 @@
       </section>
 
       <section class="view" id="calendarsView">
-        <div class="section-head-row"><div><p class="eyebrow">Scheduling</p><h3>Company calendar, team visibility, and next-step planning</h3></div></div>
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Company Calendar</p><h3>Shared schedule</h3></div><span class="badge" id="companyCalendarBadge">Loading</span></div>
@@ -1107,7 +1098,6 @@
       </section>
 
       <section class="view" id="teamView">
-        <div class="section-head-row"><div><p class="eyebrow">Team Directory</p><h3>People, live status, and internal readiness</h3></div></div>
         <div class="grid two-strong">
           <article class="card team-directory-card"><div class="card-head split-head"><div><p class="eyebrow">Employees</p><h3>Active team directory and live status</h3></div><input id="employeeSearch" class="search-input" placeholder="Search employees" /></div><div id="employeePresenceSummary" class="presence-summary-grid"></div><div id="employeeList" class="stack employee-stack"></div></article>
           <div class="stack section-side-stack">
@@ -1118,7 +1108,6 @@
       </section>
 
       <section class="view" id="feedbackView">
-        <div class="section-head-row"><div><p class="eyebrow">Service Desk</p><h3>Report an issue or request a change</h3></div></div>
         <article class="card">
             <div class="card-head"><div><p class="eyebrow">New report</p><h3>Tell us what's wrong</h3></div></div>
             <form id="feedbackForm" class="form-grid">
@@ -1200,7 +1189,6 @@
       </section>
 
       <section class="view" id="settingsView">
-        <div class="section-head-row"><div><p class="eyebrow">Settings</p><h3>Profile, password, and shared calendar configuration</h3></div></div>
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Your Profile</p><h3>Employee profile</h3></div></div>
@@ -1269,7 +1257,6 @@
       </section>
 
       <section class="view admin-only hidden" id="adminView">
-        <div class="section-head-row"><div><p class="eyebrow">Admin Controls</p><h3>Access review and controlled onboarding</h3></div></div>
         <div class="grid two">
           <article class="card"><div class="card-head"><div><p class="eyebrow">Pending Accounts</p><h3>Approve or deny requests</h3></div></div><div id="pendingList" class="stack"></div></article>
           <article class="card">
@@ -1286,7 +1273,6 @@
       </section>
 
       <section class="view" id="trashView">
-        <div class="section-head-row"><div><p class="eyebrow">Trash</p><h3>Recently deleted items</h3></div></div>
         <article class="card">
           <div class="card-head split-head">
             <div><p class="eyebrow">Recycle Bin</p><h3>Restore or remove deleted records</h3></div>
