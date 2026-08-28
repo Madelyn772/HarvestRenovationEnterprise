@@ -284,9 +284,22 @@ export function bindAppUi() {
   }
   // Service Desk filters.
   const bugFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity'], ['bugFilterStatus', 'bugStatus']];
+  const updateBugFilterCount = () => {
+    const badge = document.getElementById('bugFilterCount');
+    if (!badge) return;
+    const n = bugFilters.filter(([, key]) => state.filters[key]).length;
+    badge.textContent = n ? String(n) : '';
+    badge.classList.toggle('hidden', !n);
+  };
   bugFilters.forEach(([id, key]) => {
     const sel = document.getElementById(id);
-    if (sel) sel.addEventListener('change', () => { state.filters[key] = sel.value; renderBugReports(); });
+    if (sel) sel.addEventListener('change', () => { state.filters[key] = sel.value; updateBugFilterCount(); renderBugReports(); });
+  });
+  const bugFilterClear = document.getElementById('bugFilterClear');
+  if (bugFilterClear) bugFilterClear.addEventListener('click', () => {
+    bugFilters.forEach(([id, key]) => { const sel = document.getElementById(id); if (sel) sel.value = ''; state.filters[key] = ''; });
+    updateBugFilterCount();
+    renderBugReports();
   });
   const clearUploadBtn = document.getElementById('clearUploadDocForm');
   if (clearUploadBtn && el.uploadDocForm) clearUploadBtn.addEventListener('click', () => el.uploadDocForm.reset());

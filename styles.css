@@ -3729,11 +3729,44 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-light .main .wip-banner { background: #fbf3e4; color: #8a6520; border-color: #ecd9b3; border-left-color: #caa05a; }
 
 /* ── Service Desk: filter toolbar, ticket rows, comments ── */
+.bug-filter-menu { margin-bottom: .9rem; }
+.bug-filter-toggle {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  width: fit-content;
+  padding: .55rem .9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+  font-weight: 600;
+  font-size: .9rem;
+}
+.bug-filter-toggle::-webkit-details-marker { display: none; }
+.bug-filter-toggle svg { color: var(--muted); }
+.bug-filter-menu[open] .bug-filter-toggle { border-color: var(--line-strong); background: rgba(202,160,90,.08); }
+.bug-filter-toggle .filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  padding: 0 .3rem;
+  font-size: .68rem;
+  font-weight: 800;
+  color: #1a1610;
+  background: var(--gold, #caa05a);
+  border-radius: 999px;
+}
+.theme-light .main .bug-filter-toggle { background: #f6f3ec; border-color: rgba(31,26,20,.08); }
+
 .bug-filters {
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  margin-bottom: .9rem;
+  margin: .6rem 0 0;
   padding: .6rem .7rem;
   border: 1px solid var(--line);
   border-radius: 12px;
