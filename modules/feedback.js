@@ -89,13 +89,15 @@ export function renderBugReports() {
   const fArea = state.filters.bugArea || '';
   const fType = state.filters.bugType || '';
   const fSev = state.filters.bugSeverity || '';
+  const fStatus = state.filters.bugStatus || '';
   let reports = [...(state.store.bugReports || [])].sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
   reports = reports.filter(r =>
     (!fArea || (r.area || 'Other') === fArea) &&
     (!fType || (r.kind || 'Bug') === fType) &&
-    (!fSev || (r.severity || 'Medium') === fSev));
+    (!fSev || (r.severity || 'Medium') === fSev) &&
+    (!fStatus || (r.status || 'New') === fStatus));
   if (!reports.length) {
-    list.innerHTML = emptyHtml((fArea || fType || fSev) ? 'No reports match these filters.' : 'No reports yet. Use the form to submit one.');
+    list.innerHTML = emptyHtml((fArea || fType || fSev || fStatus) ? 'No reports match these filters.' : 'No reports yet. Use the form to submit one.');
     return;
   }
   const admin = isAdmin();

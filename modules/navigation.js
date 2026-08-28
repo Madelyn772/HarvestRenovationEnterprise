@@ -283,7 +283,7 @@ export function bindAppUi() {
     if (clearFeedback) clearFeedback.addEventListener('click', () => el.feedbackForm.reset());
   }
   // Service Desk filters.
-  const bugFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity']];
+  const bugFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity'], ['bugFilterStatus', 'bugStatus']];
   bugFilters.forEach(([id, key]) => {
     const sel = document.getElementById(id);
     if (sel) sel.addEventListener('change', () => { state.filters[key] = sel.value; renderBugReports(); });

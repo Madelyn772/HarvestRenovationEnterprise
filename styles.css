@@ -3732,6 +3732,10 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .bug-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .9rem; }
 .bug-filters select { flex: 1 1 auto; min-width: 8rem; }
 
+/* Reports spread across the screen as responsive cards. */
+#bugReportList { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; align-items: start; }
+@media (max-width: 560px) { #bugReportList { grid-template-columns: 1fr; } }
+
 .bug-card.has-unread { border-color: var(--gold, #caa05a); box-shadow: 0 0 0 1px rgba(202,160,90,.35); }
 .bug-new-reply {
   display: inline-block;
