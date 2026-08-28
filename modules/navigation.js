@@ -129,6 +129,10 @@ export function bindAppUi() {
   });
   const depositSel = document.getElementById('estimateDepositPercent');
   if (depositSel) depositSel.addEventListener('change', () => { updateDepositCustomVisibility(); recomputeEstimateTotals(); });
+  // Auto-capitalize flagged fields (data-autocap) for fast, tidy data entry.
+  document.addEventListener('input', e => {
+    if (e.target && e.target.dataset && e.target.dataset.autocap) autoCapitalizeField(e.target);
+  });
   const estDateInput = document.getElementById('estimateDate');
   if (estDateInput) estDateInput.addEventListener('change', () => syncEstimateValidUntil());
   const validUntilInput = document.getElementById('estimateValidUntil');
@@ -530,6 +534,21 @@ export function updateNewClientFieldsVisibility() {
   const fields = document.getElementById('estimateNewClientFields');
   if (!fields || !el.estimateClientSelect) return;
   fields.classList.toggle('is-hidden', el.estimateClientSelect.value !== '__new__');
+}
+
+// Auto-capitalize an input/textarea in place, preserving the caret.
+// data-autocap="words" title-cases each word; "sentence" caps sentence starts.
+export function autoCapitalizeField(field) {
+  const mode = field.dataset.autocap;
+  const v = field.value;
+  const next = mode === 'words'
+    ? v.replace(/(^|[\s\-/([])([a-z])/g, (m, pre, ch) => pre + ch.toUpperCase())
+    : v.replace(/(^\s*[a-z])|([.!?]\s+[a-z])/g, s => s.toUpperCase());
+  if (next === v) return;
+  const start = field.selectionStart;
+  const end = field.selectionEnd;
+  field.value = next;
+  if (start != null) { try { field.setSelectionRange(start, end); } catch {} }
 }
 
 export function populateEstimateSelects() {
