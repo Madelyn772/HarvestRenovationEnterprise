@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-14" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-15" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -117,8 +117,8 @@
         <button class="nav-btn" data-view="crm">CRM<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="estimating">Estimating<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="invoicing">Invoicing<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="contracts">Contracts<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="operations">Operations<span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="contracts">Contracts<span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="operations">Operations<span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="documents">Documents<span class="nav-count hidden"></span></button>
         <button class="nav-btn" data-view="marketing">KPIs</button>
         <button class="nav-btn" data-view="calendars">Calendars</button>
@@ -369,10 +369,10 @@
               <option>Yelp</option><option>Google</option><option>Referral</option><option>Website Form</option><option>Phone Call</option><option>Repeat Customer</option><option>Google Business Profile</option><option>Facebook</option><option>Other</option>
               <option value="__custom__">Other (custom)…</option>
             </select></label>
-            <label class="full is-hidden" id="quickAddCustomSourceWrap"><span>Custom source</span><input name="customSource" placeholder="e.g. Nextdoor, trade show" /></label>
             <label><span>Service</span><select name="service">
               <option>Kitchen Remodeling</option><option>Bathroom Remodeling</option><option>Whole Home Renovation</option><option>Commercial Build-Out</option><option>Tenant Improvements</option><option>Flooring</option><option>Painting</option><option>Drywall / Framing / Electrical</option><option>Roofing</option><option>Other</option>
             </select></label>
+            <label class="full is-hidden" id="quickAddCustomSourceWrap"><span>Custom source</span><input name="customSource" placeholder="e.g. Nextdoor, trade show" /></label>
             <label class="full"><span>Notes</span><textarea name="notes" rows="3"></textarea></label>
             <div class="form-actions full">
               <button type="submit" class="primary-btn">Add Lead</button>
@@ -715,6 +715,7 @@
       <!-- ── Contracts view ── -->
       <section class="view" id="contractsView">
         <div class="section-head-row"><div><p class="eyebrow">Contracts</p><h3>Create, send, and track signed agreements</h3></div></div>
+        <div class="wip-banner">🚧 <strong>Under construction.</strong> We&rsquo;re still building the Contracts feature — some things may not work yet.</div>
         <div class="grid two-strong">
           <article class="card doc-editor-card">
             <form id="contractForm" class="form-grid form-doc doc-editor">
@@ -811,6 +812,7 @@
 
       <section class="view" id="operationsView">
         <div class="section-head-row"><div><p class="eyebrow">Operations</p><h3>Projects, calendar events, and client documents</h3></div></div>
+        <div class="wip-banner">🚧 <strong>Under construction.</strong> We&rsquo;re still building the Operations feature — some things may not work yet.</div>
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Projects</p><h3>Track work in progress</h3></div></div>

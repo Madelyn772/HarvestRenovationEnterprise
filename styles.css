@@ -3688,6 +3688,34 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .recorded-payments .rec-pay-empty { margin: .2rem 0 0; }
 .theme-light .main .recorded-payments .rec-pay { border-top-color: rgba(31,26,20,.10); }
 
+/* Under-construction: nav badge + view banner. */
+.wip-badge {
+  display: inline-block;
+  margin-left: .4rem;
+  padding: .05rem .4rem;
+  font-size: .6rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #8a6520;
+  background: rgba(202, 160, 90, .18);
+  border: 1px solid rgba(202, 160, 90, .4);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.wip-banner {
+  margin: 0 0 1rem;
+  padding: .75rem 1rem;
+  border: 1px solid rgba(202, 160, 90, .4);
+  border-left: 3px solid #caa05a;
+  border-radius: 10px;
+  background: rgba(202, 160, 90, .10);
+  color: #8a6520;
+  font-size: .9rem;
+}
+.wip-banner strong { color: #8a6520; }
+.theme-light .main .wip-banner { background: #fbf3e4; color: #8a6520; border-color: #ecd9b3; border-left-color: #caa05a; }
+
 
 
 
