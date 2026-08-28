@@ -2970,14 +2970,15 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
    bar at top. Appended last to win the cascade.
    ============================================================ */
 
-/* The form canvas: light gray background with padding. */
+/* The form canvas: transparent so it sits flat on the white editor panel. */
 .form-doc {
-  background: #f4f1ea;
-  padding: 1.25rem;
-  border-radius: 14px;
-  gap: 1rem;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  gap: 1.1rem;
 }
-.theme-light .form-doc { background: #f0ede5; }
+.theme-light .form-doc { background: transparent; }
+.theme-dark .form-doc { background: transparent; }
 
 /* Section cards: white with subtle border and shadow. */
 .form-section,
@@ -3134,28 +3135,30 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
    bar at top, client/project cards, summary sidebar.
    ============================================================ */
 
-/* Sticky header bar with title, status pill, and primary actions. */
+/* Flat header bar: title, status pill, and primary actions on white. */
 .doc-editor-head {
   position: sticky;
   top: 0;
   z-index: 12;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
   background: #ffffff;
-  border: 1px solid #e2e0d8;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,.08);
-  padding: .85rem 1.1rem;
+  border: none;
+  border-bottom: 1px solid #ece8de;
+  border-radius: 0;
+  box-shadow: none;
+  padding: .1rem 0 1rem;
+  margin-bottom: .3rem;
 }
-.doc-editor-title { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
-.doc-title-line { display: flex; align-items: center; gap: .35rem; color: #1f1a12; }
-.doc-kind { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; }
-.doc-hash { font-size: 1.35rem; font-weight: 800; color: #b7ac96; }
+.doc-editor-title { display: flex; flex-direction: column; gap: .45rem; min-width: 0; }
+.doc-title-line { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; color: #1f1a12; }
+.doc-kind { font-size: 1.4rem; font-weight: 800; letter-spacing: -.01em; }
+.doc-hash { font-size: 1.4rem; font-weight: 800; color: #b7ac96; }
 .doc-number-input {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   font-weight: 800;
   color: #1f1a12;
   background: transparent !important;
@@ -3172,9 +3175,10 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   box-shadow: none !important;
 }
 .doc-edit-hint { color: #b7ac96; font-size: .9rem; }
+.doc-meta { margin: 0; color: #6f6552; font-size: .82rem; }
 
 /* Status pill: styled select. */
-.doc-status-wrap { display: inline-flex; }
+.doc-status-wrap { display: inline-flex; margin-left: .5rem; }
 .doc-status-pill {
   appearance: none;
   -webkit-appearance: none;
@@ -3264,12 +3268,16 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 }
 
 /* Dark theme. */
-.theme-dark .doc-editor-head,
+.theme-dark .doc-editor-head {
+  background: #211c15;
+  border-bottom-color: #3a342a;
+}
 .theme-dark .doc-card {
   background: #211c15;
   border-color: #3a342a;
   box-shadow: 0 1px 3px rgba(0,0,0,.2);
 }
+.theme-dark .doc-meta { color: #9a8f78; }
 .theme-dark .doc-card-head {
   background: #261f17;
   border-color: #3a342a;
@@ -3307,6 +3315,36 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .doc-editor-actions .primary-btn,
   .doc-editor-actions .gold-btn { flex: 1; }
 }
+
+/* ── Icons: buttons + card headers (masked SVG, inherit color) ── */
+.btn-ico { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; }
+.btn-ico::before {
+  content: "";
+  width: 15px; height: 15px; flex: none;
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+.btn-eye { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E"); }
+.btn-save { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z'/%3E%3Cpath d='M17 21v-8H7v8M7 3v5h8'/%3E%3C/svg%3E"); }
+.btn-send { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z'/%3E%3C/svg%3E"); }
+
+.doc-card-head { display: flex; align-items: center; gap: .5rem; }
+.doc-card-head::before {
+  content: "";
+  width: 14px; height: 14px; flex: none;
+  background-color: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat;
+  mask: var(--icon) center / contain no-repeat;
+}
+.doc-card-head { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6'/%3E%3C/svg%3E"); }
+.dh-client { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4 4-6 8-6s8 2 8 6'/%3E%3C/svg%3E"); }
+.dh-project { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3C/svg%3E"); }
+.dh-details { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6M8 13h8M8 17h6'/%3E%3C/svg%3E"); }
+.dh-scope { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 2v6h6M8 13h8M8 17h6'/%3E%3C/svg%3E"); }
+.dh-terms { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M12 2l8 4v6c0 5-4 8-8 10-4-2-8-5-8-10V6z'/%3E%3C/svg%3E"); }
+.dh-pricing { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M20 12l-8 8-9-9V3h8z'/%3E%3Ccircle cx='7.5' cy='7.5' r='1.2' fill='black'/%3E%3C/svg%3E"); }
+
 
 
 

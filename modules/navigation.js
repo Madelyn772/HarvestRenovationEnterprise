@@ -1,4 +1,4 @@
-import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber } from './state.js';
+import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
@@ -195,6 +195,15 @@ export function bindAppUi() {
     if (client) autofillClientFields(el.contractForm, client, { billingEmail: 'email', billingAddress: 'address', billingPhone: 'phone' });
   });
 
+  // Live document meta line (Created … • Prepared by …) on the doc editors.
+  ['estimateForm', 'invoiceForm', 'contractForm'].forEach(fid => {
+    const form = el[fid];
+    if (!form) return;
+    const update = () => updateDocMeta(form);
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+  });
+
   // Autofill linked-client details when a saved client is chosen in a form.
   el.leadClientSelect?.addEventListener('change', e => autofillClientFields(el.leadForm, findClient(e.target.value), { clientName: 'name', phone: 'phone', email: 'email', area: 'serviceArea' }));
   el.jobClientSelect?.addEventListener('change', e => autofillClientFields(el.jobForm, findClient(e.target.value), { client: 'name' }));
@@ -349,17 +358,20 @@ export function renderCurrentView() {
       recomputeEstimateTotals();
       renderEstimates();
       renderChangeOrders();
+      updateDocMeta(el.estimateForm);
     },
     invoicing: () => {
       hydrateInvoiceForm();
       renderInvoiceBalanceCallout();
       renderInvoices();
       renderReceipts();
+      updateDocMeta(el.invoiceForm);
     },
     contracts: () => {
       hydrateContractForm();
       recomputeContractTotals();
       renderContracts();
+      updateDocMeta(el.contractForm);
     },
     operations: () => {
       renderJobs();
@@ -484,6 +496,18 @@ export function populateEstimateSelects() {
   el.relatedEstimate.innerHTML = estOptions;
   const contractEst = document.getElementById('contractLinkedEstimate');
   if (contractEst) contractEst.innerHTML = estOptions;
+}
+
+// Populate the "Created … • Prepared by …" meta line on a doc editor.
+export function updateDocMeta(form) {
+  if (!form) return;
+  const meta = form.querySelector('[data-doc-meta]');
+  if (!meta) return;
+  const dateVal = form.querySelector('[name="date"]')?.value;
+  const user = form.querySelector('[name="user"]')?.value;
+  const parts = [dateVal ? `Created ${formatDate(dateVal)}` : 'New document'];
+  if (user) parts.push(`Prepared by ${user}`);
+  meta.textContent = parts.join(' • ');
 }
 
 export function renderAll() {

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-3" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-4" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -383,8 +383,7 @@
       <section class="view" id="estimatingView">
         <div class="section-head-row"><div><p class="eyebrow">Estimating Suite</p><h3>Build estimates, calculate totals, export to PDF, and prepare for signature workflows</h3></div></div>
         <div class="grid two-strong">
-          <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Estimate Builder</p><h3>Create proposal</h3></div></div>
+          <article class="card doc-editor-card">
             <form id="estimateForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="estimateId" />
 
@@ -395,20 +394,21 @@
                     <span class="doc-kind">Estimate</span>
                     <span class="doc-hash">#</span><input class="doc-number-input" name="estimateNumber" id="estimateNumber" placeholder="—" aria-label="Estimate number" />
                     <span class="doc-edit-hint" aria-hidden="true">✎</span>
+                    <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
                   </div>
-                  <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
+                  <p class="doc-meta"><span data-doc-meta>New estimate</span></p>
                 </div>
                 <div class="doc-editor-actions">
-                  <button type="button" class="ghost-btn" id="printEstimate">Preview PDF</button>
-                  <button type="submit" class="primary-btn">Save</button>
-                  <button type="button" class="gold-btn" id="sendEstimate">Send Estimate</button>
+                  <button type="button" class="ghost-btn btn-ico btn-eye" id="printEstimate">Preview PDF</button>
+                  <button type="submit" class="primary-btn btn-ico btn-save">Save</button>
+                  <button type="button" class="gold-btn btn-ico btn-send" id="sendEstimate">Send Estimate</button>
                 </div>
               </div>
 
               <!-- ── Info cards: Client + Project/Trade ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Client</div>
+                  <div class="doc-card-head dh-client">Client</div>
                   <div class="doc-card-body">
                     <label class="full"><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
                     <label class="full"><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
@@ -426,7 +426,7 @@
                   </div>
                 </section>
                 <section class="doc-card">
-                  <div class="doc-card-head">Project / Trade</div>
+                  <div class="doc-card-head dh-project">Project / Trade</div>
                   <div class="doc-card-body">
                     <label class="full"><span>Trade</span><input name="trade" placeholder="e.g. Kitchen Remodeling" /></label>
                     <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
@@ -454,14 +454,14 @@
               <!-- ── Scope + Terms cards ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Scope of Work</div>
+                  <div class="doc-card-head dh-scope">Scope of Work</div>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="scope" rows="5" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
                     <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
                   </div>
                 </section>
                 <section class="doc-card">
-                  <div class="doc-card-head">Terms &amp; Conditions</div>
+                  <div class="doc-card-head dh-terms">Terms &amp; Conditions</div>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="termsAndConditions" rows="8" id="estimateTerms"></textarea></label>
                     <label class="full inline-check"><input type="checkbox" name="signatureBlockEnabled" checked /><span>Print signature block on PDF</span></label>
@@ -472,7 +472,7 @@
               <!-- ── Pricing ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Pricing</div>
+                  <div class="doc-card-head dh-pricing">Pricing</div>
                   <div class="doc-card-body">
                     <label><span>Deposit</span>
                       <select name="depositPercent" id="estimateDepositPercent">
@@ -559,8 +559,7 @@
       <section class="view" id="invoicingView">
         <div class="section-head-row"><div><p class="eyebrow">Invoicing</p><h3>Create, send, and track invoices</h3></div></div>
         <div class="grid two">
-          <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Invoices</p><h3>Create invoice</h3></div></div>
+          <article class="card doc-editor-card">
             <form id="invoiceForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="invoiceId" />
 
@@ -571,20 +570,21 @@
                     <span class="doc-kind">Invoice</span>
                     <span class="doc-hash">#</span><input class="doc-number-input" name="invoiceNumber" id="invoiceNumber" placeholder="—" aria-label="Invoice number" />
                     <span class="doc-edit-hint" aria-hidden="true">✎</span>
+                    <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
                   </div>
-                  <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
+                  <p class="doc-meta"><span data-doc-meta>New invoice</span></p>
                 </div>
                 <div class="doc-editor-actions">
-                  <button type="button" class="ghost-btn" id="printInvoice">Preview PDF</button>
-                  <button type="submit" class="primary-btn">Save</button>
-                  <button type="button" class="gold-btn" id="sendInvoice">Send Invoice</button>
+                  <button type="button" class="ghost-btn btn-ico btn-eye" id="printInvoice">Preview PDF</button>
+                  <button type="submit" class="primary-btn btn-ico btn-save">Save</button>
+                  <button type="button" class="gold-btn btn-ico btn-send" id="sendInvoice">Send Invoice</button>
                 </div>
               </div>
 
               <!-- ── Info cards: Bill To + Invoice Details ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Bill To</div>
+                  <div class="doc-card-head dh-client">Bill To</div>
                   <div class="doc-card-body">
                     <label class="full"><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
                     <label><span>Client name</span><input name="clientName" /></label>
@@ -595,7 +595,7 @@
                   </div>
                 </section>
                 <section class="doc-card">
-                  <div class="doc-card-head">Invoice Details</div>
+                  <div class="doc-card-head dh-details">Invoice Details</div>
                   <div class="doc-card-body">
                     <label class="full"><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
                     <label class="full"><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
@@ -625,7 +625,7 @@
               <!-- ── Notes to client ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Notes to Client</div>
+                  <div class="doc-card-head dh-scope">Notes to Client</div>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="terms" rows="5" id="invoiceTerms"></textarea></label>
                   </div>
@@ -671,8 +671,7 @@
       <section class="view" id="contractsView">
         <div class="section-head-row"><div><p class="eyebrow">Contracts</p><h3>Create, send, and track signed agreements</h3></div></div>
         <div class="grid two-strong">
-          <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Contract Builder</p><h3>Create agreement</h3></div></div>
+          <article class="card doc-editor-card">
             <form id="contractForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="contractId" />
 
@@ -683,19 +682,20 @@
                     <span class="doc-kind">Contract</span>
                     <span class="doc-hash">#</span><input class="doc-number-input" name="contractNumber" id="contractNumber" placeholder="—" aria-label="Contract number" />
                     <span class="doc-edit-hint" aria-hidden="true">✎</span>
+                    <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Ready for Signature</option><option>Sent</option><option>Signed</option></select></label>
                   </div>
-                  <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Ready for Signature</option><option>Sent</option><option>Signed</option></select></label>
+                  <p class="doc-meta"><span data-doc-meta>New contract</span></p>
                 </div>
                 <div class="doc-editor-actions">
-                  <button type="button" class="ghost-btn" id="printContract">Preview PDF</button>
-                  <button type="submit" class="gold-btn">Save Contract</button>
+                  <button type="button" class="ghost-btn btn-ico btn-eye" id="printContract">Preview PDF</button>
+                  <button type="submit" class="gold-btn btn-ico btn-save">Save Contract</button>
                 </div>
               </div>
 
               <!-- ── Info cards: Client + Contract Details ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Client &amp; Project</div>
+                  <div class="doc-card-head dh-client">Client &amp; Project</div>
                   <div class="doc-card-body">
                     <label class="full"><span>Client</span><select name="clientId" id="contractClientSelect" required></select></label>
                     <label class="full"><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
@@ -705,7 +705,7 @@
                   </div>
                 </section>
                 <section class="doc-card">
-                  <div class="doc-card-head">Contract Details</div>
+                  <div class="doc-card-head dh-details">Contract Details</div>
                   <div class="doc-card-body">
                     <label><span>Date</span><input name="date" id="contractDate" type="date" /></label>
                     <label><span>Prepared by</span><input name="user" /></label>
@@ -736,14 +736,14 @@
               <!-- ── Scope + Terms cards ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
-                  <div class="doc-card-head">Scope of Work</div>
+                  <div class="doc-card-head dh-scope">Scope of Work</div>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="scope" rows="5" placeholder="Describe the work to be performed under this contract"></textarea></label>
                     <label class="full"><span>Internal notes (not printed)</span><textarea name="notes" rows="2" placeholder="Optional internal notes"></textarea></label>
                   </div>
                 </section>
                 <section class="doc-card">
-                  <div class="doc-card-head">Terms &amp; Conditions</div>
+                  <div class="doc-card-head dh-terms">Terms &amp; Conditions</div>
                   <div class="doc-card-body">
                     <label class="full"><textarea name="terms" rows="8" id="contractTerms"></textarea></label>
                   </div>
