@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-7" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-8" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -561,6 +561,8 @@
         <article class="card doc-editor-card">
             <form id="invoiceForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="invoiceId" />
+              <input type="hidden" name="permitsFees" id="invoicePermitsFees" />
+              <input type="hidden" name="taxPercent" id="invoiceTaxPercent" />
 
               <!-- ── Header action bar ── -->
               <div class="doc-editor-head full">
@@ -632,12 +634,9 @@
                   <div class="line-items-totals" id="invoiceLineTotals"></div>
                 </div>
                 <aside class="doc-split-side">
-                  <section class="doc-card">
-                    <div class="doc-card-head dh-summary">Summary</div>
-                    <div class="doc-card-body">
-                      <div id="invoiceSummary" class="invoice-summary"></div>
-                    </div>
-                  </section>
+                  <div class="invoice-summary-card">
+                    <div id="invoiceSummary" class="invoice-summary"></div>
+                  </div>
                 </aside>
               </div>
 

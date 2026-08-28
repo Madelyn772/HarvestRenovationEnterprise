@@ -3361,6 +3361,14 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .doc-split-side { position: sticky; top: 5.5rem; }
 
 /* Invoice summary panel rows. */
+.invoice-summary-card {
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  padding: 1.05rem 1.15rem;
+}
+.theme-dark .invoice-summary-card { background: #211c15; border-color: #3a342a; }
 .invoice-summary { display: flex; flex-direction: column; gap: 0; width: 100%; }
 .invoice-summary .isum-row {
   display: flex;
@@ -3549,6 +3557,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .invoice-summary .isum-deposit span { color: #7a7060; }
 .invoice-summary .isum-deposit strong { color: #1f1a12; font-weight: 700; }
 .invoice-summary .isum-deposit em { flex-basis: 100%; font-style: normal; color: #9a917e; font-size: .75rem; }
+.invoice-summary .isum-deposit .isum-lock { font-size: .82em; margin-right: .15rem; }
 .theme-dark .invoice-summary .isum-deposit span { color: #9a8f78; }
 .theme-dark .invoice-summary .isum-deposit strong { color: #f0e2c4; }
 
