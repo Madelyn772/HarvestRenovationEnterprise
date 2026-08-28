@@ -53,6 +53,8 @@ export function saveInvoiceFromForm() {
   const payload = collectInvoiceFromForm();
   // Chain guard: a Paid invoice's amounts are locked (edit notes only).
   const existingInv = payload.id ? state.store.invoices.find(i => i.id === payload.id) : null;
+  // Payments live on the invoice record (recorded via the payment dialog) — preserve them.
+  payload.payments = existingInv ? (existingInv.payments || []) : [];
   if (existingInv && existingInv.status === 'Paid' && invoiceAmountsChanged(existingInv, payload)) {
     showToast('This invoice is paid — amounts are locked. Duplicate the estimate or create a change order to bill more.', 'error');
     return null;
@@ -168,7 +170,8 @@ function invoiceAmountsChanged(a, b) {
 export function collectInvoiceFromForm() {
   const data = objectFromForm(el.invoiceForm);
   const items = readInvoiceItemsFromDom();
-  const payments = readPaymentsFromDom();
+  // Payments are preserved from the saved invoice record in saveInvoiceFromForm.
+  const payments = [];
   // Invoice date shares the name "date" with payment rows — read it directly.
   const dateInput = document.getElementById('invoiceDate');
   const sub = items.reduce((s, item) => s + num(item.amount), 0);
@@ -289,7 +292,11 @@ export function renderInvoiceBalanceCallout() {
   const taxPct = num(document.getElementById('invoiceTaxPercent')?.value);
   const tax = subtotal * (taxPct / 100);
   const total = subtotal + tax + fees;
-  const paid = readPaymentsFromDom().reduce((s, p) => s + num(p.amount), 0);
+  // Payments live on the saved invoice record (recorded via the payment dialog).
+  const invId = el.invoiceForm?.invoiceId?.value || '';
+  const savedInv = invId ? state.store.invoices.find(i => i.id === invId) : null;
+  const savedPayments = savedInv ? (savedInv.payments || []) : [];
+  const paid = savedPayments.reduce((s, p) => s + num(p.amount), 0);
   const balance = total - paid;
   const totalsEl = document.getElementById('invoiceLineTotals');
   if (totalsEl) totalsEl.innerHTML = `<div class="row total"><span>Invoice total</span><strong>${money.format(total)}</strong></div>`;
@@ -313,8 +320,21 @@ export function renderInvoiceBalanceCallout() {
   if (depAmtEl) depAmtEl.textContent = money.format(total * (depPct / 100));
   const depNoteEl = document.querySelector('[data-deposit-note]');
   if (depNoteEl) {
-    const depPay = readPaymentsFromDom().find(p => /deposit/i.test(p.reference || '') || /deposit/i.test(p.note || ''));
+    const depPay = savedPayments.find(p => /deposit/i.test(p.reference || '') || /deposit/i.test(p.note || ''));
     depNoteEl.textContent = depPay && depPay.date ? `Paid on ${formatDate(depPay.date)}` : (depPct > 0 ? 'Not yet paid' : '');
+  }
+  // Payment card: terms note + recorded payments list.
+  const noteEl = document.getElementById('invoicePaymentTermsNote');
+  if (noteEl) {
+    const terms = document.getElementById('invoicePaymentTerms')?.value || '';
+    const m = /Net\s*(\d+)/i.exec(terms);
+    noteEl.textContent = m ? `Payments are due within ${m[1]} days of the invoice date.` : 'Payment is due upon receipt of this invoice.';
+  }
+  const recEl = document.getElementById('invoiceRecordedPayments');
+  if (recEl) {
+    recEl.innerHTML = savedPayments.length
+      ? savedPayments.map(p => `<div class="rec-pay"><span>${escapeHtml(formatDate(p.date))} · ${escapeHtml(p.method || 'Payment')}</span><strong>${money.format(num(p.amount))}</strong></div>`).join('')
+      : '<p class="muted tiny rec-pay-empty">No payments recorded yet.</p>';
   }
   // Back-compat: legacy inline balance callout, if present.
   const callout = document.getElementById('invoiceBalanceCallout');
@@ -446,10 +466,6 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
       lineItems.forEach(it => addInvoiceRow({ description: it.description, quantity: it.quantity, unit: it.unit, unitPrice: it.unitPrice }));
     } else {
       addInvoiceRow({ description: `${estimate.trade || 'Project'} — ${estimate.scope || 'Project work'}`, quantity: 1, unit: 'LS', unitPrice: num(estimate.estimatedCost) });
-    }
-    if (num(estimate.depositAmount) > 0) {
-      addPaymentRow({ date: estimate.date, amount: num(estimate.depositAmount), method: 'Check', reference: `Deposit for ${estimate.estimateNumber || ''}`.trim(), note: 'Auto-applied from estimate' });
-      el.invoiceForm.dataset.depositEstimateId = estimate.id;
     }
     renderInvoiceBalanceCallout();
     setView('invoicing');

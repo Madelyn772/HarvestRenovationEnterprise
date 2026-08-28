@@ -17,7 +17,7 @@ import { printEstimate, printInvoice } from './pdf.js';
 import { handleLogout } from './auth.js';
 import { sendEstimate, sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
-import { renderReceipts, handlePaymentDialogSubmit } from './receipts.js';
+import { renderReceipts, handlePaymentDialogSubmit, openPaymentDialog } from './receipts.js';
 import { saveContractFromForm, handleContractSave, hydrateContractForm, renderContracts, addPaymentScheduleRow, recomputeContractTotals, fillContractFromEstimate } from './contracts.js';
 
 export function bindAppUi() {
@@ -121,8 +121,12 @@ export function bindAppUi() {
   if (addEstBtn) addEstBtn.addEventListener('click', () => addEstimateRow());
   const loadTplBtn = document.getElementById('loadTemplateItems');
   if (loadTplBtn) loadTplBtn.addEventListener('click', () => loadTemplateItems());
-  const addPayBtn = document.getElementById('addPaymentRow');
-  if (addPayBtn) addPayBtn.addEventListener('click', () => addPaymentRow());
+  const recordPayBtn = document.getElementById('invoiceRecordPaymentBtn');
+  if (recordPayBtn) recordPayBtn.addEventListener('click', () => {
+    const saved = saveInvoiceFromForm();
+    if (!saved) return;
+    openPaymentDialog(saved.id);
+  });
   const depositSel = document.getElementById('estimateDepositPercent');
   if (depositSel) depositSel.addEventListener('change', () => { updateDepositCustomVisibility(); recomputeEstimateTotals(); });
   const estDateInput = document.getElementById('estimateDate');
@@ -569,6 +573,7 @@ export function renderAll() {
   renderInvoices();
   renderNotes();
   renderReceipts();
+  renderInvoiceBalanceCallout();
   renderContracts();
   renderCampaigns();
   renderScorecard();

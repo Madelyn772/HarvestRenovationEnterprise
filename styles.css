@@ -3672,6 +3672,22 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .contact-link:hover { border-bottom-color: currentColor; }
 .theme-light .main .contact-link { color: #b07d2a; }
 
+/* Payment card: recorded payments list. */
+.recorded-payments { display: flex; flex-direction: column; gap: .3rem; }
+.recorded-payments .rec-pay {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .45rem .1rem;
+  border-top: 1px solid var(--line);
+  font-size: .85rem;
+}
+.recorded-payments .rec-pay span { color: var(--muted); }
+.recorded-payments .rec-pay strong { font-weight: 700; }
+.recorded-payments .rec-pay-empty { margin: .2rem 0 0; }
+.theme-light .main .recorded-payments .rec-pay { border-top-color: rgba(31,26,20,.10); }
+
 
 
 

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-13" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-14" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -671,10 +671,9 @@
                 <section class="doc-card">
                   <div class="doc-card-head dh-payment">Payment</div>
                   <div class="doc-card-body">
-                    <div class="full invoice-payments-shell">
-                      <div class="split-head"><strong>Payments Received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
-                      <div id="invoicePayments" class="stack compact-stack"></div>
-                    </div>
+                    <p class="full muted" id="invoicePaymentTermsNote">Payments are due within 30 days of the invoice date.</p>
+                    <div class="full"><button type="button" class="ghost-btn" id="invoiceRecordPaymentBtn">Record Payment</button></div>
+                    <div class="full recorded-payments" id="invoiceRecordedPayments"></div>
                   </div>
                 </section>
               </div>
