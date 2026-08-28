@@ -44,7 +44,7 @@ export function buildBrandedDocHtml(opts) {
     paymentsReceived = 0, paymentsRows = [],
     terms = '', signatureBlockEnabled = false
   } = opts;
-  const kindLabel = escapeHtml(kind);
+  const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
   const scopeBlock = scope ? `<div class="item-row scope"><div class="desc">${scopeToHtml(scope)}</div><div class="amt"></div></div>` : '';
@@ -59,6 +59,7 @@ export function buildBrandedDocHtml(opts) {
     ? `<span class="status">${escapeHtml(status)}</span>`
     : '';
   const metaRows = [[`${kindLabel} No.`, escapeHtml(number || '—')], ['Date', escapeHtml(formatDate(date) || '—')]];
+  if (bill.name) metaRows.push(['Client', escapeHtml(bill.name)]);
   if (validUntil) metaRows.push(['Valid until', escapeHtml(formatDate(validUntil))]);
   if (dueDate) metaRows.push(['Due date', escapeHtml(formatDate(dueDate))]);
   if (preparedBy) metaRows.push(['Prepared by', escapeHtml(preparedBy)]);

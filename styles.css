@@ -2964,6 +2964,171 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .payment-schedule-row .remove-pay-row { position: absolute; top: .4rem; right: .4rem; }
 }
 
+/* ============================================================
+   DOCUMENT-STYLE FORM REDESIGN — matches the mockup aesthetic.
+   White cards on a light canvas, gold accent headers, action
+   bar at top. Appended last to win the cascade.
+   ============================================================ */
+
+/* The form canvas: light gray background with padding. */
+.form-doc {
+  background: #f4f1ea;
+  padding: 1.25rem;
+  border-radius: 14px;
+  gap: 1rem;
+}
+.theme-light .form-doc { background: #f0ede5; }
+
+/* Section cards: white with subtle border and shadow. */
+.form-section,
+.mobile-section.form-section {
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+
+/* Section headers: small uppercase gold labels. */
+.form-section-head,
+.mobile-section.form-section .mobile-section-head {
+  background: #faf8f3;
+  border-bottom: 1px solid #eae6dc;
+  color: #8a6520;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: .7rem 1.1rem;
+}
+
+/* Section body: clean 2-column grid on white. */
+.form-section-body,
+.mobile-section.form-section .mobile-section-body {
+  background: #ffffff;
+  padding: 1.1rem;
+  gap: 1rem;
+}
+
+/* Form labels: lighter, more readable on white. */
+.form-doc label span {
+  color: #5a5044;
+  font-size: .78rem;
+}
+.form-doc label input,
+.form-doc label select,
+.form-doc label textarea {
+  background: #faf9f6;
+  border: 1px solid #ddd9cf;
+  border-radius: 8px;
+}
+.form-doc label input:focus,
+.form-doc label select:focus,
+.form-doc label textarea:focus {
+  border-color: #caa05a;
+  box-shadow: 0 0 0 2px rgba(202,160,90,.15);
+}
+
+/* Line items shell: white card too. */
+.form-doc .estimate-items-shell,
+.form-doc .invoice-items-shell,
+.form-doc .contract-payments-shell {
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  padding: 1.1rem;
+}
+
+/* Action buttons: move to a sticky top bar. */
+.form-doc .form-actions {
+  order: -1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  padding: .75rem 1.1rem;
+  margin-bottom: .25rem;
+  justify-content: flex-end;
+}
+.form-doc .form-actions .primary-btn {
+  background: #caa05a;
+  color: #1a1610;
+  font-weight: 700;
+}
+
+/* Summary sidebar: white card with gold accent. */
+.form-doc ~ .sticky-card,
+.sticky-card {
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.sticky-card .card-head {
+  border-bottom: 1px solid #eae6dc;
+}
+.sticky-card .estimate-summary .summary-tile,
+.sticky-card .estimate-summary .summary-row {
+  border-bottom: 1px solid #f0ede5;
+  padding: .55rem 0;
+}
+
+/* Dark theme: keep the form canvas dark but cards slightly lighter. */
+.theme-dark .form-doc { background: #1a1610; }
+.theme-dark .form-section,
+.theme-dark .mobile-section.form-section {
+  background: #211c15;
+  border-color: #3a342a;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.theme-dark .form-section-head,
+.theme-dark .mobile-section.form-section .mobile-section-head {
+  background: #261f17;
+  border-color: #3a342a;
+  color: #caa05a;
+}
+.theme-dark .form-section-body,
+.theme-dark .mobile-section.form-section .mobile-section-body {
+  background: #211c15;
+}
+.theme-dark .form-doc label input,
+.theme-dark .form-doc label select,
+.theme-dark .form-doc label textarea {
+  background: #181410;
+  border-color: #3a342a;
+  color: #e9d8b6;
+}
+.theme-dark .form-doc .estimate-items-shell,
+.theme-dark .form-doc .invoice-items-shell,
+.theme-dark .form-doc .contract-payments-shell {
+  background: #211c15;
+  border-color: #3a342a;
+}
+.theme-dark .form-doc .form-actions {
+  background: #211c15;
+  border-color: #3a342a;
+}
+.theme-dark .sticky-card {
+  background: #211c15;
+  border-color: #3a342a;
+}
+
+/* Payment schedule rows: match white card aesthetic. */
+.theme-light .payment-schedule-row,
+.theme-dark .payment-schedule-row {
+  border-color: #eae6dc;
+}
+.theme-light .payment-schedule-row input {
+  background: #faf9f6;
+  border: 1px solid #ddd9cf;
+  border-radius: 8px;
+}
+
+
 
 
 
