@@ -284,8 +284,8 @@ export function bindAppUi() {
   }
   // Service Desk filters.
   if (!state.filters.bugStatuses) state.filters.bugStatuses = ['New', 'In Progress']; // default: hide Resolved
-  if (!state.filters.bugSort) state.filters.bugSort = 'desc';
-  const singleFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity'], ['bugFilterRange', 'bugRange']];
+  if (!state.filters.bugSort) state.filters.bugSort = 'severity'; // default: highest severity, oldest first
+  const singleFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterRange', 'bugRange']];
   const updateBugFilterCount = () => {
     const badge = document.getElementById('bugFilterCount');
     if (!badge) return;

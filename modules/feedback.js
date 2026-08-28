@@ -91,12 +91,11 @@ export function renderBugReports() {
   const email = state.profile?.email || '';
   const fArea = state.filters.bugArea || '';
   const fType = state.filters.bugType || '';
-  const fSev = state.filters.bugSeverity || '';
   // Default view: everything except Resolved.
   const statuses = state.filters.bugStatuses || ['New', 'In Progress'];
   const activeStatuses = statuses.length ? statuses : STATUSES;
   const range = state.filters.bugRange || '';
-  const sort = state.filters.bugSort || 'desc';
+  const sort = state.filters.bugSort || 'severity';
   let reports = [...(state.store.bugReports || [])];
   if (range) {
     const cutoff = range === 'today'
@@ -107,14 +106,20 @@ export function renderBugReports() {
   reports = reports.filter(r =>
     activeStatuses.includes(r.status || 'New') &&
     (!fArea || (r.area || 'Other') === fArea) &&
-    (!fType || (r.kind || 'Bug') === fType) &&
-    (!fSev || (r.severity || 'Medium') === fSev));
+    (!fType || (r.kind || 'Bug') === fType));
+  const sevRank = { Blocking: 3, High: 2, Medium: 1, Low: 0 };
   reports.sort((a, b) => {
+    if (sort === 'severity') {
+      // Highest severity first, then oldest date.
+      const s = (sevRank[b.severity] ?? 1) - (sevRank[a.severity] ?? 1);
+      if (s !== 0) return s;
+      return (a.submittedAt || '').localeCompare(b.submittedAt || '');
+    }
     const c = (a.submittedAt || '').localeCompare(b.submittedAt || '');
-    return sort === 'asc' ? c : -c;
+    return sort === 'oldest' ? c : -c;
   });
   if (!reports.length) {
-    const filtering = fArea || fType || fSev || range || statuses.length !== 2 || statuses.includes('Resolved');
+    const filtering = fArea || fType || range || statuses.length !== 2 || statuses.includes('Resolved');
     list.innerHTML = emptyHtml(filtering ? 'No reports match these filters.' : 'No open reports. Use the form to submit one.');
     return;
   }

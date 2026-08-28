@@ -3729,8 +3729,9 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-light .main .wip-banner { background: #fbf3e4; color: #8a6520; border-color: #ecd9b3; border-left-color: #caa05a; }
 
 /* ── Service Desk: filter toolbar, ticket rows, comments ── */
-.bug-toolbar { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .5rem; margin-bottom: .9rem; }
-.bug-filter-menu { flex: 0 1 auto; }
+.bug-report-head { flex-wrap: wrap; gap: .75rem; align-items: center; }
+.bug-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.bug-filter-menu { position: relative; flex: 0 0 auto; }
 .bug-filter-toggle {
   list-style: none;
   cursor: pointer;
@@ -3742,16 +3743,14 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255,255,255,.05);
-  backdrop-filter: blur(4px);
-  color: var(--text);
-  font-weight: 600;
+  color: #caa05a;
+  font-weight: 700;
   font-size: .8rem;
   transition: background .15s ease, border-color .15s ease;
 }
 .bug-filter-toggle:hover { background: rgba(255,255,255,.09); }
 .bug-filter-toggle::-webkit-details-marker { display: none; }
-.bug-filter-toggle svg { color: var(--muted); }
-.bug-filter-menu[open] .bug-filter-toggle { border-color: var(--line-strong); background: rgba(202,160,90,.10); }
+.bug-filter-menu[open] .bug-filter-toggle { border-color: var(--line-strong); background: rgba(202,160,90,.14); }
 .bug-filter-toggle .filter-count {
   display: inline-flex;
   align-items: center;
@@ -3765,7 +3764,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   background: var(--gold, #caa05a);
   border-radius: 999px;
 }
-.theme-light .main .bug-filter-toggle { background: rgba(31,26,20,.05); border-color: rgba(31,26,20,.1); }
+.theme-light .main .bug-filter-toggle { background: rgba(31,26,20,.05); border-color: rgba(31,26,20,.1); color: #8a6520; }
 .theme-light .main .bug-filter-toggle:hover { background: rgba(31,26,20,.09); }
 
 .bug-sort { display: inline-flex; align-items: center; gap: .4rem; }
@@ -3778,37 +3777,47 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 }
 .theme-light .main .bug-sort select { background: rgba(31,26,20,.04); border-color: rgba(31,26,20,.1); }
 
+/* Filters panel is a popover so it doesn't push the layout. */
 .bug-filters {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
   display: flex;
   flex-wrap: wrap;
-  gap: .8rem;
+  gap: .85rem;
   align-items: flex-end;
-  margin: .55rem 0 0;
-  padding: .8rem;
-  border: 1px solid var(--line);
+  padding: .9rem;
+  min-width: 250px;
+  max-width: min(30rem, calc(100vw - 2rem));
+  border: 1px solid var(--line-strong);
   border-radius: 12px;
-  background: rgba(255,255,255,.03);
+  background: #1c1811;
+  box-shadow: 0 18px 44px rgba(0,0,0,.5);
 }
 .bug-filters select { min-width: 8.5rem; }
 .bf-group { display: flex; flex-direction: column; gap: .3rem; }
-.bf-label { font-size: .64rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; }
+.bf-label { font-size: .64rem; text-transform: uppercase; letter-spacing: .07em; color: #a89e88; font-weight: 700; }
 .bf-checks { display: flex; flex-wrap: wrap; gap: .5rem; }
-.bf-check { display: inline-flex; align-items: center; gap: .3rem; font-size: .82rem; cursor: pointer; }
-.bf-check input { width: 15px; height: 15px; }
+.bf-check { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; cursor: pointer; color: #f0e2c4; }
+.bf-check input { width: 15px; height: 15px; accent-color: #caa05a; }
 .bf-clear {
   align-self: flex-end;
   padding: .35rem .7rem;
   font-size: .78rem;
   border-radius: 8px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.04);
-  color: var(--muted);
+  border: 1px solid var(--line-strong);
+  background: rgba(255,255,255,.06);
+  color: #e9d8b6;
   cursor: pointer;
   transition: background .15s ease, color .15s ease;
 }
-.bf-clear:hover { background: rgba(255,255,255,.08); color: var(--text); }
-.theme-light .main .bug-filters { background: #f6f3ec; border-color: rgba(31,26,20,.08); }
-.theme-light .main .bf-clear { background: rgba(31,26,20,.04); border-color: rgba(31,26,20,.1); }
+.bf-clear:hover { background: rgba(255,255,255,.12); }
+.theme-light .main .bug-filters { background: #ffffff; border-color: rgba(31,26,20,.14); box-shadow: 0 18px 44px rgba(31,26,20,.16); }
+.theme-light .main .bf-label { color: #6b6153; }
+.theme-light .main .bf-check { color: #1f1a14; }
+.theme-light .main .bf-clear { background: rgba(31,26,20,.05); border-color: rgba(31,26,20,.14); color: #1f1a14; }
+@media (max-width: 560px) { .bug-filters { right: auto; left: 0; } }
 
 /* Reports as compact, collapsible rows. */
 #bugReportList { display: flex; flex-direction: column; gap: .5rem; }
