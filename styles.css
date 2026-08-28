@@ -226,7 +226,7 @@ textarea { resize: vertical; min-height: 120px; }
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 310px 1fr;
+  grid-template-columns: var(--sidebar-w, 310px) 1fr;
   min-height: 100vh;
 }
 .sidebar {
@@ -245,12 +245,36 @@ textarea { resize: vertical; min-height: 120px; }
 /* Desktop: the sidebar is sticky (top:0) and as tall as its natural content,
    so it scrolls with the page instead of trapping its own scroll. Mobile uses
    a drawer/transform layout below 960px, handled separately. */
+
+/* ── Desktop sidebar collapse toggle (icon-only rail) ── */
+@media (min-width: 961px) {
+  .shell { transition: grid-template-columns .2s ease; }
+  body.sidebar-collapsed { --sidebar-w: 60px; }
+  body.sidebar-collapsed .sidebar { padding-left: .5rem; padding-right: .5rem; overflow: hidden; }
+  body.sidebar-collapsed .brand-block { grid-template-columns: 1fr; justify-items: center; }
+  body.sidebar-collapsed .brand-mark,
+  body.sidebar-collapsed .brand-block > div,
+  body.sidebar-collapsed .sidebar-user,
+  body.sidebar-collapsed .sidebar-card,
+  body.sidebar-collapsed .nav-label,
+  body.sidebar-collapsed .nav-count,
+  body.sidebar-collapsed .wip-badge { display: none; }
+  body.sidebar-collapsed .nav-btn { justify-content: center; gap: 0; padding-left: 0; padding-right: 0; }
+}
 .brand-block, .sidebar-user {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: .9rem;
   align-items: center;
 }
+.brand-block { grid-template-columns: auto auto 1fr; gap: .6rem; }
+.sidebar-toggle-btn {
+  display: inline-flex; flex-direction: column; justify-content: center; gap: 4px;
+  width: 36px; height: 36px; padding: 8px; flex: 0 0 auto;
+  border: 1px solid var(--line); border-radius: 10px; background: transparent; cursor: pointer;
+}
+.sidebar-toggle-btn span { display: block; width: 100%; height: 2px; background: var(--text); border-radius: 2px; }
+.sidebar-toggle-btn:hover { border-color: rgba(217,174,107,.5); }
 .sidebar-user {
   margin: 1.4rem 0;
   padding: 1rem;
@@ -298,6 +322,9 @@ textarea { resize: vertical; min-height: 120px; }
   background: linear-gradient(135deg, var(--gold-2), #f5e4c6);
 }
 .nav-btn {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
   text-align: left;
   font-weight: 600;
   border: 1px solid var(--line);
@@ -306,6 +333,9 @@ textarea { resize: vertical; min-height: 120px; }
   color: var(--muted);
   padding: .95rem 1rem;
 }
+.nav-icon { flex: 0 0 auto; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+.nav-icon svg { width: 100%; height: 100%; }
+.nav-label { flex: 1 1 auto; min-width: 0; }
 .nav-btn.active { color: var(--text); border-color: rgba(217,174,107,.38); background: rgba(217,174,107,.14); }
 .sidebar-card {
   margin-top: 1rem;

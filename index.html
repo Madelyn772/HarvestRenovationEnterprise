@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-45" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-46" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -93,6 +93,9 @@
     <div class="sidebar-scrim" id="sidebarScrim" hidden></div>
     <aside class="sidebar" id="appSidebar">
       <div class="brand-block">
+        <button type="button" class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Collapse sidebar">
+          <span></span><span></span><span></span>
+        </button>
         <div class="brand-mark">HR</div>
         <div>
           <p class="eyebrow">Enterprise Portal</p>
@@ -113,19 +116,19 @@
       </div>
 
       <nav class="nav">
-        <button class="nav-btn active" data-view="dashboard">Executive Dashboard</button>
-        <button class="nav-btn" data-view="crm">CRM<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="estimating">Estimating<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="invoicing">Invoicing<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="contracts">Contracts<span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="operations">Operations<span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="documents">Documents<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="marketing">KPIs</button>
-        <button class="nav-btn" data-view="calendars">Calendars</button>
-        <button class="nav-btn" data-view="team">Team</button>
-        <button class="nav-btn" data-view="feedback">🛠️ Service Desk<span class="nav-count hidden"></span></button>
-        <button class="nav-btn admin-only hidden" data-view="admin">Admin<span class="nav-count hidden"></span></button>
-        <button class="nav-btn" data-view="trash">Trash<span class="nav-count hidden"></span></button>
+        <button class="nav-btn active" data-view="dashboard" title="Executive Dashboard"><span class="nav-icon"></span><span class="nav-label">Executive Dashboard</span></button>
+        <button class="nav-btn" data-view="crm" title="CRM"><span class="nav-icon"></span><span class="nav-label">CRM</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="estimating" title="Estimating"><span class="nav-icon"></span><span class="nav-label">Estimating</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="invoicing" title="Invoicing"><span class="nav-icon"></span><span class="nav-label">Invoicing</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="contracts" title="Contracts"><span class="nav-icon"></span><span class="nav-label">Contracts</span><span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="operations" title="Operations"><span class="nav-icon"></span><span class="nav-label">Operations</span><span class="wip-badge">Beta</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="documents" title="Documents"><span class="nav-icon"></span><span class="nav-label">Documents</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="marketing" title="KPIs"><span class="nav-icon"></span><span class="nav-label">KPIs</span></button>
+        <button class="nav-btn" data-view="calendars" title="Calendars"><span class="nav-icon"></span><span class="nav-label">Calendars</span></button>
+        <button class="nav-btn" data-view="team" title="Team"><span class="nav-icon"></span><span class="nav-label">Team</span></button>
+        <button class="nav-btn" data-view="feedback" title="Service Desk"><span class="nav-icon"></span><span class="nav-label">🛠️ Service Desk</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn admin-only hidden" data-view="admin" title="Admin"><span class="nav-icon"></span><span class="nav-label">Admin</span><span class="nav-count hidden"></span></button>
+        <button class="nav-btn" data-view="trash" title="Trash"><span class="nav-icon"></span><span class="nav-label">Trash</span><span class="nav-count hidden"></span></button>
       </nav>
 
       <div class="sidebar-card compact mobile-hide">

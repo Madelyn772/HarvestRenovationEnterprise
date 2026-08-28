@@ -357,6 +357,7 @@ export function bindAppUi() {
   }
   applyTheme(getStoredTheme());
   initMobileNav();
+  initSidebarState();
 }
 
 export function initMobileNav() {
@@ -385,6 +386,10 @@ export function initMobileNav() {
   scrim.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 
+  // Desktop-only collapse toggle (delegates to the drawer on mobile).
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+
   // Choosing any section (or the settings/quick-jump buttons) closes the drawer.
   sidebar.querySelectorAll('.nav-btn, [data-jump], #openSettingsPanelBtn').forEach(btn => btn.addEventListener('click', closeDrawer));
 
@@ -398,9 +403,29 @@ export function initMobileNav() {
 
   // Clear drawer state when the viewport grows back to desktop.
   const mq = window.matchMedia('(max-width: 960px)');
-  const onChange = e => { if (!e.matches) closeDrawer(); };
+  const onChange = e => { if (!e.matches) { closeDrawer(); initSidebarState(); } };
   if (mq.addEventListener) mq.addEventListener('change', onChange);
   else if (mq.addListener) mq.addListener(onChange);
+}
+
+const SIDEBAR_COLLAPSED_KEY = 'harvest-sidebar-collapsed';
+
+// Desktop (>960px): collapse/expand the icon rail + persist. Mobile: drawer.
+export function toggleSidebar() {
+  if (window.innerWidth <= 960) {
+    document.getElementById('mobileMenuBtn')?.click();
+    return;
+  }
+  const collapsed = document.body.classList.toggle('sidebar-collapsed');
+  try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? 'true' : 'false'); } catch {}
+}
+
+// Apply the stored collapse preference on desktop (ignored on mobile via CSS).
+export function initSidebarState() {
+  if (window.innerWidth <= 960) return;
+  let stored = null;
+  try { stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY); } catch {}
+  document.body.classList.toggle('sidebar-collapsed', stored === 'true');
 }
 
 export function getStoredTheme() {
