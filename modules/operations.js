@@ -199,19 +199,34 @@ export function addPaymentRow(payment = {}) {
 }
 
 export function renderInvoiceBalanceCallout() {
-  const callout = document.getElementById('invoiceBalanceCallout');
   const items = readInvoiceItemsFromDom();
-  const total = items.reduce((s, it) => s + num(it.amount), 0);
+  const subtotal = items.reduce((s, it) => s + num(it.amount), 0);
+  const total = subtotal;
   const paid = readPaymentsFromDom().reduce((s, p) => s + num(p.amount), 0);
   const balance = total - paid;
   const totalsEl = document.getElementById('invoiceLineTotals');
   if (totalsEl) totalsEl.innerHTML = `<div class="row total"><span>Invoice total</span><strong>${money.format(total)}</strong></div>`;
-  if (!callout) return;
-  const balClass = balance <= 0.01 && paid > 0 ? 'paid-in-full' : (balance > 0.01 ? 'owed' : '');
-  callout.innerHTML = `
-    <div><span>Total</span><strong>${money.format(total)}</strong></div>
-    <div><span>Paid</span><strong>${money.format(paid)}</strong></div>
-    <div class="${balClass}"><span>Balance</span><strong>${money.format(balance)}</strong></div>`;
+  const summary = document.getElementById('invoiceSummary');
+  if (summary) {
+    const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
+    const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
+    summary.innerHTML = `
+      <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
+      <div class="isum-row isum-muted"><span>Tax (0%)</span><strong>${money.format(0)}</strong></div>
+      <div class="isum-divide"></div>
+      <div class="isum-row isum-total"><span>Total Due</span><strong>${money.format(total)}</strong></div>
+      ${paidRow}
+      <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>`;
+  }
+  // Back-compat: legacy inline balance callout, if present.
+  const callout = document.getElementById('invoiceBalanceCallout');
+  if (callout) {
+    const balClass = balance <= 0.01 && paid > 0 ? 'paid-in-full' : (balance > 0.01 ? 'owed' : '');
+    callout.innerHTML = `
+      <div><span>Total</span><strong>${money.format(total)}</strong></div>
+      <div><span>Paid</span><strong>${money.format(paid)}</strong></div>
+      <div class="${balClass}"><span>Balance</span><strong>${money.format(balance)}</strong></div>`;
+  }
 }
 
 function addDaysISO(dateStr, days) {

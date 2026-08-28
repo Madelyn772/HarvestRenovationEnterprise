@@ -498,11 +498,19 @@ export function populateEstimateSelects() {
   if (contractEst) contractEst.innerHTML = estOptions;
 }
 
-// Populate the "Created … • Prepared by …" meta line on a doc editor.
+// Populate the meta line under a doc-editor title.
 export function updateDocMeta(form) {
   if (!form) return;
   const meta = form.querySelector('[data-doc-meta]');
   if (!meta) return;
+  const dueEl = form.querySelector('[name="dueDate"]');
+  if (dueEl) {
+    const issued = document.getElementById('invoiceDate')?.value;
+    const parts = [issued ? `Issued ${formatDate(issued)}` : 'New invoice'];
+    if (dueEl.value) parts.push(`Due ${formatDate(dueEl.value)}`);
+    meta.textContent = parts.join(' • ');
+    return;
+  }
   const dateVal = form.querySelector('[name="date"]')?.value;
   const user = form.querySelector('[name="user"]')?.value;
   const parts = [dateVal ? `Created ${formatDate(dateVal)}` : 'New document'];

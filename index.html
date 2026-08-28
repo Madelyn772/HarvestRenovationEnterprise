@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-4" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-5" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -558,8 +558,7 @@
       <!-- ── Invoicing view (pulled out of Operations) ── -->
       <section class="view" id="invoicingView">
         <div class="section-head-row"><div><p class="eyebrow">Invoicing</p><h3>Create, send, and track invoices</h3></div></div>
-        <div class="grid two">
-          <article class="card doc-editor-card">
+        <article class="card doc-editor-card">
             <form id="invoiceForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="invoiceId" />
 
@@ -581,53 +580,70 @@
                 </div>
               </div>
 
-              <!-- ── Info cards: Bill To + Invoice Details ── -->
-              <div class="doc-cards full">
+              <!-- ── Info cards: Bill To + Project/Service + Invoice Details ── -->
+              <div class="doc-cards doc-cards-3 full">
                 <section class="doc-card">
                   <div class="doc-card-head dh-client">Bill To</div>
                   <div class="doc-card-body">
                     <label class="full"><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
-                    <label><span>Client name</span><input name="clientName" /></label>
-                    <label><span>Phone</span><input name="phone" /></label>
-                    <label><span>Email</span><input name="email" type="email" /></label>
+                    <label class="full"><span>Client name</span><input name="clientName" /></label>
+                    <label class="full"><span>Phone</span><input name="phone" /></label>
+                    <label class="full"><span>Email</span><input name="email" type="email" /></label>
                     <label class="full"><span>Address</span><input name="address" /></label>
-                    <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+                    <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save as a new client record</span></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head dh-project">Project / Service</div>
+                  <div class="doc-card-body">
+                    <label class="full"><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
+                    <label class="full"><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
                   </div>
                 </section>
                 <section class="doc-card">
                   <div class="doc-card-head dh-details">Invoice Details</div>
                   <div class="doc-card-body">
-                    <label class="full"><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
-                    <label class="full"><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
-                    <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
-                    <label><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
+                    <label class="full"><span>Issue date</span><input name="date" id="invoiceDate" type="date" /></label>
+                    <label class="full"><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
                   </div>
                 </section>
               </div>
 
-              <!-- ── Line items ── -->
-              <div class="invoice-items-shell full">
-                <div class="split-head"><strong>Line Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">+ Add line</button></div>
-                <div class="line-items-head invoice-line">
-                  <span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
+              <!-- ── Line items (left) + summary (right) ── -->
+              <div class="doc-split full">
+                <div class="doc-split-main invoice-items-shell">
+                  <div class="split-head"><strong>Line Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">+ Add item</button></div>
+                  <div class="line-items-head invoice-line">
+                    <span>Description</span><span>Qty</span><span>Unit</span><span>Rate</span><span>Total</span><span></span>
+                  </div>
+                  <div id="invoiceItems" class="stack compact-stack"></div>
+                  <div class="line-items-totals" id="invoiceLineTotals"></div>
                 </div>
-                <div id="invoiceItems" class="stack compact-stack"></div>
-                <div class="line-items-totals" id="invoiceLineTotals"></div>
+                <aside class="doc-split-side">
+                  <section class="doc-card">
+                    <div class="doc-card-head dh-summary">Summary</div>
+                    <div class="doc-card-body">
+                      <div id="invoiceSummary" class="invoice-summary"></div>
+                    </div>
+                  </section>
+                </aside>
               </div>
 
-              <!-- ── Payments ── -->
-              <div class="invoice-payments-shell full">
-                <div class="split-head"><strong>Payments Received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
-                <div id="invoicePayments" class="stack compact-stack"></div>
-                <div class="balance-callout" id="invoiceBalanceCallout"></div>
-              </div>
-
-              <!-- ── Notes to client ── -->
+              <!-- ── Notes to client + Payment ── -->
               <div class="doc-cards full">
                 <section class="doc-card">
                   <div class="doc-card-head dh-scope">Notes to Client</div>
                   <div class="doc-card-body">
-                    <label class="full"><textarea name="terms" rows="5" id="invoiceTerms"></textarea></label>
+                    <label class="full"><textarea name="terms" rows="5" id="invoiceTerms" placeholder="Thank you for your business! Payments are due within 30 days of the invoice date."></textarea></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head dh-payment">Payment</div>
+                  <div class="doc-card-body">
+                    <div class="full invoice-payments-shell">
+                      <div class="split-head"><strong>Payments Received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
+                      <div id="invoicePayments" class="stack compact-stack"></div>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -642,7 +658,6 @@
             <div class="card-head"><div><p class="eyebrow">Invoice Library</p><h3>Saved invoices</h3></div></div>
             <div id="invoiceList" class="stack"></div>
           </article>
-        </div>
 
         <details class="card co-card" id="receiptsCard">
           <summary><strong>Receipts</strong> <span class="muted tiny">— issued payment receipts</span></summary>
