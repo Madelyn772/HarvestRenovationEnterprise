@@ -10,6 +10,12 @@ import { openChangeOrderForm } from './changeOrders.js';
 
 export function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
+  // Client is required — block save (and therefore Print/Send) if none selected.
+  const hasClient = data.clientId && data.clientId !== '__new__' ? true : !!(data.clientName && data.clientName.trim());
+  if (!hasClient) {
+    showToast('Select a client or enter a name before saving the estimate.', 'error');
+    return null;
+  }
   if (el.estimateForm.reportValidity && !el.estimateForm.reportValidity()) return null;
   const typedNumber = (data.estimateNumber || '').trim();
   if (typedNumber && numberInUse('estimate', typedNumber, data.estimateId || '')) {

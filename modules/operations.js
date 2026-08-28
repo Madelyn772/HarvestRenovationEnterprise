@@ -44,6 +44,12 @@ export function renderCalendarItems() {
 
 export function saveInvoiceFromForm() {
   const data = objectFromForm(el.invoiceForm);
+  // Client is required — block save (and therefore Print/Send) if none selected.
+  const hasClient = data.clientId && data.clientId !== '__new__' ? true : !!(data.clientName && data.clientName.trim());
+  if (!hasClient) {
+    showToast('Select a client or enter a name before saving the invoice.', 'error');
+    return null;
+  }
   // Don't spawn a brand-new invoice from an empty form (accidental button clicks).
   const isNew = !(data.invoiceId || '').trim();
   if (isNew) {
