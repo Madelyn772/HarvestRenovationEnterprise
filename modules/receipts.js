@@ -11,7 +11,7 @@ function invoiceBalance(invoice) {
   return { total, paid, balance: total - paid };
 }
 
-function createReceipt(invoice, amount, method, date, type, balanceRemaining, previouslyPaid) {
+function createReceipt(invoice, amount, method, date, type, balanceRemaining, previouslyPaid, note) {
   const receipt = {
     id: uid('RCT'),
     receiptNumber: autoNumber('RCT'),
@@ -26,7 +26,7 @@ function createReceipt(invoice, amount, method, date, type, balanceRemaining, pr
     previouslyPaid: num(previouslyPaid),
     balanceRemaining: num(balanceRemaining),
     total: num(invoice.total),
-    notes: '',
+    notes: (note || '').trim(),
     issuedBy: state.profile?.full_name || '',
     createdAt: new Date().toISOString()
   };
@@ -37,18 +37,19 @@ function createReceipt(invoice, amount, method, date, type, balanceRemaining, pr
 }
 
 // Record a payment on an invoice and ALWAYS issue a numbered receipt.
-export function recordPayment(invoiceId, { amount, method, date, type } = {}) {
+export function recordPayment(invoiceId, { amount, method, date, type, note } = {}) {
   const invoice = state.store.invoices.find(i => i.id === invoiceId);
   if (!invoice) return null;
   const amt = num(amount);
   if (amt <= 0) { showToast('Enter a payment amount greater than 0.', 'error'); return null; }
   const before = invoiceBalance(invoice);
   invoice.payments = invoice.payments || [];
-  invoice.payments.push({ id: uid('PAY'), date: date || todayISO(), amount: amt, method: method || 'Check', reference: '', note: (type ? type + ' payment' : '') });
+  const typeNote = type ? `${type} payment` : '';
+  invoice.payments.push({ id: uid('PAY'), date: date || todayISO(), amount: amt, method: method || 'Check', reference: '', note: [typeNote, (note || '').trim()].filter(Boolean).join(' — ') });
   const after = invoiceBalance(invoice);
   if (after.total > 0 && after.balance <= 0.01) { invoice.status = 'Paid'; invoice.paidAt = new Date().toISOString(); }
   else if (after.paid > 0 && after.paid < after.total && invoice.status !== 'Draft') invoice.status = 'Partial';
-  const { html } = createReceipt(invoice, amt, method, date, type, after.balance, before.paid);
+  const { html } = createReceipt(invoice, amt, method, date, type, after.balance, before.paid, note);
   addActivity(`Recorded ${money.format(amt)} payment on ${invoice.invoiceNumber || invoice.id}.`, 'Billing');
   saveStore('Payment recorded');
   renderAll();
@@ -109,7 +110,7 @@ export function handlePaymentDialogSubmit(event) {
   const invoiceId = dlg.dataset.invoiceId;
   const form = dlg.querySelector('form');
   dlg.close();
-  recordPayment(invoiceId, { amount: form.amount.value, method: form.method.value, date: form.date.value, type: form.type.value });
+  recordPayment(invoiceId, { amount: form.amount.value, method: form.method.value, date: form.date.value, type: form.type.value, note: form.note ? form.note.value : '' });
 }
 
 export function renderReceipts() {
