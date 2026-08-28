@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-2" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-3" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -385,36 +385,58 @@
         <div class="grid two-strong">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Estimate Builder</p><h3>Create proposal</h3></div></div>
-            <form id="estimateForm" class="form-grid form-doc">
+            <form id="estimateForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="estimateId" />
 
-              <!-- ── Section: Client & Project ── -->
-              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Client &amp; Project</button><div class="mobile-section-body">
-              <label class="full"><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
-              <label class="full"><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
-              <div class="new-client-fields full is-hidden" id="estimateNewClientFields">
-                <p class="full new-client-note muted tiny">New client info — only needed when adding a client that is not on the list.</p>
-                <label><span>New client name</span><input name="clientName" placeholder="Type to add a client not in the list" /></label>
-                <label><span>New client phone</span><input name="clientPhone" /></label>
-                <label class="full"><span>New client email</span><input name="clientEmail" type="email" /></label>
-                <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+              <!-- ── Header action bar ── -->
+              <div class="doc-editor-head full">
+                <div class="doc-editor-title">
+                  <div class="doc-title-line">
+                    <span class="doc-kind">Estimate</span>
+                    <span class="doc-hash">#</span><input class="doc-number-input" name="estimateNumber" id="estimateNumber" placeholder="—" aria-label="Estimate number" />
+                    <span class="doc-edit-hint" aria-hidden="true">✎</span>
+                  </div>
+                  <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
+                </div>
+                <div class="doc-editor-actions">
+                  <button type="button" class="ghost-btn" id="printEstimate">Preview PDF</button>
+                  <button type="submit" class="primary-btn">Save</button>
+                  <button type="button" class="gold-btn" id="sendEstimate">Send Estimate</button>
+                </div>
               </div>
-              <label class="full"><span>Project / billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
-              <label><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
-              <label><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS (optional)" /></label>
-              <label class="full inline-check"><input type="checkbox" id="useClientPhone" checked /><span>Use client&rsquo;s saved phone</span></label>
-              </div></div>
 
-              <!-- ── Section: Estimate Details ── -->
-              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Estimate Details</button><div class="mobile-section-body">
-              <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
-              <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
-              <label><span>Prepared by</span><input name="user" /></label>
-              <label><span>Trade</span><input name="trade" /></label>
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
-              </div></div>
+              <!-- ── Info cards: Client + Project/Trade ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Client</div>
+                  <div class="doc-card-body">
+                    <label class="full"><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
+                    <label class="full"><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
+                    <div class="new-client-fields full is-hidden" id="estimateNewClientFields">
+                      <p class="full new-client-note muted tiny">New client info — only needed when adding a client that is not on the list.</p>
+                      <label><span>New client name</span><input name="clientName" placeholder="Type to add a client not in the list" /></label>
+                      <label><span>New client phone</span><input name="clientPhone" /></label>
+                      <label class="full"><span>New client email</span><input name="clientEmail" type="email" /></label>
+                      <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+                    </div>
+                    <label class="full"><span>Project / billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
+                    <label><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
+                    <label><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS (optional)" /></label>
+                    <label class="full inline-check"><input type="checkbox" id="useClientPhone" checked /><span>Use client&rsquo;s saved phone</span></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head">Project / Trade</div>
+                  <div class="doc-card-body">
+                    <label class="full"><span>Trade</span><input name="trade" placeholder="e.g. Kitchen Remodeling" /></label>
+                    <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
+                    <label><span>Prepared by</span><input name="user" /></label>
+                    <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
+                  </div>
+                </section>
+              </div>
 
-              <!-- ── Section: Line Items ── -->
+              <!-- ── Line items ── -->
               <div class="estimate-items-shell full">
                 <div class="split-head"><strong>Line Items</strong>
                   <div class="line-item-tools">
@@ -429,40 +451,51 @@
                 <div class="line-items-totals" id="estimateLineTotals"></div>
               </div>
 
-              <!-- ── Section: Scope & Comments ── -->
-              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Scope &amp; Comments</button><div class="mobile-section-body">
-              <label class="full"><span>Scope of work</span><textarea name="scope" rows="4" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
-              <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
-              </div></div>
+              <!-- ── Scope + Terms cards ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Scope of Work</div>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="scope" rows="5" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
+                    <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head">Terms &amp; Conditions</div>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="termsAndConditions" rows="8" id="estimateTerms"></textarea></label>
+                    <label class="full inline-check"><input type="checkbox" name="signatureBlockEnabled" checked /><span>Print signature block on PDF</span></label>
+                  </div>
+                </section>
+              </div>
 
-              <!-- ── Section: Pricing & Terms ── -->
-              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Pricing &amp; Terms</button><div class="mobile-section-body">
-              <label><span>Deposit</span>
-                <select name="depositPercent" id="estimateDepositPercent">
-                  <option value="0">No deposit</option>
-                  <option value="10">10%</option>
-                  <option value="20">20%</option>
-                  <option value="30" selected>30%</option>
-                  <option value="40">40%</option>
-                  <option value="50">50%</option>
-                  <option value="custom">Custom…</option>
-                </select>
-              </label>
-              <label id="estimateDepositCustomWrap" class="hidden"><span>Custom deposit %</span><input name="depositPercentCustom" type="number" min="0" max="100" step="1" /></label>
-              <label><span>Final markup %</span><input name="finalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
-              <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
-              <label><span>Permits &amp; fees ($)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
-              <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
-              <label class="full inline-check"><input type="checkbox" name="signatureBlockEnabled" checked /><span>Print signature block on PDF</span></label>
-              <label class="full"><span>Terms &amp; conditions (prints on estimate)</span><textarea name="termsAndConditions" rows="5" id="estimateTerms"></textarea></label>
-              </div></div>
+              <!-- ── Pricing ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Pricing</div>
+                  <div class="doc-card-body">
+                    <label><span>Deposit</span>
+                      <select name="depositPercent" id="estimateDepositPercent">
+                        <option value="0">No deposit</option>
+                        <option value="10">10%</option>
+                        <option value="20">20%</option>
+                        <option value="30" selected>30%</option>
+                        <option value="40">40%</option>
+                        <option value="50">50%</option>
+                        <option value="custom">Custom…</option>
+                      </select>
+                    </label>
+                    <label id="estimateDepositCustomWrap" class="hidden"><span>Custom deposit %</span><input name="depositPercentCustom" type="number" min="0" max="100" step="1" /></label>
+                    <label><span>Final markup %</span><input name="finalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
+                    <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
+                    <label><span>Permits &amp; fees ($)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
+                  </div>
+                </section>
+              </div>
 
-              <!-- ── Actions ── -->
-              <div class="form-actions full">
+              <!-- ── Secondary actions ── -->
+              <div class="doc-foot-actions full">
                 <button type="button" class="secondary-btn" id="calculateEstimate">Calculate</button>
-                <button type="submit" class="primary-btn">Save Estimate</button>
-                <button type="button" class="primary-btn" id="sendEstimate">Send</button>
-                <button type="button" class="ghost-btn" id="printEstimate">Print / PDF</button>
                 <button type="button" class="ghost-btn" id="clearEstimateForm">Clear</button>
               </div>
             </form>
@@ -528,36 +561,51 @@
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Invoices</p><h3>Create invoice</h3></div></div>
-            <form id="invoiceForm" class="form-grid form-doc">
+            <form id="invoiceForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="invoiceId" />
 
-              <!-- ── Section: Client & Project ── -->
-              <div class="form-section full">
-              <div class="form-section-head">Client &amp; Project</div>
-              <div class="form-section-body">
-              <label class="full"><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
-              <label><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
-              <label><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
-              <label><span>Client name</span><input name="clientName" /></label>
-              <label><span>Phone</span><input name="phone" /></label>
-              <label><span>Email</span><input name="email" type="email" /></label>
-              <label class="full"><span>Address</span><input name="address" /></label>
-              <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
-              </div>
-              </div>
-
-              <!-- ── Section: Invoice Details ── -->
-              <div class="form-section full">
-              <div class="form-section-head">Invoice Details</div>
-              <div class="form-section-body">
-              <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
-              <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
-              <label><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
-              </div>
+              <!-- ── Header action bar ── -->
+              <div class="doc-editor-head full">
+                <div class="doc-editor-title">
+                  <div class="doc-title-line">
+                    <span class="doc-kind">Invoice</span>
+                    <span class="doc-hash">#</span><input class="doc-number-input" name="invoiceNumber" id="invoiceNumber" placeholder="—" aria-label="Invoice number" />
+                    <span class="doc-edit-hint" aria-hidden="true">✎</span>
+                  </div>
+                  <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
+                </div>
+                <div class="doc-editor-actions">
+                  <button type="button" class="ghost-btn" id="printInvoice">Preview PDF</button>
+                  <button type="submit" class="primary-btn">Save</button>
+                  <button type="button" class="gold-btn" id="sendInvoice">Send Invoice</button>
+                </div>
               </div>
 
-              <!-- ── Section: Line Items ── -->
+              <!-- ── Info cards: Bill To + Invoice Details ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Bill To</div>
+                  <div class="doc-card-body">
+                    <label class="full"><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
+                    <label><span>Client name</span><input name="clientName" /></label>
+                    <label><span>Phone</span><input name="phone" /></label>
+                    <label><span>Email</span><input name="email" type="email" /></label>
+                    <label class="full"><span>Address</span><input name="address" /></label>
+                    <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head">Invoice Details</div>
+                  <div class="doc-card-body">
+                    <label class="full"><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
+                    <label class="full"><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
+                    <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
+                    <label><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
+                  </div>
+                </section>
+              </div>
+
+              <!-- ── Line items ── -->
               <div class="invoice-items-shell full">
                 <div class="split-head"><strong>Line Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">+ Add line</button></div>
                 <div class="line-items-head invoice-line">
@@ -567,26 +615,25 @@
                 <div class="line-items-totals" id="invoiceLineTotals"></div>
               </div>
 
-              <!-- ── Section: Payments ── -->
+              <!-- ── Payments ── -->
               <div class="invoice-payments-shell full">
                 <div class="split-head"><strong>Payments Received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
                 <div id="invoicePayments" class="stack compact-stack"></div>
                 <div class="balance-callout" id="invoiceBalanceCallout"></div>
               </div>
 
-              <!-- ── Section: Terms ── -->
-              <div class="form-section full">
-              <div class="form-section-head">Terms &amp; Notes</div>
-              <div class="form-section-body">
-              <label class="full"><span>Terms (prints on invoice)</span><textarea name="terms" rows="4" id="invoiceTerms"></textarea></label>
-              </div>
+              <!-- ── Notes to client ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Notes to Client</div>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="terms" rows="5" id="invoiceTerms"></textarea></label>
+                  </div>
+                </section>
               </div>
 
-              <!-- ── Actions ── -->
-              <div class="form-actions full">
-                <button type="submit" class="primary-btn">Save Invoice</button>
-                <button type="button" class="primary-btn" id="sendInvoice">Send</button>
-                <button type="button" class="ghost-btn" id="printInvoice">Print / PDF</button>
+              <!-- ── Secondary actions ── -->
+              <div class="doc-foot-actions full">
                 <button type="button" class="ghost-btn" id="clearInvoiceForm">Clear</button>
               </div>
             </form>
@@ -626,41 +673,58 @@
         <div class="grid two-strong">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Contract Builder</p><h3>Create agreement</h3></div></div>
-            <form id="contractForm" class="form-grid form-doc">
+            <form id="contractForm" class="form-grid form-doc doc-editor">
               <input type="hidden" name="contractId" />
 
-              <div class="form-section full">
-              <div class="form-section-head">Client &amp; Project</div>
-              <div class="form-section-body">
-              <label class="full"><span>Client</span><select name="clientId" id="contractClientSelect" required></select></label>
-              <label><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
-              <label><span>Contract number</span><input name="contractNumber" id="contractNumber" /></label>
-              <label><span>Date</span><input name="date" id="contractDate" type="date" /></label>
-              <label><span>Prepared by</span><input name="user" /></label>
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Ready for Signature</option><option>Sent</option><option>Signed</option></select></label>
-              <label class="full"><span>Billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP" /></label>
-              <label><span>Client phone</span><input name="billingPhone" type="tel" /></label>
-              <label><span>Client email</span><input name="billingEmail" type="email" /></label>
-              </div>
-              </div>
-
-              <div class="form-section full">
-              <div class="form-section-head">Contract Amount &amp; Deposit</div>
-              <div class="form-section-body">
-              <label class="full"><span>Contract amount ($)</span><input name="contractAmount" id="contractAmount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
-              <label><span>Deposit %</span>
-                <select name="depositPercent" id="contractDepositPercent">
-                  <option value="0">No deposit</option>
-                  <option value="10">10%</option>
-                  <option value="20">20%</option>
-                  <option value="30" selected>30%</option>
-                  <option value="40">40%</option>
-                  <option value="50">50%</option>
-                </select>
-              </label>
-              </div>
+              <!-- ── Header action bar ── -->
+              <div class="doc-editor-head full">
+                <div class="doc-editor-title">
+                  <div class="doc-title-line">
+                    <span class="doc-kind">Contract</span>
+                    <span class="doc-hash">#</span><input class="doc-number-input" name="contractNumber" id="contractNumber" placeholder="—" aria-label="Contract number" />
+                    <span class="doc-edit-hint" aria-hidden="true">✎</span>
+                  </div>
+                  <label class="doc-status-wrap"><select name="status" class="doc-status-pill"><option>Draft</option><option>Ready for Signature</option><option>Sent</option><option>Signed</option></select></label>
+                </div>
+                <div class="doc-editor-actions">
+                  <button type="button" class="ghost-btn" id="printContract">Preview PDF</button>
+                  <button type="submit" class="gold-btn">Save Contract</button>
+                </div>
               </div>
 
+              <!-- ── Info cards: Client + Contract Details ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Client &amp; Project</div>
+                  <div class="doc-card-body">
+                    <label class="full"><span>Client</span><select name="clientId" id="contractClientSelect" required></select></label>
+                    <label class="full"><span>Linked estimate</span><select name="linkedEstimateId" id="contractLinkedEstimate"></select></label>
+                    <label class="full"><span>Billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP" /></label>
+                    <label><span>Client phone</span><input name="billingPhone" type="tel" /></label>
+                    <label><span>Client email</span><input name="billingEmail" type="email" /></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head">Contract Details</div>
+                  <div class="doc-card-body">
+                    <label><span>Date</span><input name="date" id="contractDate" type="date" /></label>
+                    <label><span>Prepared by</span><input name="user" /></label>
+                    <label class="full"><span>Contract amount ($)</span><input name="contractAmount" id="contractAmount" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+                    <label><span>Deposit %</span>
+                      <select name="depositPercent" id="contractDepositPercent">
+                        <option value="0">No deposit</option>
+                        <option value="10">10%</option>
+                        <option value="20">20%</option>
+                        <option value="30" selected>30%</option>
+                        <option value="40">40%</option>
+                        <option value="50">50%</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+              </div>
+
+              <!-- ── Payment schedule ── -->
               <div class="contract-payments-shell full">
                 <div class="split-head"><strong>Payment Schedule</strong><button type="button" class="ghost-btn" id="addContractPayment">+ Add milestone</button></div>
                 <div class="payment-schedule-head">
@@ -669,18 +733,25 @@
                 <div id="contractPayments" class="stack compact-stack"></div>
               </div>
 
-              <div class="form-section full">
-              <div class="form-section-head">Scope &amp; Terms</div>
-              <div class="form-section-body">
-              <label class="full"><span>Scope of work</span><textarea name="scope" rows="4" placeholder="Describe the work to be performed under this contract"></textarea></label>
-              <label class="full"><span>Terms &amp; conditions (prints on contract)</span><textarea name="terms" rows="6" id="contractTerms"></textarea></label>
-              <label class="full"><span>Internal notes (not printed)</span><textarea name="notes" rows="2" placeholder="Optional internal notes"></textarea></label>
-              </div>
+              <!-- ── Scope + Terms cards ── -->
+              <div class="doc-cards full">
+                <section class="doc-card">
+                  <div class="doc-card-head">Scope of Work</div>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="scope" rows="5" placeholder="Describe the work to be performed under this contract"></textarea></label>
+                    <label class="full"><span>Internal notes (not printed)</span><textarea name="notes" rows="2" placeholder="Optional internal notes"></textarea></label>
+                  </div>
+                </section>
+                <section class="doc-card">
+                  <div class="doc-card-head">Terms &amp; Conditions</div>
+                  <div class="doc-card-body">
+                    <label class="full"><textarea name="terms" rows="8" id="contractTerms"></textarea></label>
+                  </div>
+                </section>
               </div>
 
-              <div class="form-actions full">
-                <button type="submit" class="primary-btn">Save Contract</button>
-                <button type="button" class="ghost-btn" id="printContract">Print / PDF</button>
+              <!-- ── Secondary actions ── -->
+              <div class="doc-foot-actions full">
                 <button type="button" class="ghost-btn" id="clearContractForm">Clear</button>
               </div>
             </form>

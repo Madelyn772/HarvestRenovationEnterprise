@@ -3128,6 +3128,187 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   border-radius: 8px;
 }
 
+/* ============================================================
+   DOC EDITOR — header action bar + info-card layout.
+   Matches the "document editor" mockups: sticky title/action
+   bar at top, client/project cards, summary sidebar.
+   ============================================================ */
+
+/* Sticky header bar with title, status pill, and primary actions. */
+.doc-editor-head {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+  padding: .85rem 1.1rem;
+}
+.doc-editor-title { display: flex; flex-direction: column; gap: .5rem; min-width: 0; }
+.doc-title-line { display: flex; align-items: center; gap: .35rem; color: #1f1a12; }
+.doc-kind { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; }
+.doc-hash { font-size: 1.35rem; font-weight: 800; color: #b7ac96; }
+.doc-number-input {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #1f1a12;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px dashed transparent !important;
+  border-radius: 0 !important;
+  padding: 0 .1rem !important;
+  width: 8ch;
+  min-width: 4ch;
+}
+.doc-number-input:focus {
+  outline: none;
+  border-bottom: 1px dashed #caa05a !important;
+  box-shadow: none !important;
+}
+.doc-edit-hint { color: #b7ac96; font-size: .9rem; }
+
+/* Status pill: styled select. */
+.doc-status-wrap { display: inline-flex; }
+.doc-status-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #8a6520 !important;
+  background: #faf3e6 !important;
+  border: 1px solid #e6d3ab !important;
+  border-radius: 999px !important;
+  padding: .3rem 1.6rem .3rem .8rem !important;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a6520' stroke-width='1.5' fill='none'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right .6rem center !important;
+}
+
+.doc-editor-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.doc-editor-actions .ghost-btn,
+.doc-editor-actions .primary-btn,
+.doc-editor-actions .gold-btn {
+  padding: .6rem 1rem;
+  border-radius: 10px;
+  font-size: .85rem;
+  box-shadow: none;
+}
+.doc-editor-actions .primary-btn {
+  background: #ffffff;
+  color: #1f1a12;
+  border: 1px solid #ddd9cf;
+  font-weight: 700;
+}
+.doc-editor-actions .primary-btn:hover { background: #faf8f3; transform: none; }
+
+/* Gold call-to-action (Send/Save). */
+.gold-btn {
+  background: linear-gradient(135deg, #d9ae6b 0%, #caa05a 100%);
+  color: #1a1610;
+  font-weight: 700;
+  border: 1px solid #c2954a;
+  padding: .6rem 1.1rem;
+  border-radius: 10px;
+}
+.gold-btn:hover { filter: brightness(1.03); }
+
+/* Info-card grid rows. */
+.doc-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.doc-cards > .doc-card:only-child { grid-column: 1 / -1; }
+.doc-card {
+  background: #ffffff;
+  border: 1px solid #e2e0d8;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.doc-card-head {
+  background: #faf8f3;
+  border-bottom: 1px solid #eae6dc;
+  color: #8a6520;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: .7rem 1.1rem;
+}
+.doc-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1.1rem;
+}
+.doc-card-body .full { grid-column: 1 / -1; }
+
+/* Footer secondary actions. */
+.doc-foot-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+/* Dark theme. */
+.theme-dark .doc-editor-head,
+.theme-dark .doc-card {
+  background: #211c15;
+  border-color: #3a342a;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.theme-dark .doc-card-head {
+  background: #261f17;
+  border-color: #3a342a;
+  color: #caa05a;
+}
+.theme-dark .doc-title-line,
+.theme-dark .doc-kind,
+.theme-dark .doc-number-input { color: #f0e2c4; }
+.theme-dark .doc-hash,
+.theme-dark .doc-edit-hint { color: #7a6f57; }
+.theme-dark .doc-status-pill {
+  color: #e9d8b6 !important;
+  background: #2c2318 !important;
+  border-color: #4a3d29 !important;
+}
+.theme-dark .doc-editor-actions .primary-btn {
+  background: #2a2419;
+  color: #f0e2c4;
+  border-color: #4a4335;
+}
+
+/* Mobile: stack info cards, relax the sticky header. */
+@media (max-width: 768px) {
+  .doc-cards,
+  .doc-card-body {
+    grid-template-columns: 1fr;
+  }
+  .doc-editor-head {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .doc-editor-actions { justify-content: stretch; }
+  .doc-editor-actions .ghost-btn,
+  .doc-editor-actions .primary-btn,
+  .doc-editor-actions .gold-btn { flex: 1; }
+}
+
+
 
 
 
