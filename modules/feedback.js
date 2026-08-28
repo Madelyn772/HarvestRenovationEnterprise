@@ -143,7 +143,7 @@ export function renderBugReports() {
       if (c.system) return `<div class="bug-comment system"><span>🔔 ${escapeHtml(c.body || '')} — ${escapeHtml(c.author || '')} · ${escapeHtml(formatDateTime(c.at))}</span></div>`;
       return `<div class="bug-comment${c.author === me ? ' mine' : ''}${c.internal ? ' internal' : ''}"><div class="bc-head"><span class="bc-author">${escapeHtml(c.author || 'User')}${c.internal ? ' <span class="bc-internal-tag">Internal</span>' : ''}</span><span class="muted tiny">${escapeHtml(formatDateTime(c.at))}</span></div><p>${escapeHtml(c.body || '')}</p></div>`;
     }).join('');
-    const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Write a message…" /><button type="button" class="ghost-btn bug-comment-send" data-bug-id="${r.id}" data-internal="false" title="Send a reply that notifies the person who created this ticket">Reply to reporter</button><button type="button" class="ghost-btn bug-comment-note" data-bug-id="${r.id}" data-internal="true" title="Add a private note for workflow/documentation — the reporter is not notified">Internal note</button></div></div>`;
+    const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Write a message…" /><select class="bug-comment-type" data-bug-id="${r.id}" title="Choose who this message is for"><option value="true">Internal note</option><option value="false">Reply to reporter</option></select><button type="button" class="gold-btn bug-comment-send" data-bug-id="${r.id}">Send</button></div></div>`;
     return `<details class="bug-row${isMine && unread ? ' has-unread' : ''}">
       <summary class="bug-row-summary">
         <span class="bug-chevron" aria-hidden="true">›</span>
@@ -167,23 +167,26 @@ export function renderBugReports() {
     </details>`;
   }).join('');
   list.querySelectorAll('.bug-status-btn').forEach(btn => btn.addEventListener('click', () => updateBugStatus(btn.dataset.bugId, btn.dataset.status)));
-  list.querySelectorAll('.bug-comment-send, .bug-comment-note').forEach(btn => btn.addEventListener('click', () => submitComment(btn.dataset.bugId, btn.dataset.internal === 'true')));
+  list.querySelectorAll('.bug-comment-send').forEach(btn => btn.addEventListener('click', () => submitComment(btn.dataset.bugId)));
   list.querySelectorAll('.bug-comment-input').forEach(inp => inp.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); submitComment(inp.dataset.bugId, false); }
+    if (e.key === 'Enter') { e.preventDefault(); submitComment(inp.dataset.bugId); }
   }));
 }
 
-// Post a message on a ticket. A public reply notifies the reporter; an internal
-// note is workflow/documentation only (reporter isn't notified and can't see it).
-function submitComment(id, internal = false) {
+// Post a message on a ticket. The type dropdown chooses the audience: an
+// internal note is workflow/documentation only (reporter not notified/can't see
+// it); a reply to the reporter notifies them.
+function submitComment(id) {
   const input = el.bugReportList.querySelector(`.bug-comment-input[data-bug-id="${id}"]`);
   const body = (input?.value || '').trim();
   if (!body) return;
+  const typeSel = el.bugReportList.querySelector(`.bug-comment-type[data-bug-id="${id}"]`);
+  const internal = typeSel ? typeSel.value === 'true' : true;
   const report = (state.store.bugReports || []).find(b => b.id === id);
   if (!report) return;
   const me = currentUserName();
   report.comments = report.comments || [];
-  report.comments.push({ id: uid('CMT'), author: me, authorEmail: state.profile?.email || '', body, at: new Date().toISOString(), internal: !!internal });
+  report.comments.push({ id: uid('CMT'), author: me, authorEmail: state.profile?.email || '', body, at: new Date().toISOString(), internal });
   report.updatedAt = new Date().toISOString();
   if (report.submittedBy === me) report.submitterSeenAt = report.updatedAt;
   addActivity(`${internal ? 'Added an internal note on' : 'Replied on'} report "${report.title}".`, 'Feedback');
