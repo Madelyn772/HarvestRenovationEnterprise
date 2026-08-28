@@ -384,30 +384,58 @@
         <div class="grid two-strong">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Estimate Builder</p><h3>Create proposal</h3></div></div>
-            <form id="estimateForm" class="form-grid">
+            <form id="estimateForm" class="form-grid form-doc">
               <input type="hidden" name="estimateId" />
-              <div class="mobile-section"><button type="button" class="mobile-section-head">Client</button><div class="mobile-section-body">
-              <label><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
-              <label><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
+
+              <!-- ── Section: Client & Project ── -->
+              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Client &amp; Project</button><div class="mobile-section-body">
+              <label class="full"><span>Starter items</span><select name="templateKey" id="estimateTemplateSelect"></select></label>
+              <label class="full"><span>Client *</span><select name="clientId" id="estimateClientSelect" required></select></label>
               <div class="new-client-fields full is-hidden" id="estimateNewClientFields">
                 <p class="full new-client-note muted tiny">New client info — only needed when adding a client that is not on the list.</p>
                 <label><span>New client name</span><input name="clientName" placeholder="Type to add a client not in the list" /></label>
                 <label><span>New client phone</span><input name="clientPhone" /></label>
-                <label><span>New client email</span><input name="clientEmail" type="email" /></label>
+                <label class="full"><span>New client email</span><input name="clientEmail" type="email" /></label>
                 <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
               </div>
               <label class="full"><span>Project / billing address</span><input name="billingAddress" placeholder="Street, City, ST ZIP (prints in Bill To)" /></label>
-              <label class="full"><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
-              <label class="full"><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS delivery (optional)" /></label>
+              <label><span>Client email</span><input name="billingEmail" type="email" placeholder="Prints in Bill To" /></label>
+              <label><span>Client phone</span><input type="tel" id="estimateClientPhone" placeholder="For e-signature SMS (optional)" /></label>
               <label class="full inline-check"><input type="checkbox" id="useClientPhone" checked /><span>Use client&rsquo;s saved phone</span></label>
               </div></div>
-              <div class="mobile-section"><button type="button" class="mobile-section-head">Estimate details</button><div class="mobile-section-body">
+
+              <!-- ── Section: Estimate Details ── -->
+              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Estimate Details</button><div class="mobile-section-body">
               <label><span>Estimate number</span><input name="estimateNumber" id="estimateNumber" /></label>
               <label><span>Date *</span><input name="date" id="estimateDate" type="date" required /></label>
               <label><span>Prepared by</span><input name="user" /></label>
               <label><span>Trade</span><input name="trade" /></label>
+              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
               </div></div>
-              <div class="mobile-section"><button type="button" class="mobile-section-head">Deposit</button><div class="mobile-section-body">
+
+              <!-- ── Section: Line Items ── -->
+              <div class="estimate-items-shell full">
+                <div class="split-head"><strong>Line Items</strong>
+                  <div class="line-item-tools">
+                    <button type="button" class="ghost-btn" id="loadTemplateItems">Load template items</button>
+                    <button type="button" class="ghost-btn" id="addEstimateRow">+ Add line</button>
+                  </div>
+                </div>
+                <div class="line-items-head">
+                  <span>Description</span><span>Category</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
+                </div>
+                <div id="estimateItems" class="stack compact-stack"></div>
+                <div class="line-items-totals" id="estimateLineTotals"></div>
+              </div>
+
+              <!-- ── Section: Scope & Comments ── -->
+              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Scope &amp; Comments</button><div class="mobile-section-body">
+              <label class="full"><span>Scope of work</span><textarea name="scope" rows="4" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
+              <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
+              </div></div>
+
+              <!-- ── Section: Pricing & Terms ── -->
+              <div class="mobile-section form-section full"><button type="button" class="mobile-section-head">Pricing &amp; Terms</button><div class="mobile-section-body">
               <label><span>Deposit</span>
                 <select name="depositPercent" id="estimateDepositPercent">
                   <option value="0">No deposit</option>
@@ -420,31 +448,15 @@
                 </select>
               </label>
               <label id="estimateDepositCustomWrap" class="hidden"><span>Custom deposit %</span><input name="depositPercentCustom" type="number" min="0" max="100" step="1" /></label>
-              </div></div>
-              <div class="mobile-section"><button type="button" class="mobile-section-head">Scope &amp; status</button><div class="mobile-section-body">
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Approved</option><option>Declined</option></select></label>
-              <label class="full"><span>Scope of work</span><textarea name="scope" rows="5" placeholder="Optional — add notes, exclusions, or project context. Line items above describe the work."></textarea></label>
-              <label class="full"><span>Comments (printed on the estimate)</span><textarea name="comments" rows="3" placeholder="Optional note shown in the Comments box on the PDF"></textarea></label>
-              </div></div>
-              <div class="estimate-items-shell full">
-                <div class="split-head"><strong>Line items</strong>
-                  <div class="line-item-tools">
-                    <button type="button" class="ghost-btn" id="loadTemplateItems">Load template items</button>
-                    <button type="button" class="ghost-btn" id="addEstimateRow">+ Add line</button>
-                  </div>
-                </div>
-                <div class="line-items-head">
-                  <span>Description</span><span>Category</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
-                </div>
-                <div id="estimateItems" class="stack compact-stack"></div>
-                <div class="line-items-totals" id="estimateLineTotals"></div>
-              </div>
               <label><span>Final markup %</span><input name="finalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
               <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
-              <label><span>Permits &amp; fees ($, pass-through)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
+              <label><span>Permits &amp; fees ($)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
               <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
               <label class="full inline-check"><input type="checkbox" name="signatureBlockEnabled" checked /><span>Print signature block on PDF</span></label>
-              <label class="full"><span>Terms &amp; conditions (prints on estimate)</span><textarea name="termsAndConditions" rows="6" id="estimateTerms"></textarea></label>
+              <label class="full"><span>Terms &amp; conditions (prints on estimate)</span><textarea name="termsAndConditions" rows="5" id="estimateTerms"></textarea></label>
+              </div></div>
+
+              <!-- ── Actions ── -->
               <div class="form-actions full">
                 <button type="button" class="secondary-btn" id="calculateEstimate">Calculate</button>
                 <button type="submit" class="primary-btn">Save Estimate</button>
@@ -515,34 +527,61 @@
         <div class="grid two">
           <article class="card">
             <div class="card-head"><div><p class="eyebrow">Invoices</p><h3>Create invoice</h3></div></div>
-            <form id="invoiceForm" class="form-grid">
+            <form id="invoiceForm" class="form-grid form-doc">
               <input type="hidden" name="invoiceId" />
-              <label><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
+
+              <!-- ── Section: Client & Project ── -->
+              <div class="form-section full">
+              <div class="form-section-head">Client &amp; Project</div>
+              <div class="form-section-body">
+              <label class="full"><span>Client</span><select name="clientId" id="invoiceClientSelect"></select></label>
               <label><span>Related estimate</span><select name="relatedEstimate" id="relatedEstimate"></select></label>
               <label><span>Related change order</span><input name="relatedChangeOrder" id="relatedChangeOrder" readonly placeholder="—" /></label>
-              <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
-              <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
               <label><span>Client name</span><input name="clientName" /></label>
-              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
               <label><span>Phone</span><input name="phone" /></label>
               <label><span>Email</span><input name="email" type="email" /></label>
               <label class="full"><span>Address</span><input name="address" /></label>
               <label class="full inline-check"><input type="checkbox" name="saveAsClient" checked /><span>Save the typed client as a new client record</span></label>
+              </div>
+              </div>
+
+              <!-- ── Section: Invoice Details ── -->
+              <div class="form-section full">
+              <div class="form-section-head">Invoice Details</div>
+              <div class="form-section-body">
+              <label><span>Invoice number</span><input name="invoiceNumber" id="invoiceNumber" /></label>
+              <label><span>Date</span><input name="date" id="invoiceDate" type="date" /></label>
+              <label><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
+              <label><span>Status</span><select name="status"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option></select></label>
+              </div>
+              </div>
+
+              <!-- ── Section: Line Items ── -->
               <div class="invoice-items-shell full">
-                <div class="split-head"><strong>Invoice Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">Add Row</button></div>
+                <div class="split-head"><strong>Line Items</strong><button type="button" class="ghost-btn" id="addInvoiceRow">+ Add line</button></div>
                 <div class="line-items-head invoice-line">
                   <span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span><span></span>
                 </div>
                 <div id="invoiceItems" class="stack compact-stack"></div>
                 <div class="line-items-totals" id="invoiceLineTotals"></div>
               </div>
+
+              <!-- ── Section: Payments ── -->
               <div class="invoice-payments-shell full">
-                <div class="split-head"><strong>Payments received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
+                <div class="split-head"><strong>Payments Received</strong><button type="button" class="ghost-btn" id="addPaymentRow">+ Record payment</button></div>
                 <div id="invoicePayments" class="stack compact-stack"></div>
                 <div class="balance-callout" id="invoiceBalanceCallout"></div>
               </div>
-              <label><span>Due date</span><input name="dueDate" id="invoiceDueDate" type="date" /></label>
+
+              <!-- ── Section: Terms ── -->
+              <div class="form-section full">
+              <div class="form-section-head">Terms &amp; Notes</div>
+              <div class="form-section-body">
               <label class="full"><span>Terms (prints on invoice)</span><textarea name="terms" rows="4" id="invoiceTerms"></textarea></label>
+              </div>
+              </div>
+
+              <!-- ── Actions ── -->
               <div class="form-actions full">
                 <button type="submit" class="primary-btn">Save Invoice</button>
                 <button type="button" class="primary-btn" id="sendInvoice">Send</button>
@@ -1009,5 +1048,6 @@
   </template>
 
   <script type="module" src="./app-bootstrap.js?v=20260815-57"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>

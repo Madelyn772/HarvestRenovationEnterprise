@@ -2819,4 +2819,108 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .tip-admin { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .tip-admin .checklist-add { flex: 1 1 auto; }
 
+/* ============================================================
+   FORM SECTION CARDS — document-style layout for estimate and
+   invoice forms. Each section is a bordered card with a gold
+   header and an internal 2-column grid for its fields.
+   Appended last so these rules win the cascade.
+   ============================================================ */
+
+/* The form itself becomes a vertical stack of section cards. */
+.form-doc {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+/* Base form-section: a bordered card with a header bar and body grid.
+   Used by the invoice form (non-accordion). */
+.form-section {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.form-section-head {
+  display: flex;
+  align-items: center;
+  padding: .65rem 1rem;
+  background: rgba(202,160,90,.08);
+  border-bottom: 1px solid var(--line);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+}
+.form-section-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+.form-section-body .full { grid-column: 1 / -1; }
+
+/* Override mobile-section display:contents for form-sections on desktop.
+   The mobile-section wrappers on the estimate form become visual cards
+   instead of invisible pass-throughs. */
+.mobile-section.form-section {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.mobile-section.form-section .mobile-section-head {
+  display: flex;
+  align-items: center;
+  padding: .65rem 1rem;
+  background: rgba(202,160,90,.08);
+  border-bottom: 1px solid var(--line);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.mobile-section.form-section .mobile-section-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+.mobile-section.form-section .mobile-section-body .full { grid-column: 1 / -1; }
+
+/* Light theme overrides for form sections. */
+.theme-light .form-section,
+.theme-light .mobile-section.form-section {
+  border-color: rgba(31,26,20,.10);
+}
+.theme-light .form-section-head,
+.theme-light .mobile-section.form-section .mobile-section-head {
+  background: rgba(205,161,90,.10);
+  border-color: rgba(31,26,20,.10);
+  color: #8a6520;
+}
+.theme-light .form-section-body,
+.theme-light .mobile-section.form-section .mobile-section-body {
+  background: #ffffff;
+}
+
+/* Mobile: sections collapse to 1-column, keep accordion behavior
+   for mobile-section wrappers (estimate form). Invoice form sections
+   stay open — they're lightweight enough to scroll. */
+@media (max-width: 960px) {
+  .form-section-body,
+  .mobile-section.form-section .mobile-section-body {
+    grid-template-columns: 1fr;
+  }
+  .mobile-section.form-section.is-collapsed .mobile-section-body {
+    display: none;
+  }
+}
+
 
