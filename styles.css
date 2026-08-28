@@ -3753,6 +3753,14 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .bug-comment { padding: .5rem .65rem; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
 .bug-comment.mine { background: rgba(202,160,90,.10); border-color: rgba(202,160,90,.3); }
 .bug-comment.internal { background: rgba(120,120,140,.10); border-style: dashed; }
+.bug-comment.system {
+  background: rgba(202,160,90,.08);
+  border-color: rgba(202,160,90,.25);
+  text-align: center;
+  font-size: .8rem;
+  color: var(--muted);
+  padding: .4rem .6rem;
+}
 .bug-comment .bc-internal-tag {
   display: inline-block;
   margin-left: .4rem;

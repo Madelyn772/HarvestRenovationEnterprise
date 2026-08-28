@@ -72,9 +72,12 @@ function readFileAsDataUrl(file) {
 export function updateBugStatus(id, status) {
   if (!isAdmin()) return;
   const report = (state.store.bugReports || []).find(b => b.id === id);
-  if (!report || !STATUSES.includes(status)) return;
+  if (!report || !STATUSES.includes(status) || report.status === status) return;
   report.status = status;
   report.updatedAt = new Date().toISOString();
+  // System message in the thread notifies the reporter (via the unread badge).
+  report.comments = report.comments || [];
+  report.comments.push({ id: uid('CMT'), author: currentUserName(), authorEmail: state.profile?.email || '', body: `Status changed to ${status}.`, at: report.updatedAt, internal: false, system: true });
   addActivity(`Marked report "${report.title}" as ${status}.`, 'Feedback');
   saveStore('Bug report updated');
   renderBugReports();
@@ -116,7 +119,10 @@ export function renderBugReports() {
         ? `<a href="${att.fileData}" target="_blank" rel="noopener" class="bug-attach" title="${escapeHtml(att.fileName || 'attachment')}"><img src="${att.fileData}" alt="${escapeHtml(att.fileName || 'attachment')}" class="bug-attach-thumb" /></a>`
         : `<a href="${att.fileData}" download="${escapeHtml(att.fileName || 'attachment')}" class="bug-attach">📎 ${escapeHtml(att.fileName || 'Attachment')}</a>`)
       : '';
-    const commentsHtml = (r.comments || []).filter(c => !c.internal || admin || !isMine || c.author === me).map(c => `<div class="bug-comment${c.author === me ? ' mine' : ''}${c.internal ? ' internal' : ''}"><div class="bc-head"><span class="bc-author">${escapeHtml(c.author || 'User')}${c.internal ? ' <span class="bc-internal-tag">Internal</span>' : ''}</span><span class="muted tiny">${escapeHtml(formatDateTime(c.at))}</span></div><p>${escapeHtml(c.body || '')}</p></div>`).join('');
+    const commentsHtml = (r.comments || []).filter(c => !c.internal || admin || !isMine || c.author === me).map(c => {
+      if (c.system) return `<div class="bug-comment system"><span>🔔 ${escapeHtml(c.body || '')} — ${escapeHtml(c.author || '')} · ${escapeHtml(formatDateTime(c.at))}</span></div>`;
+      return `<div class="bug-comment${c.author === me ? ' mine' : ''}${c.internal ? ' internal' : ''}"><div class="bc-head"><span class="bc-author">${escapeHtml(c.author || 'User')}${c.internal ? ' <span class="bc-internal-tag">Internal</span>' : ''}</span><span class="muted tiny">${escapeHtml(formatDateTime(c.at))}</span></div><p>${escapeHtml(c.body || '')}</p></div>`;
+    }).join('');
     const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Write a message…" /><button type="button" class="ghost-btn bug-comment-send" data-bug-id="${r.id}" data-internal="false" title="Send a reply that notifies the person who created this ticket">Reply to reporter</button><button type="button" class="ghost-btn bug-comment-note" data-bug-id="${r.id}" data-internal="true" title="Add a private note for workflow/documentation — the reporter is not notified">Internal note</button></div></div>`;
     return `<div class="bug-card stack-item${isMine && unread ? ' has-unread' : ''}">
       <div class="bug-card-top">
