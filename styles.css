@@ -3716,6 +3716,36 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .wip-banner strong { color: #8a6520; }
 .theme-light .main .wip-banner { background: #fbf3e4; color: #8a6520; border-color: #ecd9b3; border-left-color: #caa05a; }
 
+/* ── Service Desk: filters, ticket comments, reply notifications ── */
+.bug-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .9rem; }
+.bug-filters select { flex: 1 1 auto; min-width: 8rem; }
+
+.bug-card.has-unread { border-color: var(--gold, #caa05a); box-shadow: 0 0 0 1px rgba(202,160,90,.35); }
+.bug-new-reply {
+  display: inline-block;
+  padding: .1rem .5rem;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #1a1610;
+  background: linear-gradient(135deg, #e0b878, #caa05a);
+  border-radius: 999px;
+}
+
+.bug-comments { margin-top: .75rem; padding-top: .6rem; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: .5rem; }
+.bug-comment { padding: .5rem .65rem; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.bug-comment.mine { background: rgba(202,160,90,.10); border-color: rgba(202,160,90,.3); }
+.bug-comment .bc-head { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; }
+.bug-comment .bc-author { font-weight: 700; font-size: .82rem; }
+.bug-comment p { margin: .25rem 0 0; font-size: .88rem; }
+.bug-comment-add { display: flex; gap: .5rem; margin-top: .15rem; }
+.bug-comment-add .bug-comment-input { flex: 1; }
+.bug-comment-add .ghost-btn { padding: .5rem .9rem; }
+
+.theme-light .main .bug-comment { background: #f6f3ec; border-color: rgba(31,26,20,.08); }
+.theme-light .main .bug-comment.mine { background: #faf3e4; border-color: #ecd9b3; }
+
 
 
 

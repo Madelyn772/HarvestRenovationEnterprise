@@ -6,7 +6,7 @@ import { renderClients, renderLeads, renderClientDetail, handleClientSave, handl
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
-import { handleBugReportSave, renderBugReports, openBugReportCount } from './feedback.js';
+import { handleBugReportSave, renderBugReports, openBugReportCount, myUnreadCommentCount, markMyCommentsSeen } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
 import { renderEmployees, renderTeamPending, renderReadiness } from './team.js';
 import { renderPendingUsers, handleAdminGrantAccess } from './admin.js';
@@ -282,6 +282,12 @@ export function bindAppUi() {
     const clearFeedback = document.getElementById('clearFeedbackForm');
     if (clearFeedback) clearFeedback.addEventListener('click', () => el.feedbackForm.reset());
   }
+  // Service Desk filters.
+  const bugFilters = [['bugFilterArea', 'bugArea'], ['bugFilterType', 'bugType'], ['bugFilterSeverity', 'bugSeverity']];
+  bugFilters.forEach(([id, key]) => {
+    const sel = document.getElementById(id);
+    if (sel) sel.addEventListener('change', () => { state.filters[key] = sel.value; renderBugReports(); });
+  });
   const clearUploadBtn = document.getElementById('clearUploadDocForm');
   if (clearUploadBtn && el.uploadDocForm) clearUploadBtn.addEventListener('click', () => el.uploadDocForm.reset());
   if (el.toggleUploadBtn && el.uploadPanel) {
@@ -442,7 +448,7 @@ export function renderCurrentView() {
       renderTeamPending();
       renderReadiness();
     },
-    feedback: () => renderBugReports(),
+    feedback: () => { renderBugReports(); markMyCommentsSeen(); },
     settings: () => {},
     admin: () => renderPendingUsers(),
     trash: () => renderTrash()
@@ -657,7 +663,7 @@ export function renderNavCounts() {
     contracts: state.store.contracts.length,
     operations: activeJobs,
     documents: state.store.documents.length,
-    feedback: isAdmin() ? openBugReportCount() : 0,
+    feedback: (isAdmin() ? openBugReportCount() : 0) + myUnreadCommentCount(),
     trash: state.store.trash.length,
     admin: isAdmin() ? state.pendingUsers.length : 0
   };

@@ -84,15 +84,27 @@ export function updateBugStatus(id, status) {
 export function renderBugReports() {
   const list = el.bugReportList;
   if (!list) return;
-  const reports = [...(state.store.bugReports || [])].sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+  const me = currentUserName();
+  const email = state.profile?.email || '';
+  const fArea = state.filters.bugArea || '';
+  const fType = state.filters.bugType || '';
+  const fSev = state.filters.bugSeverity || '';
+  let reports = [...(state.store.bugReports || [])].sort((a, b) => (b.submittedAt || '').localeCompare(a.submittedAt || ''));
+  reports = reports.filter(r =>
+    (!fArea || (r.area || 'Other') === fArea) &&
+    (!fType || (r.kind || 'Bug') === fType) &&
+    (!fSev || (r.severity || 'Medium') === fSev));
   if (!reports.length) {
-    list.innerHTML = emptyHtml('No reports yet. Use the form to submit one.');
+    list.innerHTML = emptyHtml((fArea || fType || fSev) ? 'No reports match these filters.' : 'No reports yet. Use the form to submit one.');
     return;
   }
   const admin = isAdmin();
   list.innerHTML = reports.map(r => {
     const statusKey = String(r.status || 'New').toLowerCase().replace(/\s+/g, '-');
     const sevKey = String(r.severity || 'Medium').toLowerCase();
+    const isMine = r.submittedBy === me || (email && r.submittedByEmail === email);
+    const unread = (r.comments || []).filter(c => c.author !== me && (!r.submitterSeenAt || (c.at || '') > r.submitterSeenAt)).length;
+    const replyBadge = isMine && unread > 0 ? `<span class="bug-new-reply">${unread} new repl${unread > 1 ? 'ies' : 'y'}</span>` : '';
     const controls = admin
       ? `<div class="bug-actions">${STATUSES.map(s => `<button type="button" class="ghost-btn bug-status-btn${r.status === s ? ' current' : ''}" data-bug-id="${r.id}" data-status="${s}">${s}</button>`).join('')}${deleteBtn('bugReports', r.id)}</div>`
       : '';
@@ -102,9 +114,12 @@ export function renderBugReports() {
         ? `<a href="${att.fileData}" target="_blank" rel="noopener" class="bug-attach" title="${escapeHtml(att.fileName || 'attachment')}"><img src="${att.fileData}" alt="${escapeHtml(att.fileName || 'attachment')}" class="bug-attach-thumb" /></a>`
         : `<a href="${att.fileData}" download="${escapeHtml(att.fileName || 'attachment')}" class="bug-attach">📎 ${escapeHtml(att.fileName || 'Attachment')}</a>`)
       : '';
-    return `<div class="bug-card stack-item">
+    const commentsHtml = (r.comments || []).map(c => `<div class="bug-comment${c.author === me ? ' mine' : ''}"><div class="bc-head"><span class="bc-author">${escapeHtml(c.author || 'User')}</span><span class="muted tiny">${escapeHtml(formatDateTime(c.at))}</span></div><p>${escapeHtml(c.body || '')}</p></div>`).join('');
+    const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Reply to ${escapeHtml(r.submittedBy || 'reporter')}…" /><button type="button" class="ghost-btn bug-comment-send" data-bug-id="${r.id}">Send</button></div></div>`;
+    return `<div class="bug-card stack-item${isMine && unread ? ' has-unread' : ''}">
       <div class="bug-card-top">
         <strong>${escapeHtml(r.title)}</strong>
+        ${replyBadge}
         <span class="bug-status bug-status-${statusKey}">${escapeHtml(r.status || 'New')}</span>
       </div>
       <div class="bug-meta">
@@ -117,7 +132,58 @@ export function renderBugReports() {
       ${attHtml}
       <p class="muted tiny">By ${escapeHtml(r.submittedBy || 'Unknown')} · ${escapeHtml(formatDateTime(r.submittedAt))}</p>
       ${controls}
+      ${commentBox}
     </div>`;
   }).join('');
   list.querySelectorAll('.bug-status-btn').forEach(btn => btn.addEventListener('click', () => updateBugStatus(btn.dataset.bugId, btn.dataset.status)));
+  list.querySelectorAll('.bug-comment-send').forEach(btn => btn.addEventListener('click', () => submitComment(btn.dataset.bugId)));
+  list.querySelectorAll('.bug-comment-input').forEach(inp => inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); submitComment(inp.dataset.bugId); }
+  }));
+}
+
+// Post a reply on a ticket. If the author isn't the reporter, it becomes an
+// unread notification for the reporter (surfaced on the nav badge + card).
+function submitComment(id) {
+  const input = el.bugReportList.querySelector(`.bug-comment-input[data-bug-id="${id}"]`);
+  const body = (input?.value || '').trim();
+  if (!body) return;
+  const report = (state.store.bugReports || []).find(b => b.id === id);
+  if (!report) return;
+  const me = currentUserName();
+  report.comments = report.comments || [];
+  report.comments.push({ id: uid('CMT'), author: me, authorEmail: state.profile?.email || '', body, at: new Date().toISOString() });
+  report.updatedAt = new Date().toISOString();
+  if (report.submittedBy === me) report.submitterSeenAt = report.updatedAt;
+  addActivity(`Commented on report "${report.title}".`, 'Feedback');
+  saveStore('Comment added');
+  renderBugReports();
+  renderNavCounts();
+  showToast('Reply posted.', 'success');
+}
+
+// How many of MY tickets have unread replies (from someone else).
+export function myUnreadCommentCount() {
+  const me = currentUserName();
+  const email = state.profile?.email || '';
+  return (state.store.bugReports || []).reduce((n, r) => {
+    const mine = r.submittedBy === me || (email && r.submittedByEmail === email);
+    if (!mine) return n;
+    const unread = (r.comments || []).some(c => c.author !== me && (!r.submitterSeenAt || (c.at || '') > r.submitterSeenAt));
+    return n + (unread ? 1 : 0);
+  }, 0);
+}
+
+// Mark my tickets' replies as seen (called when I open the Service Desk view).
+export function markMyCommentsSeen() {
+  const me = currentUserName();
+  const email = state.profile?.email || '';
+  let changed = false;
+  (state.store.bugReports || []).forEach(r => {
+    const mine = r.submittedBy === me || (email && r.submittedByEmail === email);
+    if (!mine) return;
+    const hasUnread = (r.comments || []).some(c => c.author !== me && (!r.submitterSeenAt || (c.at || '') > r.submitterSeenAt));
+    if (hasUnread) { r.submitterSeenAt = new Date().toISOString(); changed = true; }
+  });
+  if (changed) { saveStore('Ticket replies seen'); renderNavCounts(); }
 }
