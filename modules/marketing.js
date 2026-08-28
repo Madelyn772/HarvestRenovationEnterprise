@@ -203,124 +203,126 @@ export function renderDeclineReasons() {
 //    wins + approved estimates, de-duped) over time, grouped by week / month
 //    / quarter / year. ──
 export function renderJobsWonChart() {
-  const canvas = el.jobsWonChart;
-  if (!canvas || !canvas.getContext) return;
+  const host = el.jobsWonChart;
+  if (!host) return;
   const period = el.chartPeriod?.value || 'month';
+  const buckets = buildJobsWonBuckets(period);
+  buckets.forEach(b => { b.count = wonDealsInRange(b.start, b.end).size; });
+  drawJobsWonChart(host, buckets);
+}
+
+function dailyBuckets(n) {
   const now = new Date();
-  const buckets = [];
-
-  if (period === 'week') {
-    for (let i = 11; i >= 0; i--) {
-      const end = new Date(now);
-      end.setHours(23, 59, 59, 999);
-      end.setDate(now.getDate() + (6 - now.getDay()) - i * 7);
-      const start = new Date(end);
-      start.setHours(0, 0, 0, 0);
-      start.setDate(end.getDate() - 6);
-      buckets.push({ start, end, label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) });
-    }
-  } else if (period === 'quarter') {
-    const idx = now.getFullYear() * 4 + Math.floor(now.getMonth() / 3);
-    for (let i = 7; i >= 0; i--) {
-      const q = ((idx - i) % 4 + 4) % 4;
-      const y = Math.floor((idx - i) / 4);
-      buckets.push({
-        start: new Date(y, q * 3, 1, 0, 0, 0, 0),
-        end: new Date(y, q * 3 + 3, 0, 23, 59, 59, 999),
-        label: `Q${q + 1} '${String(y).slice(2)}`
-      });
-    }
-  } else if (period === 'year') {
-    for (let i = 4; i >= 0; i--) {
-      const y = now.getFullYear() - i;
-      buckets.push({ start: new Date(y, 0, 1, 0, 0, 0, 0), end: new Date(y, 11, 31, 23, 59, 59, 999), label: String(y) });
-    }
-  } else {
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      buckets.push({
-        start: new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0),
-        end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999),
-        label: d.toLocaleDateString('en-US', { month: 'short' })
-      });
-    }
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now); d.setDate(now.getDate() - i);
+    const start = new Date(d); start.setHours(0, 0, 0, 0);
+    const end = new Date(d); end.setHours(23, 59, 59, 999);
+    out.push({ start, end, label: `${d.getMonth() + 1}/${d.getDate()}`, full: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) });
   }
+  return out;
+}
 
-  // Count won deals per bucket — combined CRM pipeline wins + approved
-  // estimates, matching the scorecard's Jobs Won.
-  buckets.forEach(b => {
-    b.count = wonDealsInRange(b.start, b.end).size;
-  });
+function weeklyBuckets(n) {
+  const now = new Date();
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const end = new Date(now); end.setHours(23, 59, 59, 999);
+    end.setDate(now.getDate() + (6 - now.getDay()) - i * 7);
+    const start = new Date(end); start.setHours(0, 0, 0, 0); start.setDate(end.getDate() - 6);
+    out.push({ start, end, label: `${start.getMonth() + 1}/${start.getDate()}`, full: `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` });
+  }
+  return out;
+}
 
-  // High-DPI canvas setup; fall back to the attribute size when hidden.
-  const cssW = canvas.clientWidth || 600;
-  const cssH = canvas.clientHeight || 250;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(cssW * dpr);
-  canvas.height = Math.round(cssH * dpr);
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, cssW, cssH);
+function buildJobsWonBuckets(period) {
+  if (period === 'week') return dailyBuckets(7);      // ~7 daily bars
+  if (period === 'quarter') return weeklyBuckets(13);  // ~13 weekly bars
+  if (period === 'year') return weeklyBuckets(52);     // ~52 weekly bars
+  return weeklyBuckets(5);                             // month: ~5 weekly bars
+}
+
+// Round up to the next "nice" number (1,2,5,10,20,50,100,...) for the Y ceiling.
+function niceCeil(v) {
+  if (v <= 0) return 1;
+  let mag = 1;
+  while (mag < 1e9) {
+    for (const s of [1, 2, 5]) { const c = s * mag; if (c >= v) return c; }
+    mag *= 10;
+  }
+  return v;
+}
+
+function drawJobsWonChart(host, buckets) {
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+  if (!total) { host.innerHTML = '<div class="jobs-chart-empty">No jobs won in this period</div>'; return; }
 
   const isLight = document.documentElement.classList.contains('theme-light');
-  const textColor = isLight ? '#2c2419' : '#e9d8b6';
-  const axisColor = isLight ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.18)';
-  const gold = '#B8860B';
+  const grid = isLight ? '#e5e5e5' : 'rgba(255,255,255,0.12)';
+  const text = isLight ? '#6b6153' : '#9a8f78';
+  const strong = isLight ? '#2c2419' : '#e9d8b6';
+  const gold = '#caa05a';
 
-  const padL = 30, padR = 14, padT = 22, padB = 26;
-  const plotW = cssW - padL - padR;
-  const plotH = cssH - padT - padB;
-  const baseY = padT + plotH;
-  const maxCount = Math.max(1, ...buckets.map(b => b.count));
-
-  ctx.font = '11px Inter, Arial, sans-serif';
-  ctx.textBaseline = 'middle';
-
-  // Y gridlines + labels
-  const yTicks = maxCount <= 4 ? Array.from({ length: maxCount + 1 }, (_, i) => i) : [0, Math.round(maxCount / 2), maxCount];
-  ctx.textAlign = 'right';
-  yTicks.forEach(t => {
-    const y = baseY - (t / maxCount) * plotH;
-    ctx.strokeStyle = axisColor;
-    ctx.globalAlpha = t === 0 ? 1 : 0.5;
-    ctx.beginPath();
-    ctx.moveTo(padL, y);
-    ctx.lineTo(cssW - padR, y);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = textColor;
-    ctx.fillText(String(t), padL - 6, y);
-  });
-
+  const W = Math.max(280, Math.round(host.clientWidth || 600));
+  const H = 300;
   const n = buckets.length;
-  const stepX = n > 1 ? plotW / (n - 1) : 0;
-  const pts = buckets.map((b, i) => ({ x: padL + i * stepX, y: baseY - (b.count / maxCount) * plotH, b }));
+  const axisL = 44, padR = 14, padT = 16;
+  const axisB = n > 12 ? 46 : 30; // room for rotated x labels
+  const plotW = W - axisL - padR;
+  const plotH = H - padT - axisB;
+  const baseY = padT + plotH;
+  const maxNice = niceCeil(Math.max(1, ...buckets.map(b => b.count)));
 
-  // X labels (thin them out when crowded)
-  const showEvery = n > 8 ? 2 : 1;
-  ctx.textAlign = 'center';
-  ctx.fillStyle = textColor;
-  pts.forEach((p, i) => {
-    if (i % showEvery === 0 || i === n - 1) ctx.fillText(p.b.label, p.x, baseY + 12);
+  // Grid lines + Y labels at 0/25/50/75/100%.
+  let svg = '';
+  for (let k = 0; k <= 4; k++) {
+    const frac = k / 4;
+    const y = baseY - frac * plotH;
+    svg += `<line x1="${axisL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="${grid}" stroke-width="1"/>`;
+    svg += `<text x="${axisL - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="11" fill="${text}">${Math.round(maxNice * frac)}</text>`;
+  }
+
+  const slot = plotW / n;
+  const barW = Math.max(1, slot * 0.85); // 15% gap
+  const showData = n <= 15;
+  const rotate = n > 12;
+  const showEvery = n > 24 ? 2 : 1;
+  let bars = '', labels = '', dataLabels = '';
+  buckets.forEach((b, i) => {
+    const cx = axisL + i * slot + slot / 2;
+    const h = b.count > 0 ? Math.max(2, (b.count / maxNice) * plotH) : 0;
+    const by = baseY - h;
+    if (h > 0) {
+      bars += `<rect class="jobs-bar" x="${(cx - barW / 2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="${gold}" data-full="${escapeHtml(b.full)}" data-count="${b.count}"/>`;
+    }
+    if (showData && b.count > 0) {
+      dataLabels += `<text x="${cx.toFixed(1)}" y="${(by - 5).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="${strong}">${b.count}</text>`;
+    }
+    if (i % showEvery === 0) {
+      labels += rotate
+        ? `<text x="${cx.toFixed(1)}" y="${(baseY + 13).toFixed(1)}" text-anchor="end" font-size="10" fill="${text}" transform="rotate(-45 ${cx.toFixed(1)} ${(baseY + 13).toFixed(1)})">${escapeHtml(b.label)}</text>`
+        : `<text x="${cx.toFixed(1)}" y="${(baseY + 16).toFixed(1)}" text-anchor="middle" font-size="11" fill="${text}">${escapeHtml(b.label)}</text>`;
+    }
   });
+  svg += `<line x1="${axisL}" y1="${baseY.toFixed(1)}" x2="${W - padR}" y2="${baseY.toFixed(1)}" stroke="${grid}" stroke-width="1.5"/>`;
+  svg += bars + dataLabels + labels;
 
-  // Trend line
-  ctx.strokeStyle = gold;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  pts.forEach((p, i) => { i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y); });
-  ctx.stroke();
+  host.innerHTML = `<svg class="jobs-chart" width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Jobs won chart">${svg}</svg><div class="jobs-tooltip" hidden></div>`;
 
-  // Dots + counts above them
-  ctx.fillStyle = gold;
-  pts.forEach(p => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+  // Hover tooltips (positioned from the rendered bar rect, robust to scaling).
+  const tip = host.querySelector('.jobs-tooltip');
+  host.querySelectorAll('.jobs-bar').forEach(rect => {
+    rect.addEventListener('mouseenter', () => {
+      const count = rect.getAttribute('data-count');
+      tip.innerHTML = `<strong>${escapeHtml(rect.getAttribute('data-full') || '')}</strong><span>${count} job${count === '1' ? '' : 's'} won</span>`;
+      const r = rect.getBoundingClientRect();
+      const hr = host.getBoundingClientRect();
+      tip.style.left = `${r.left + r.width / 2 - hr.left}px`;
+      tip.style.top = `${r.top - hr.top - 8}px`;
+      tip.hidden = false;
+    });
+    rect.addEventListener('mouseleave', () => { tip.hidden = true; });
   });
-  ctx.fillStyle = textColor;
-  ctx.textAlign = 'center';
-  pts.forEach(p => { if (p.b.count) ctx.fillText(String(p.b.count), p.x, p.y - 12); });
 }
 
 export function renderCampaigns() {

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-31" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-32" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -1019,15 +1019,15 @@
             <div class="scorecard-period">
               <label><span>View</span>
                 <select id="chartPeriod">
-                  <option value="week">Weekly (last 12 weeks)</option>
-                  <option value="month" selected>Monthly (last 12 months)</option>
-                  <option value="quarter">Quarterly (last 8 quarters)</option>
-                  <option value="year">Yearly (last 5 years)</option>
+                  <option value="week">Week (daily)</option>
+                  <option value="month" selected>Month (weekly)</option>
+                  <option value="quarter">Quarter (weekly)</option>
+                  <option value="year">Year (weekly)</option>
                 </select>
               </label>
             </div>
           </div>
-          <canvas id="jobsWonChart" width="600" height="250"></canvas>
+          <div id="jobsWonChart"></div>
         </article>
         <!-- ── Decline Reasons (why are we losing jobs?) ── -->
         <article class="card">
