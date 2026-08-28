@@ -4129,6 +4129,74 @@ html:not(.theme-light) .followup-count-badge { background: rgba(220,38,38,.16); 
   .log-contact-btn { font-size: .7rem; }
 }
 
+/* ── Dashboard Redesign ── */
+.action-items-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.action-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 8px; cursor: pointer;
+  transition: background .15s, transform .1s;
+  border-left: 4px solid transparent;
+  background: rgba(255,255,255,.03);
+}
+.action-item:hover { transform: translateX(2px); background: rgba(255,255,255,.06); }
+.theme-light .action-item { background: #faf7f0; }
+.theme-light .action-item:hover { background: #f3ecdd; }
+.action-item--red { border-left-color: #dc2626; }
+.action-item--orange { border-left-color: #ea580c; }
+.action-item--yellow { border-left-color: #ca8a04; }
+.action-item--blue { border-left-color: #2563eb; }
+.action-item-icon { font-size: 18px; flex-shrink: 0; }
+.action-item-label { flex: 1; font-size: 14px; color: var(--text); }
+.action-item-arrow { color: var(--muted); font-size: 16px; }
+.action-items-date { font-size: 12px; color: var(--muted); }
+.action-items-all-clear { text-align: center; padding: 24px; color: #16a34a; font-size: 16px; font-weight: 600; }
+
+/* Receivables */
+.receivables-body { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.receivables-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.receivables-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.receivables-dot--red { background: #dc2626; }
+.receivables-dot--yellow { background: #ca8a04; }
+.receivables-dot--orange { background: #ea580c; }
+.receivables-label { flex: 1; font-size: 13px; color: var(--text); }
+.receivables-count { font-size: 12px; color: var(--muted); margin-right: 12px; }
+.receivables-amount { font-weight: 600; font-size: 14px; color: var(--text); }
+.receivables-total { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--gold, #c9a227); }
+.receivables-total-label { font-weight: 600; font-size: 14px; color: var(--text); }
+.receivables-total-amount { font-weight: 700; font-size: 20px; color: var(--text); }
+
+/* Speed-to-lead tiles */
+.dashboard-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.kpi-tile { text-align: center; padding: 20px; }
+.kpi-tile-value { font-size: 28pt; font-weight: 800; color: var(--gold, #c9a227); margin: 8px 0 4px; line-height: 1.1; }
+.kpi-tile-label { font-size: 11pt; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.kpi-tile-sub { font-size: 11px; margin-top: 8px; min-height: 14px; }
+.kpi-tile-sub--good { color: #16a34a; }
+.kpi-tile-sub--warn { color: #ca8a04; }
+.kpi-tile-sub--bad { color: #dc2626; }
+
+/* Funnel charts */
+.funnel-chart-wrap { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.funnel-row { display: flex; align-items: center; gap: 12px; }
+.funnel-label { width: 160px; font-size: 13px; font-weight: 500; text-align: right; flex-shrink: 0; color: var(--text); }
+.funnel-bar-wrap { flex: 1; height: 28px; background: #211c15; border-radius: 4px; overflow: hidden; }
+.theme-light .funnel-bar-wrap { background: #f5f3ee; }
+.funnel-bar { height: 100%; border-radius: 4px; transition: width 400ms ease; background: var(--gold, #c9a227); min-width: 2px; }
+.funnel-bar--won { background: #16a34a; }
+.funnel-bar--lost { background: #b91c1c; opacity: .7; }
+.funnel-bar--collected { background: #16a34a; }
+.funnel-value { width: 100px; font-weight: 600; font-size: 13px; text-align: right; flex-shrink: 0; color: var(--text); }
+.funnel-empty { text-align: center; padding: 24px; color: var(--muted); font-size: 14px; }
+
+@media (max-width: 640px) {
+  .dashboard-duo { grid-template-columns: 1fr; }
+  .funnel-label { width: 100px; font-size: 11px; }
+  .funnel-value { width: 80px; font-size: 12px; }
+  .action-item-label { font-size: 13px; }
+  .kpi-tile-value { font-size: 22pt; }
+  .receivables-total-amount { font-size: 16px; }
+}
+
 
 
 

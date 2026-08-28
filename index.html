@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-46" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-47" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -169,6 +169,18 @@
       </header>
 
       <section class="view active" id="dashboardView">
+        <!-- ── Today's Action Items ── -->
+        <article class="card" id="actionItemsCard">
+          <div class="card-head">
+            <div>
+              <p class="eyebrow">Daily Focus</p>
+              <h3>Today's Action Items</h3>
+            </div>
+            <span class="action-items-date" id="actionItemsDate"></span>
+          </div>
+          <div class="action-items-list" id="actionItemsList"></div>
+        </article>
+
         <div class="hero-panel">
           <div>
             <p class="eyebrow">Executive Command Center</p>
@@ -181,6 +193,40 @@
             <button class="ghost-btn" data-view-trigger="calendars">Open Calendars</button>
           </div>
         </div>
+
+        <!-- ── Outstanding Receivables + Speed to Lead ── -->
+        <div class="grid two">
+          <article class="card" id="receivablesCard">
+            <div class="card-head"><div><p class="eyebrow">Cash Flow</p><h3>Outstanding Receivables</h3></div></div>
+            <div class="receivables-body" id="receivablesBody"></div>
+          </article>
+          <div class="dashboard-duo">
+            <article class="card kpi-tile" id="speedToLeadTile">
+              <p class="eyebrow">Response Speed</p>
+              <div class="kpi-tile-value" id="avgResponseTime">—</div>
+              <div class="kpi-tile-label">Avg time to first contact</div>
+              <div class="kpi-tile-sub" id="avgResponseTrend"></div>
+            </article>
+            <article class="card kpi-tile" id="speedToLeadRateTile">
+              <p class="eyebrow">Same-Day Contact</p>
+              <div class="kpi-tile-value" id="sameDayRate">—</div>
+              <div class="kpi-tile-label">Leads contacted within 1 day</div>
+              <div class="kpi-tile-sub" id="sameDayTrend"></div>
+            </article>
+          </div>
+        </div>
+
+        <!-- ── Lead Pipeline Funnel ── -->
+        <article class="card" id="leadFunnelCard">
+          <div class="card-head"><div><p class="eyebrow">Pipeline Health</p><h3>Leads by Pipeline Stage</h3></div></div>
+          <div id="leadFunnelChart" class="funnel-chart-wrap"></div>
+        </article>
+
+        <!-- ── Revenue Funnel ── -->
+        <article class="card" id="revenueFunnelCard">
+          <div class="card-head"><div><p class="eyebrow">Revenue Flow</p><h3>Where the Money Is Sitting</h3></div></div>
+          <div id="revenueFunnelChart" class="funnel-chart-wrap"></div>
+        </article>
 
         <div class="kpi-grid" id="dashboardKpis"></div>
 
@@ -195,15 +241,6 @@
         </article>
 
         <div class="grid two">
-          <article class="card">
-            <div class="card-head">
-              <div>
-                <p class="eyebrow">Pipeline</p>
-                <h3>Lead funnel snapshot</h3>
-              </div>
-            </div>
-            <div id="pipelineSummary" class="stack"></div>
-          </article>
           <article class="card">
             <div class="card-head">
               <div>

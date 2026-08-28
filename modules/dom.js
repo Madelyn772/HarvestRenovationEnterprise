@@ -5,6 +5,7 @@ export function cacheDom() {
     'authShell','pendingShell','appShell','authMessage','loginForm','signupForm','pendingTitle','pendingBody','refreshProfileBtn','logoutPendingBtn',
     'sidebarUserName','sidebarUserMeta','sidebarRole','sidebarInitials','pageTitle','pageSubtitle','toastStack','openSettingsPanelBtn','logoutBtn',
     'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','checklistAddForm','clientForm','leadForm','clientList','leadTable',
+    'actionItemsList','actionItemsDate','receivablesBody','avgResponseTime','avgResponseTrend','sameDayRate','sameDayTrend','leadFunnelChart','revenueFunnelChart',
     'clientDetailTitle','clientDetailBody','clientSearch','estimateForm','estimateTemplateSelect','estimateClientSelect','estimateNumber','estimateDate',
     'estimateSummary','estimateList','calculateEstimate','printEstimate','jobForm','leadClientSelect','jobClientSelect','calendarForm','calendarClientSelect','invoiceForm',
     'invoiceClientSelect','relatedEstimate','invoiceNumber','invoiceDate','invoiceItems','addInvoiceRow','printInvoice','noteForm','noteClientSelect',
