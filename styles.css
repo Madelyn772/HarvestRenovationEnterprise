@@ -2824,6 +2824,8 @@ html:not(.theme-light) .sidebar {
 .move-menu-item { text-align: left; background: transparent; border: 0; color: #f4e9d4; padding: .55rem .6rem; border-radius: 6px; cursor: pointer; font-size: .85rem; }
 .move-menu-item:hover { background: rgba(217,174,107,.16); }
 .move-menu-item.current { color: #caa05a; font-weight: 700; }
+.move-menu-delete { color: #e06a6a; margin-top: .15rem; border-top: 1px solid rgba(224,106,106,.25); border-radius: 0 0 6px 6px; }
+.move-menu-delete:hover { background: rgba(224,106,106,.16); }
 
 .crm-dialog { max-width: 560px; width: 92vw; border: 1px solid var(--line); border-radius: 16px; padding: 1.5rem; background: #fff; color: #14110d; }
 .crm-dialog::backdrop { background: rgba(10,8,6,.55); }

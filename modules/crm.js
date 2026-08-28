@@ -1,6 +1,7 @@
 import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, tradeOptionsHtml, TRADE_CATEGORIES } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
+import { softDelete } from './trash.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { applyEstimateTemplate, renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
 import { promptDeclineReason } from './documenso.js';
@@ -636,12 +637,22 @@ function openMoveMenu(leadId, anchor) {
   const lead = state.store.leads.find(l => l.id === leadId);
   const menu = document.createElement('div');
   menu.className = 'move-menu';
-  menu.innerHTML = PIPELINE_STAGES.map(s => `<button type="button" class="move-menu-item${lead && normalizeLeadStatus(lead.status) === s ? ' current' : ''}" data-stage="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('');
+  menu.innerHTML = PIPELINE_STAGES.map(s => `<button type="button" class="move-menu-item${lead && normalizeLeadStatus(lead.status) === s ? ' current' : ''}" data-stage="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('')
+    + '<button type="button" class="move-menu-item move-menu-delete" data-action="delete">Delete</button>';
   document.body.appendChild(menu);
   const r = anchor.getBoundingClientRect();
   menu.style.top = `${r.bottom + window.scrollY + 4}px`;
   menu.style.left = `${Math.max(8, Math.min(r.left + window.scrollX, window.innerWidth - 230))}px`;
-  menu.querySelectorAll('.move-menu-item').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); moveDealToStage(leadId, b.dataset.stage); closeMoveMenu(); }));
+  menu.querySelectorAll('.move-menu-item').forEach(b => b.addEventListener('click', ev => {
+    ev.stopPropagation();
+    if (b.dataset.action === 'delete') {
+      closeMoveMenu();
+      if (confirm(`Move ${lead ? leadDisplayName(lead) : 'this deal'} to Trash?`)) softDelete('leads', leadId);
+      return;
+    }
+    moveDealToStage(leadId, b.dataset.stage);
+    closeMoveMenu();
+  }));
   activeMoveMenu = menu;
   setTimeout(() => document.addEventListener('click', closeMoveMenu), 0);
 }
