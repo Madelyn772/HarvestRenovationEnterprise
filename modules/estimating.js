@@ -481,7 +481,16 @@ export function renderEstimates() {
     const approvedExtra = status === 'Approved'
       ? `<button class="ghost-btn estimate-duplicate" data-estimate-id="${item.id}">Duplicate</button><button class="ghost-btn estimate-changeorder" data-estimate-id="${item.id}">Change Order</button>`
       : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.estimateNumber || item.id)} ${lockIcon}</h4><p>${escapeHtml(item.user || '')} • ${escapeHtml(item.trade || '')}</p></div><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div><p class="muted deal-pill-row">${statusBadge || escapeHtml(status)} ${depositPill}</p>${declineLine}${coLine}<div class="form-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${approvedExtra}${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div></div>`;
+    const meta = [escapeHtml(item.user || ''), escapeHtml(item.trade || ''), formatDate(item.date)].filter(Boolean).join(' • ');
+    return `<div class="invoice-row">
+      <div class="invoice-row-info">
+        <div class="invoice-row-top"><strong>${escapeHtml(item.estimateNumber || item.id)}</strong>${lockIcon}${statusBadge}${depositPill}</div>
+        <p class="muted tiny">${meta}</p>
+        ${declineLine}${coLine}
+      </div>
+      <div class="invoice-row-amount"><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div>
+      <div class="invoice-row-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${approvedExtra}${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div>
+    </div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-invoice').forEach(btn => btn.addEventListener('click', () => fillInvoiceFromEstimate(btn.dataset.estimateId, { switchView: true })));

@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260828-58" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-59" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -540,7 +540,7 @@
                   <div class="split-head"><strong>Line Items</strong>
                     <div class="line-item-tools">
                       <button type="button" class="ghost-btn" id="loadTemplateItems">Load Template</button>
-                      <button type="button" class="gold-btn tiny" id="addEstimateRow">+ Add Item</button>
+                      <button type="button" class="ghost-btn" id="addEstimateRow">+ Add Item</button>
                     </div>
                   </div>
                   <div class="line-items-head">
@@ -1371,7 +1371,12 @@
       <select name="unit"><option>EA</option><option>SF</option><option>LF</option><option>HR</option><option selected>LS</option></select>
       <input name="unitPrice" type="number" step="0.01" placeholder="0.00" />
       <span class="line-amount" data-line-amount>$0.00</span>
-      <button type="button" class="icon-btn remove-line-row" aria-label="Remove line">×</button>
+      <div class="line-row-actions">
+        <button type="button" class="icon-btn line-row-menu-btn" aria-label="Row actions">⋮</button>
+        <div class="line-row-menu">
+          <button type="button" class="line-row-menu-item remove-line-row">Remove line</button>
+        </div>
+      </div>
     </div>
   </template>
 
