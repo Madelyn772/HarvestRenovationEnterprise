@@ -58,6 +58,10 @@ export async function handleBugReportSave(event) {
   if (titleInput) titleInput.value = '';
   if (descInput) descInput.value = '';
   if (fileInput) fileInput.value = '';
+  // Collapse the form back to the launcher after a successful submit.
+  const formCard = document.getElementById('feedbackFormCard');
+  if (formCard) formCard.classList.add('hidden');
+  document.getElementById('toggleFeedbackFormBtn')?.setAttribute('aria-expanded', 'false');
 }
 
 function readFileAsDataUrl(file) {
@@ -143,22 +147,18 @@ export function renderBugReports() {
       if (c.system) return `<div class="bug-comment system"><span>🔔 ${escapeHtml(c.body || '')} — ${escapeHtml(c.author || '')} · ${escapeHtml(formatDateTime(c.at))}</span></div>`;
       return `<div class="bug-comment${c.author === me ? ' mine' : ''}${c.internal ? ' internal' : ''}"><div class="bc-head"><span class="bc-author">${escapeHtml(c.author || 'User')}${c.internal ? ' <span class="bc-internal-tag">Internal</span>' : ''}</span><span class="muted tiny">${escapeHtml(formatDateTime(c.at))}</span></div><p>${escapeHtml(c.body || '')}</p></div>`;
     }).join('');
-    const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Write a message…" /><select class="bug-comment-type" data-bug-id="${r.id}" title="Choose who this message is for"><option value="true">Internal note</option><option value="false">Reply to reporter</option></select><button type="button" class="gold-btn bug-comment-send" data-bug-id="${r.id}">Send</button></div></div>`;
-    return `<details class="bug-row${isMine && unread ? ' has-unread' : ''}">
+    const commentBox = `<div class="bug-comments">${commentsHtml}<div class="bug-comment-add"><input type="text" class="bug-comment-input" data-bug-id="${r.id}" placeholder="Write a message…" /><div class="bug-comment-controls"><select class="bug-comment-type" data-bug-id="${r.id}" title="Choose who this message is for"><option value="true">Internal note</option><option value="false">Reply to reporter</option></select><button type="button" class="gold-btn bug-comment-send" data-bug-id="${r.id}">Send</button></div></div></div>`;
+    return `<details class="bug-row bug-row-sev-${sevKey}${isMine && unread ? ' has-unread' : ''}">
       <summary class="bug-row-summary">
         <span class="bug-chevron" aria-hidden="true">›</span>
         <span class="bug-row-main">
-          <span class="bug-row-title-line"><strong>${escapeHtml(r.title)}</strong>${replyBadge}</span>
+          <span class="bug-row-title-line"><strong>${escapeHtml(r.title)}</strong>${replyBadge}<span class="bug-sev-dot bug-sev-dot-${sevKey}" title="${escapeHtml(r.severity || 'Medium')}"></span></span>
           <span class="bug-row-sub muted tiny">${escapeHtml(r.number || '')} · By ${escapeHtml(r.submittedBy || 'Unknown')} · ${escapeHtml(formatDateTime(r.submittedAt))}</span>
-        </span>
-        <span class="bug-row-tags">
-          <span class="bug-pill bug-kind">${escapeHtml(r.kind || 'Bug')}</span>
-          <span class="bug-pill bug-area">${escapeHtml(r.area || 'Other')}</span>
-          <span class="bug-pill bug-sev bug-sev-${sevKey}">${escapeHtml(r.severity || 'Medium')}</span>
         </span>
         <span class="bug-status bug-status-${statusKey}">${escapeHtml(r.status || 'New')}</span>
       </summary>
       <div class="bug-row-body">
+        <div class="bug-meta-line muted tiny"><span class="bug-meta-tag">${escapeHtml(r.kind || 'Bug')}</span><span class="bug-meta-sep">·</span><span class="bug-meta-tag">${escapeHtml(r.area || 'Other')}</span><span class="bug-meta-sep">·</span><span class="bug-meta-tag">${escapeHtml(r.severity || 'Medium')}</span></div>
         <p class="bug-desc">${escapeHtml(r.description || '')}</p>
         ${attHtml}
         ${controls}

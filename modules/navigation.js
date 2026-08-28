@@ -308,6 +308,14 @@ export function bindAppUi() {
     const clearFeedback = document.getElementById('clearFeedbackForm');
     if (clearFeedback) clearFeedback.addEventListener('click', () => el.feedbackForm.reset());
   }
+  const toggleFeedbackBtn = document.getElementById('toggleFeedbackFormBtn');
+  if (toggleFeedbackBtn) toggleFeedbackBtn.addEventListener('click', () => {
+    const card = document.getElementById('feedbackFormCard');
+    if (!card) return;
+    const open = card.classList.toggle('hidden') === false;
+    toggleFeedbackBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) el.feedbackForm?.querySelector('[name="title"]')?.focus();
+  });
   // Service Desk filters.
   if (!state.filters.bugStatuses) state.filters.bugStatuses = ['New', 'In Progress']; // default: hide Resolved
   if (!state.filters.bugSort) state.filters.bugSort = 'severity'; // default: highest severity, oldest first
