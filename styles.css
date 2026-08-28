@@ -339,6 +339,18 @@ body.sidebar-collapsed { --sidebar-w: 60px; }
 }
 .nav-icon { flex: 0 0 auto; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
 .nav-icon svg { width: 100%; height: 100%; }
+.nav-icon:not(:empty) {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--muted);
+  font-family: Arial, sans-serif;
+}
+.nav-btn.active .nav-icon:not(:empty) {
+  color: var(--gold);
+}
+body.sidebar-collapsed .nav-icon:not(:empty) {
+  font-size: .82rem;
+}
 .nav-label { flex: 1 1 auto; min-width: 0; }
 .nav-btn.active { color: var(--text); border-color: rgba(217,174,107,.38); background: rgba(217,174,107,.14); }
 .sidebar-card {
