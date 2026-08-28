@@ -66,6 +66,8 @@ export function saveInvoiceFromForm() {
   payload.clientId = resolved.clientId;
   payload.clientName = resolved.clientName || payload.clientName;
   payload.id = payload.id || uid('INV');
+  // Record the creator once; keep the original on re-save.
+  payload.createdBy = (existingInv && existingInv.createdBy) || state.profile?.full_name || 'Unknown';
   upsertArray('invoices', payload, 'id');
   // Keep editing the same record so re-saving (or printing) updates in place.
   el.invoiceForm.invoiceId.value = payload.id;
@@ -316,12 +318,20 @@ export function renderInvoices() {
     const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
     const lockIcon = status === 'Paid' ? '<span class="lock-icon" title="Paid invoice — amounts cannot be changed">🔒</span>' : '';
-    const balanceLine = balance > 0.01 ? `<p class="invoice-balance-owed">Balance ${money.format(balance)}</p>` : '';
+    const balanceLine = balance > 0.01 ? `<span class="invoice-bal">Balance ${money.format(balance)}</span>` : '';
     const payBtns = balance > 0.01
       ? `<button class="ghost-btn invoice-record-payment" data-invoice-id="${item.id}">Record Payment</button><button class="ghost-btn invoice-mark-paid" data-invoice-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Mark Paid</button>`
       : '';
     const receiptBtn = status === 'Paid' ? `<button class="ghost-btn invoice-generate-receipt" data-invoice-id="${item.id}">Generate Receipt</button>` : '';
-    return `<div class="stack-item"><div class="split-head"><div><h4>${escapeHtml(item.invoiceNumber || item.id)} ${lockIcon}</h4><p>${escapeHtml(item.clientName || '')} • ${formatDate(item.date)}</p></div><div class="invoice-amount-cell"><strong>${money.format(total)}</strong>${balanceLine}</div></div><p class="muted">${statusBadge || escapeHtml(status)}</p><div class="form-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${payBtns}${receiptBtn}${deleteBtn('invoices', item.id)}</div></div>`;
+    const meta = [escapeHtml(item.clientName || 'Client'), formatDate(item.date), item.createdBy ? `by ${escapeHtml(item.createdBy)}` : ''].filter(Boolean).join(' • ');
+    return `<div class="invoice-row">
+      <div class="invoice-row-info">
+        <div class="invoice-row-top"><strong>${escapeHtml(item.invoiceNumber || item.id)}</strong>${lockIcon}${statusBadge}</div>
+        <p class="muted tiny">${meta}</p>
+      </div>
+      <div class="invoice-row-amount"><strong>${money.format(total)}</strong>${balanceLine}</div>
+      <div class="invoice-row-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${payBtns}${receiptBtn}${deleteBtn('invoices', item.id)}</div>
+    </div>`;
   }).join('') : emptyHtml('No invoices yet.');
   el.invoiceList.querySelectorAll('.invoice-print').forEach(btn => btn.addEventListener('click', () => {
     const invoice = state.store.invoices.find(item => item.id === btn.dataset.invoiceId);
