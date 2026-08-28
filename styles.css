@@ -4213,6 +4213,22 @@ html:not(.theme-light) .followup-count-badge { background: rgba(220,38,38,.16); 
   .receivables-total-amount { font-size: 16px; }
 }
 
+/* Light theme: the app recolors card text via explicit rules (the --text var
+   stays near-white globally), so restate dark text for the new dashboard bits. */
+.theme-light .main .action-item-label,
+.theme-light .main .receivables-label,
+.theme-light .main .receivables-amount,
+.theme-light .main .receivables-total-label,
+.theme-light .main .receivables-total-amount,
+.theme-light .main .funnel-label,
+.theme-light .main .funnel-value { color: #1f1a14; }
+.theme-light .main .action-item-arrow,
+.theme-light .main .action-items-date,
+.theme-light .main .receivables-count,
+.theme-light .main .kpi-tile-label,
+.theme-light .main .funnel-empty { color: #5c5346; }
+.theme-light .main .kpi-tile-value { color: #b07d2a; }
+
 
 
 
