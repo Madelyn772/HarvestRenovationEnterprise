@@ -31,6 +31,14 @@ function scopeToHtml(scope) {
   return escapeHtml(scope);
 }
 
+function termsToHtml(terms) {
+  const items = String(terms || '').split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => line.replace(/^(?:\d+[.)]|[-*])\s+/, ''));
+  return `<ul class="terms-list">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
+}
+
 // Shared, branded estimate/invoice document modeled on the Harvest Renovation
 // letterhead (black + gold, wheat mark, bill-to, line items, terms, signature).
 export function buildBrandedDocHtml(opts) {
@@ -83,7 +91,7 @@ export function buildBrandedDocHtml(opts) {
   const payTable = (paymentsRows && paymentsRows.length)
     ? `<div class="items paytable"><div class="ihead pay"><span>Date</span><span>Amount</span><span>Method</span><span>Reference</span></div><div class="ibody">${paymentsRows.map(p => `<div class="item-row pay"><div>${escapeHtml(formatDate(p.date) || '—')}</div><div>${money.format(num(p.amount))}</div><div>${escapeHtml(p.method || '')}</div><div>${escapeHtml(p.reference || '')}</div></div>`).join('')}</div></div>`
     : '';
-  const termsBlock = terms ? `<div class="terms"><div class="band">Terms &amp; Conditions</div><div class="tbody">${escapeHtml(terms)}</div></div>` : '';
+  const termsBlock = terms ? `<div class="terms"><div class="band">Terms &amp; Conditions</div><div class="tbody">${termsToHtml(terms)}</div></div>` : '';
   const sigsBlock = signatureBlockEnabled ? `<div class="sigs">
     <div class="sig"><div class="sigline"></div><div class="siglabel">Client signature</div></div>
     <div class="sig"><div class="sigline"></div><div class="siglabel">Date</div></div>
@@ -169,7 +177,10 @@ export function buildBrandedDocHtml(opts) {
     .box .val{font-size:12px;color:#2c2419;white-space:pre-wrap}
     .terms{padding:0 26px;margin-top:16px}
     .terms .band{background:#0f0c08;color:#caa05a;font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:7px 12px}
-    .terms .tbody{border:1px solid #eadfce;border-top:none;padding:12px;font-size:11px;color:#6b5d46;line-height:1.6;white-space:pre-wrap}
+    .terms .tbody{border:1px solid #eadfce;border-top:none;padding:12px;font-size:11px;color:#6b5d46;line-height:1.6}
+    .terms-list{list-style-type:disc;margin:0;padding-left:20px}
+    .terms-list li{padding-left:2px;margin:0 0 4px}
+    .terms-list li:last-child{margin-bottom:0}
     .sigs{display:grid;grid-template-columns:1fr 200px 1fr 200px;gap:24px;padding:22px 26px 8px}
     .sigs .siglabel{font-size:11px;color:#6b5d46;margin-top:6px;text-transform:uppercase;letter-spacing:.08em}
     .sigs .sigline{border-bottom:1px solid #b9a888;height:32px}

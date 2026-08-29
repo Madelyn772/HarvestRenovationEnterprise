@@ -68,14 +68,11 @@ export const estimateTemplates = {
 };
 
 export const DEFAULT_ESTIMATE_TERMS = [
-  '1. This estimate is valid for 30 days from the date of issue unless otherwise stated.',
-  '2. A deposit is required upfront to cover material costs and secure the job on the schedule. Work begins once the deposit is received.',
-  '3. Any additional requests or changes to the agreed-upon scope will be documented as a Change Order and may result in a price adjustment.',
-  '4. Client is responsible for any city permits or HOA approvals unless explicitly included above.',
-  '5. Materials or fixtures supplied by the client are at the client\u2019s risk; Harvest Renovation is not responsible for defects, delays, or breakage of client-supplied items.',
-  '6. Balance is due upon substantial completion. Balances 30+ days past due accrue 1.5% monthly interest.',
-  '7. Warranty: 1 year on workmanship from date of completion. Manufacturer warranties apply to materials.',
-  '8. Either party may terminate this agreement in writing. Client is responsible for work completed and materials purchased up to the date of termination.'
+  'This estimate is valid for 30 days from the date of issue unless otherwise stated.',
+  'Any additional requests or changes to the agreed-upon scope will be documented as a Change Order and may result in a price adjustment.',
+  "Materials or fixtures supplied by the client are at the client's risk; Harvest Renovation is not responsible for defects, delays, or breakage of client-supplied items.",
+  'Balance is due upon substantial completion. Balances 30+ days past due accrue 1.5% monthly interest.',
+  'Warranty: 1 year on workmanship from date of completion. Manufacturer warranties apply to materials.'
 ].join('\n');
 
 export const DEFAULT_INVOICE_TERMS = [
