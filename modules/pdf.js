@@ -1,5 +1,5 @@
 import { money, num, formatDate, currentUserName, autoNumber, BRAND, BRAND_LOGO_PATH, DEFAULT_ESTIMATE_TERMS, DEFAULT_INVOICE_TERMS, DEFAULT_CONTRACT_TERMS } from './state.js';
-import { escapeHtml, openPrintWindow } from './dom.js';
+import { escapeHtml, openPrintWindow, openPdfPreview } from './dom.js';
 import { saveDocument, renderDocuments } from './documents.js';
 
 export function brandWheatSvg() {
@@ -307,6 +307,13 @@ export function printEstimate(estimate) {
   openPrintWindow(html);
 }
 
+export function previewEstimate(estimate) {
+  const html = buildEstimateDocHtml(estimate);
+  saveDocument('estimate', estimate.estimateNumber || estimate.id || autoNumber('EST'), estimate.clientName, estimate.estimatedCost, html, estimate.user || currentUserName());
+  renderDocuments();
+  openPdfPreview(html, `Estimate ${estimate.estimateNumber || estimate.id || ''}`.trim());
+}
+
 export function buildInvoiceDocHtml(invoice) {
   const items = invoice.items || [];
   const itemizedMode = invoice.itemizedMode !== false;
@@ -363,6 +370,13 @@ export function printInvoice(invoice) {
   openPrintWindow(html);
 }
 
+export function previewInvoice(invoice) {
+  const html = buildInvoiceDocHtml(invoice);
+  saveDocument('invoice', invoice.invoiceNumber || invoice.id || autoNumber('INV'), invoice.clientName, invoice.total, html, invoice.user || currentUserName());
+  renderDocuments();
+  openPdfPreview(html, `Invoice ${invoice.invoiceNumber || invoice.id || ''}`.trim());
+}
+
 export function buildContractDocHtml(contract) {
   return buildBrandedDocHtml({
     kind: 'CONTRACT',
@@ -403,6 +417,20 @@ export function printContract(contract) {
   saveDocument('contract', contract.contractNumber || contract.id || autoNumber('CON'), contract.clientName, contract.contractAmount, finalHtml, contract.user || currentUserName());
   renderDocuments();
   openPrintWindow(finalHtml);
+}
+
+export function previewContract(contract) {
+  const baseHtml = buildContractDocHtml(contract);
+  const payRows = (contract.paymentSchedule || []).map((payment, index) => {
+    return `<div class="item-row"><div class="desc">${index + 1}. ${escapeHtml(payment.label || '')}<div class="line-sub">${escapeHtml(payment.dueDescription || '')}</div></div><div class="amt">${num(payment.percent)}% — ${money.format(num(payment.amount))}</div></div>`;
+  }).join('');
+  const paySection = payRows
+    ? `<div class="items" style="margin-top:18px"><div class="ihead"><span>Payment Schedule</span><span>Amount</span></div><div class="ibody" style="min-height:0">${payRows}</div></div>`
+    : '';
+  const html = baseHtml.replace('<div class="terms"><div class="band">Terms', paySection + '<div class="terms"><div class="band">Terms');
+  saveDocument('contract', contract.contractNumber || contract.id || autoNumber('CON'), contract.clientName, contract.contractAmount, html, contract.user || currentUserName());
+  renderDocuments();
+  openPdfPreview(html, `Contract ${contract.contractNumber || contract.id || ''}`.trim());
 }
 
 export function buildChangeOrderDocHtml(co) {

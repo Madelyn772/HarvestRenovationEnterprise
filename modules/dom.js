@@ -24,7 +24,7 @@ export function cacheDom() {
     'feedbackForm','bugReportList',
     'tipText','tipCounter','tipPrev','tipNext','tipAddForm','tipDeleteBtn'
     ,'contractForm','contractClientSelect','contractLinkedEstimate','contractNumber','contractDate','contractAmount','contractSummary','contractList','printContract','contractPayments','contractTerms'
-    ,'logContactDialog','logContactForm'
+    ,'logContactDialog','logContactForm','pdfPreviewDialog','pdfPreviewFrame','pdfPreviewTitle','printPdfPreview','savePdfPreview'
   ];
   ids.forEach(id => el[id] = document.getElementById(id));
 }
@@ -58,6 +58,16 @@ export function openPrintWindow(html) {
   win.document.open();
   win.document.write(html);
   win.document.close();
+}
+
+export function openPdfPreview(html, title = 'Document preview') {
+  if (!el.pdfPreviewDialog || !el.pdfPreviewFrame) return;
+  const previewHtml = String(html)
+    .replace(/<script>window\.onload=function\(\)\{setTimeout\(function\(\)\{window\.print\(\)\},250\)\}<\/script>/, '')
+    .replace('</head>', '<style>.bar{display:none!important}</style></head>');
+  el.pdfPreviewTitle.textContent = title;
+  el.pdfPreviewFrame.srcdoc = previewHtml;
+  el.pdfPreviewDialog.showModal();
 }
 
 // Fill mapped form fields from a saved client record. mapping = { formField: clientProp }.
