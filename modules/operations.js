@@ -400,8 +400,6 @@ export function renderInvoiceBalanceCallout() {
   const savedPayments = savedInv ? (savedInv.payments || []) : [];
   const paid = savedPayments.reduce((s, p) => s + num(p.amount), 0);
   const balance = total - paid;
-  const totalsEl = document.getElementById('invoiceLineTotals');
-  if (totalsEl) totalsEl.innerHTML = `<div class="row total"><span>Invoice total</span><strong>${money.format(total)}</strong></div>`;
   const summary = document.getElementById('invoiceSummary');
   if (summary) {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');

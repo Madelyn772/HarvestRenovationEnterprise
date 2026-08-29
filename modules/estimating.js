@@ -332,14 +332,6 @@ export function addEstimateRow(item = {}) {
 
 export function recomputeEstimateTotals() {
   const estimate = collectEstimateFromForm();
-  const totalsEl = document.getElementById('estimateLineTotals');
-  if (totalsEl) {
-    const rows = [`<div class="row"><span>Total</span><strong>${money.format(num(estimate.subtotal))}</strong></div>`];
-    if (num(estimate.permitsFees) > 0) rows.push(`<div class="row"><span>Permits &amp; fees</span><strong>${money.format(num(estimate.permitsFees))}</strong></div>`);
-    if (num(estimate.finalPay) > 0) rows.push(`<div class="row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>`);
-    rows.push(`<div class="row total"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>`);
-    totalsEl.innerHTML = rows.join('');
-  }
   renderEstimateSummary(estimate);
 }
 

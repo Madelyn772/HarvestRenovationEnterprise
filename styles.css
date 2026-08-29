@@ -3681,10 +3681,6 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .doc-split-side { position: static; }
 }
 
-/* Totals live in the summary panel, so hide the inline line-items total. */
-#invoiceLineTotals { display: none; }
-#estimateLineTotals { display: none; }
-
 /* Estimate summary rail: meta rows + signature toggle. */
 .estimate-summary-card .isum-meta { border-top: 1px solid #ece8de; margin-top: .2rem; }
 .estimate-summary-card .isum-meta .isum-row { padding: .5rem 0; font-size: .9rem; }
