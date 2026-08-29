@@ -387,12 +387,12 @@ export function renderEstimateSummary(estimate) {
   const fees = num(estimate.permitsFees);
   const total = num(estimate.estimatedCost);
   if (el.estimateSummary) {
+    const subtotalRow = estimate.itemizedMode !== false ? `<div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>` : '';
     const feesRow = estimate.itemizedMode !== false && fees > 0 ? `<div class="isum-row"><span>Permits / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
     const finalRow = estimate.itemizedMode !== false && num(estimate.finalPay) > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>` : '';
     el.estimateSummary.innerHTML = `
-      <div class="isum-row"><span>Total</span><strong>${money.format(subtotal)}</strong></div>
-      ${feesRow}${finalRow}
-      <div class="isum-divide"></div>
+      ${subtotalRow}${feesRow}${finalRow}
+      ${subtotalRow ? '<div class="isum-divide"></div>' : ''}
       <div class="isum-row isum-total"><span>Total</span><strong>${money.format(total)}</strong></div>`;
   }
   const depPct = num(estimate.depositPercent);

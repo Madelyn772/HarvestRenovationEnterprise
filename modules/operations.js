@@ -403,14 +403,13 @@ export function renderInvoiceBalanceCallout() {
   const summary = document.getElementById('invoiceSummary');
   if (summary) {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
+    const subtotalRow = itemizedMode ? `<div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>` : '';
     const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
     const finalRow = itemizedMode && finalPay > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(finalPay)}</strong></div>` : '';
     const feesRow = itemizedMode && fees > 0 ? `<div class="isum-row"><span>Permit / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
     summary.innerHTML = `
-      <div class="isum-row"><span>Total</span><strong>${money.format(subtotal)}</strong></div>
-      ${finalRow}
-      ${feesRow}
-      <div class="isum-divide"></div>
+      ${subtotalRow}${finalRow}${feesRow}
+      ${subtotalRow ? '<div class="isum-divide"></div>' : ''}
       <div class="isum-row isum-total"><span>Total Due</span><strong>${money.format(total)}</strong></div>
       ${paidRow}
       <div class="isum-balance ${balClass}"><span>Balance Due</span><strong>${money.format(balance)}</strong></div>`;
