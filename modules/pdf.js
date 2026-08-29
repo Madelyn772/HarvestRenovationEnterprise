@@ -169,7 +169,7 @@ export function buildBrandedDocHtml(opts) {
     .verse{background:#0f0c08;color:#caa05a;text-align:center;font-size:12px;letter-spacing:.02em;padding:12px 20px;margin-top:18px}
     .item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}
     @media screen and (max-width:780px){body{overflow-x:hidden}.sheet{width:100%;max-width:none;margin:8px 0;box-shadow:none}.top{align-items:flex-start;flex-wrap:wrap;padding:18px 14px}.brand-logo{max-width:190px;height:auto}.title strong{font-size:28px}.contact{flex-direction:column;padding:12px 14px}.meta{width:100%;min-width:0}.billto,.items,.terms{padding-left:12px;padding-right:12px}.foot{grid-template-columns:1fr;padding:16px 14px 4px}.sigs{grid-template-columns:minmax(0,1fr) 86px;gap:16px;padding:20px 14px 8px}.item-row{grid-template-columns:minmax(0,1fr) 112px}.items .ihead{grid-template-columns:minmax(0,1fr) 112px}}
-    @media print{@page{margin:.5in}.bar{display:none}body{background:#fff}.sheet{width:auto;max-width:none;margin:0;box-shadow:none}.item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}}
+    @media print{@page{margin:0}.bar{display:none}body{background:#fff}.sheet{width:auto;max-width:none;margin:0;box-shadow:none}.item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}}
   </style></head>
   <body>
     <div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
