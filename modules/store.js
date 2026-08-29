@@ -9,11 +9,80 @@ const CLOUD_TABLE = 'portal_shared_data';
 const CLOUD_ROW_ID = 1;
 // Unique id for THIS browser tab, so we can ignore realtime echoes of our own writes.
 const CLIENT_ID = `${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
+const PORTAL_STORAGE_PREFIX = STORAGE_KEY;
+let PORTAL_TEST_MODE = false;
+let localStorageGuardInstalled = false;
 let cloudInitialized = false;   // true once the cloud row holds real data (migrated or loaded)
 let cloudPushTimer = null;
 let applyingRemote = false;     // guards against re-pushing data we just received
 let cloudChannel = null;
 let lastCloudUpdatedAt = null;  // updated_at we last saw, for optimistic-concurrency conflict detection
+
+export function isTestMode() {
+  return PORTAL_TEST_MODE;
+}
+
+function installLocalStorageGuard() {
+  if (localStorageGuardInstalled || typeof localStorage === 'undefined') return;
+  const originalSetItem = localStorage.setItem.bind(localStorage);
+  const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+  localStorage.setItem = function(key, value) {
+    if (PORTAL_TEST_MODE && String(key).startsWith(PORTAL_STORAGE_PREFIX)) return;
+    return originalSetItem(key, value);
+  };
+  localStorage.removeItem = function(key) {
+    if (PORTAL_TEST_MODE && String(key).startsWith(PORTAL_STORAGE_PREFIX)) return;
+    return originalRemoveItem(key);
+  };
+  localStorageGuardInstalled = true;
+}
+
+function showTestModeBadge() {
+  if (typeof document === 'undefined' || document.getElementById('portal-test-mode-badge')) return;
+  const badge = document.createElement('div');
+  badge.id = 'portal-test-mode-badge';
+  badge.textContent = 'TEST MODE - writes blocked';
+  badge.style.cssText = 'position:fixed;bottom:8px;left:8px;background:#c0392b;color:#fff;font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;z-index:99999;font-family:system-ui,sans-serif;letter-spacing:0.5px;pointer-events:none;';
+  if (document.body) document.body.appendChild(badge);
+  else document.addEventListener('DOMContentLoaded', () => document.body.appendChild(badge), { once: true });
+}
+
+export function enableTestMode() {
+  PORTAL_TEST_MODE = true;
+  installLocalStorageGuard();
+
+  if (cloudPushTimer) {
+    clearTimeout(cloudPushTimer);
+    cloudPushTimer = null;
+  }
+
+  const supabase = state.supabase;
+  if (supabase && cloudChannel) supabase.removeChannel(cloudChannel);
+  if (supabase && state.presenceChannel) supabase.removeChannel(state.presenceChannel);
+  cloudChannel = null;
+  state.presenceChannel = null;
+  state.supabase = null;
+  showTestModeBadge();
+  return state.store;
+}
+
+/**
+ * Call this at the START of every browser test, before importing or using any other module.
+ * It enables test mode (blocking all writes to localStorage and Supabase) and seeds the
+ * in-memory store with the provided fixture (or a fresh empty store if none provided).
+ * After this call, the test can manipulate state freely - saveStore() and scheduleCloudPush()
+ * are no-ops, loadStore() returns the in-memory store, and the Supabase client is null.
+ *
+ * Usage:
+ *   const { bootstrapTestStore } = await import('./modules/store.js');
+ *   const store = bootstrapTestStore({ clients: [...], leads: [...] });
+ *   // now safe to import and call any module function
+ */
+export function bootstrapTestStore(fixture = null) {
+  enableTestMode();
+  state.store = fixture ? normalizeStoreShape(structuredClone(fixture)) : structuredClone(seedStore);
+  return state.store;
+}
 
 export function storageKey() {
   const userId = state.session?.user?.id || 'guest';
@@ -42,6 +111,7 @@ function storeHasContent(data) {
 }
 
 function writeLocal() {
+  if (PORTAL_TEST_MODE) return false;
   try {
     localStorage.setItem(storageKey(), JSON.stringify(state.store));
     return true;
@@ -51,6 +121,7 @@ function writeLocal() {
 }
 
 export async function loadStore() {
+  if (PORTAL_TEST_MODE) return state.store;
   let cloudData = null;
   if (state.supabase) {
     try {
@@ -102,6 +173,10 @@ export async function loadStore() {
 }
 
 export function saveStore(message = 'Saved') {
+  if (PORTAL_TEST_MODE) {
+    console.debug('[portal] saveStore skipped - test mode active');
+    return;
+  }
   const ok = writeLocal();
   updateChip(el.saveStateChip, ok ? message : 'Storage blocked');
   // Push to the cloud too (debounced) once the shared record has been set up.
@@ -110,11 +185,13 @@ export function saveStore(message = 'Saved') {
 }
 
 function scheduleCloudPush() {
+  if (PORTAL_TEST_MODE) return;
   if (cloudPushTimer) clearTimeout(cloudPushTimer);
   cloudPushTimer = setTimeout(pushCloud, 600);
 }
 
 async function pushCloud() {
+  if (PORTAL_TEST_MODE) return;
   cloudPushTimer = null;
   if (!state.supabase) return;
   try {
@@ -142,6 +219,7 @@ async function pushCloud() {
 }
 
 function subscribeCloud() {
+  if (PORTAL_TEST_MODE) return;
   if (!state.supabase || cloudChannel) return;
   cloudChannel = state.supabase
     .channel('portal-shared-data')
@@ -172,6 +250,7 @@ function subscribeCloud() {
 
 // One-time (or anytime) push of THIS device's data up as the shared source of truth.
 export async function migrateToCloud() {
+  if (PORTAL_TEST_MODE) return;
   if (!state.supabase) {
     showToast('Not connected to the cloud. Check your connection and try again.', 'error');
     return;

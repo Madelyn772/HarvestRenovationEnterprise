@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { config, state, isActive, isRealAdmin } from './state.js';
 import { el, updateChip, showToast } from './dom.js';
-import { loadStore } from './store.js';
+import { isTestMode, loadStore } from './store.js';
 import { purgeExpiredTrash } from './trash.js';
 import { backfillLeadFields } from './crm.js';
 import { bindAppUi, getStoredAdminView, hydrateForms, renderCurrentView, renderAll } from './navigation.js';
@@ -36,6 +36,10 @@ export function bindAuthUi() {
 }
 
 export function initSupabase() {
+  if (isTestMode()) {
+    state.supabase = null;
+    return;
+  }
   if (!state.supabase) {
     const publishableKey = config.supabasePublishableKey || config.supabaseAnonKey || '';
     if (!config.supabaseUrl || !publishableKey) {
