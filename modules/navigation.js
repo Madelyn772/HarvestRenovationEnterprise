@@ -4,7 +4,7 @@ import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBa
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, handleEstimateSave, saveEstimateFromForm, addEstimateRow, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode } from './operations.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode, setInvoiceDeposit } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { handleBugReportSave, renderBugReports, openBugReportCount, myUnreadCommentCount, markMyCommentsSeen } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
@@ -842,7 +842,7 @@ export function clearFormForButton(id) {
   if (form === el.invoiceForm) {
     el.invoiceItems.innerHTML = '';
     setInvoiceDeposit(0);
-    setInvoiceItemizedMode(true, { recompute: false });
+    setInvoiceItemizedMode(false, { recompute: false });
     setInvoiceCommercialMode(false, { recompute: false });
     addInvoiceRow();
   }
