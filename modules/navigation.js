@@ -49,7 +49,6 @@ export function bindAppUi() {
     el.clientSearch.focus();
   });
   if (el.pipelineRange) el.pipelineRange.addEventListener('change', e => { state.filters.pipelineRange = e.target.value; renderLeads(); });
-  const tradeFilters = document.getElementById('tradeFilters');
   if (tradeFilters) tradeFilters.addEventListener('click', e => {
     const chip = e.target.closest('.trade-chip');
     if (!chip) return;
@@ -103,7 +102,6 @@ export function bindAppUi() {
   }
   document.querySelectorAll('[data-close-dialog]').forEach(btn => btn.addEventListener('click', () => document.getElementById(btn.dataset.closeDialog)?.close()));
   el.estimateForm.addEventListener('submit', handleEstimateSave);
-  el.calculateEstimate.addEventListener('click', () => recomputeEstimateTotals());
   el.printEstimate.addEventListener('click', () => {
     const saved = saveEstimateFromForm();
     if (!saved) return;
