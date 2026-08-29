@@ -271,7 +271,7 @@ export function buildEstimateDocHtml(estimate) {
     permitsFees: num(estimate.permitsFees),
     finalPay: num(estimate.finalPay),
     terms: estimate.termsAndConditions || DEFAULT_ESTIMATE_TERMS,
-    signatureBlockEnabled: estimate.signatureBlockEnabled !== false
+    signatureBlockEnabled: estimate.signatureBlockEnabled === true
   });
 }
 

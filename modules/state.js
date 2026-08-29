@@ -413,7 +413,7 @@ export function migrateEstimate(record) {
   if (r.estimatedCost == null) r.estimatedCost = num(r.subtotal) + num(r.taxAmount) + num(r.permitsFees) + num(r.finalPay);
   if (!r.validUntil) r.validUntil = addDaysISO(r.date, 30);
   if (r.termsAndConditions == null) r.termsAndConditions = DEFAULT_ESTIMATE_TERMS;
-  if (r.signatureBlockEnabled == null) r.signatureBlockEnabled = true;
+  if (r.signatureBlockEnabled == null) r.signatureBlockEnabled = false;
   if (r.depositReceivedAt == null) r.depositReceivedAt = '';
   if (r.depositReceivedBy == null) r.depositReceivedBy = '';
   return r;

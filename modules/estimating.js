@@ -486,7 +486,7 @@ export function loadEstimateIntoForm(id) {
   if (validInput) { validInput.value = item.validUntil || ''; validInput.dataset.auto = 'false'; }
   const termsInput = document.getElementById('estimateTerms');
   if (termsInput) termsInput.value = item.termsAndConditions != null ? item.termsAndConditions : DEFAULT_ESTIMATE_TERMS;
-  if (el.estimateForm.signatureBlockEnabled) el.estimateForm.signatureBlockEnabled.checked = item.signatureBlockEnabled !== false;
+  if (el.estimateForm.signatureBlockEnabled) el.estimateForm.signatureBlockEnabled.checked = item.signatureBlockEnabled === true;
   setEstimateCommercialMode(item.commercialJob === true, { recompute: false });
   const wrap = getEstimateItemsEl();
   if (wrap) {
