@@ -13,7 +13,7 @@ import { renderPendingUsers, handleAdminGrantAccess } from './admin.js';
 import { handleProfileSave, handlePasswordSave } from './settings.js';
 import { renderDocuments, handleDocumentUpload, handleReservedNumberAdd, renderReservedNumbers } from './documents.js';
 import { renderTrash, softDelete } from './trash.js';
-import { previewEstimate, previewInvoice, previewContract } from './pdf.js';
+import { printEstimate, printInvoice, printContract } from './pdf.js';
 import { handleLogout } from './auth.js';
 import { sendEstimate, sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
@@ -107,7 +107,7 @@ export function bindAppUi() {
   el.printEstimate.addEventListener('click', () => {
     const saved = saveEstimateFromForm();
     if (!saved) return;
-    previewEstimate(saved);
+    printEstimate(saved);
     showToast(`Estimate ${saved.estimateNumber || saved.id} saved. Preview ready.`, 'success');
   });
   if (el.sendEstimate) el.sendEstimate.addEventListener('click', () => {
@@ -121,7 +121,7 @@ export function bindAppUi() {
   el.printInvoice.addEventListener('click', () => {
     const saved = saveInvoiceFromForm();
     if (!saved) return;
-    previewInvoice(saved);
+    printInvoice(saved);
     showToast(`Invoice ${saved.invoiceNumber || saved.id} saved. Preview ready.`, 'success');
   });
   if (el.sendInvoice) el.sendInvoice.addEventListener('click', () => {
@@ -216,18 +216,9 @@ export function bindAppUi() {
   if (el.printContract) el.printContract.addEventListener('click', () => {
     const saved = saveContractFromForm();
     if (!saved) return;
-    previewContract(saved);
+    printContract(saved);
     showToast(`Contract ${saved.contractNumber || saved.id} saved. Preview ready.`, 'success');
   });
-  const printPreview = saveAsPdf => {
-    const previewWindow = el.pdfPreviewFrame?.contentWindow;
-    if (!previewWindow) return;
-    if (saveAsPdf) showToast('Choose “Save as PDF” as the print destination.', 'info');
-    previewWindow.focus();
-    previewWindow.print();
-  };
-  el.printPdfPreview?.addEventListener('click', () => printPreview(false));
-  el.savePdfPreview?.addEventListener('click', () => printPreview(true));
   const contractDepositSel = document.getElementById('contractDepositPercent');
   if (contractDepositSel) contractDepositSel.addEventListener('change', () => recomputeContractTotals());
   if (el.contractForm) {
