@@ -387,6 +387,7 @@ export function migrateEstimate(record) {
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
   if (r.commercialJob == null) r.commercialJob = false;
+  if (r.itemizedMode == null) r.itemizedMode = true;
   // Legacy lumped-pricing subtotal — used only to rescue old records that were
   // saved before the line-item editor and therefore carry no items[].
   const laborBase = num(r.quantity) * num(r.rate);
@@ -411,6 +412,7 @@ export function migrateEstimate(record) {
   if (r.finalPercent == null) r.finalPercent = 0;
   if (r.finalPay == null) r.finalPay = 0;
   if (r.estimatedCost == null) r.estimatedCost = num(r.subtotal) + num(r.taxAmount) + num(r.permitsFees) + num(r.finalPay);
+  if (r.lumpSumTotal == null) r.lumpSumTotal = r.itemizedMode === false ? num(r.estimatedCost) : 0;
   if (!r.validUntil) r.validUntil = addDaysISO(r.date, 30);
   if (r.termsAndConditions == null) r.termsAndConditions = DEFAULT_ESTIMATE_TERMS;
   if (r.signatureBlockEnabled == null) r.signatureBlockEnabled = false;
@@ -424,6 +426,7 @@ export function migrateInvoice(record) {
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
   if (r.commercialJob == null) r.commercialJob = false;
+  if (r.itemizedMode == null) r.itemizedMode = true;
   // Normalize legacy items {description, amount} while retaining extra keys.
   r.items = r.items.map(it => {
     if (!it || typeof it !== 'object') return it;
@@ -453,6 +456,7 @@ export function migrateInvoice(record) {
     const sub = r.items.reduce((s, it) => s + num(it && it.amount), 0);
     r.total = sub + sub * num(r.taxPercent) / 100 + num(r.permitsFees);
   }
+  if (r.lumpSumTotal == null) r.lumpSumTotal = r.itemizedMode === false ? num(r.total) : 0;
   return r;
 }
 

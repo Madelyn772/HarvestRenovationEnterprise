@@ -3,8 +3,8 @@ import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, setInvoiceCommercialMode } from './operations.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle } from './estimating.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { handleBugReportSave, renderBugReports, openBugReportCount, myUnreadCommentCount, markMyCommentsSeen } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
@@ -148,8 +148,16 @@ export function bindAppUi() {
   if (loadTplBtn) loadTplBtn.addEventListener('click', () => loadTemplateItems());
   const estimateCommercialToggle = document.getElementById('estimateCommercialToggle');
   if (estimateCommercialToggle) estimateCommercialToggle.addEventListener('change', handleEstimateCommercialToggle);
+  const estimateItemizedToggle = document.getElementById('estimateItemizedToggle');
+  if (estimateItemizedToggle) estimateItemizedToggle.addEventListener('change', handleEstimateItemizedToggle);
+  const estimateLumpSumTotal = document.getElementById('estimateLumpSumTotal');
+  if (estimateLumpSumTotal) estimateLumpSumTotal.addEventListener('input', recomputeEstimateTotals);
   const invoiceCommercialToggle = document.getElementById('invoiceCommercialToggle');
   if (invoiceCommercialToggle) invoiceCommercialToggle.addEventListener('change', handleInvoiceCommercialToggle);
+  const invoiceItemizedToggle = document.getElementById('invoiceItemizedToggle');
+  if (invoiceItemizedToggle) invoiceItemizedToggle.addEventListener('change', handleInvoiceItemizedToggle);
+  const invoiceLumpSumTotal = document.getElementById('invoiceLumpSumTotal');
+  if (invoiceLumpSumTotal) invoiceLumpSumTotal.addEventListener('input', renderInvoiceBalanceCallout);
   const recordPayBtn = document.getElementById('invoiceRecordPaymentBtn');
   if (recordPayBtn) recordPayBtn.addEventListener('click', () => {
     const saved = saveInvoiceFromForm();
@@ -850,6 +858,7 @@ export function clearFormForButton(id) {
   if (form === el.invoiceForm) {
     el.invoiceItems.innerHTML = '';
     setInvoiceDeposit(0);
+    setInvoiceItemizedMode(true, { recompute: false });
     setInvoiceCommercialMode(false, { recompute: false });
     addInvoiceRow();
   }

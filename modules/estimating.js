@@ -65,6 +65,7 @@ function taxFreeEstimateTotal(estimate) {
 function estimateFinancialsChanged(a, b) {
   if (!estFinEq(taxFreeEstimateTotal(a), taxFreeEstimateTotal(b))) return true;
   if (!estFinEq(a.subtotal, b.subtotal)) return true;
+  if ((a.itemizedMode !== false) !== (b.itemizedMode !== false)) return true;
   if (num(a.depositPercent) !== num(b.depositPercent)) return true;
   if (!estFinEq(a.permitsFees, b.permitsFees)) return true;
   if (!estFinEq(a.finalPercent, b.finalPercent)) return true;
@@ -96,6 +97,10 @@ export function applyEstimateLock(locked) {
   if (loadBtn) loadBtn.disabled = locked;
   const commercialToggle = document.getElementById('estimateCommercialToggle');
   if (commercialToggle) commercialToggle.disabled = locked;
+  const itemizedToggle = document.getElementById('estimateItemizedToggle');
+  if (itemizedToggle) itemizedToggle.disabled = locked;
+  const lumpSumInput = document.getElementById('estimateLumpSumTotal');
+  if (lumpSumInput) lumpSumInput.readOnly = locked;
   if (el.sendEstimate) el.sendEstimate.disabled = locked;
   F.classList.toggle('form-locked', locked);
   document.querySelectorAll('#estimateItems [name="amount"]').forEach(input => {
@@ -135,6 +140,10 @@ function isEstimateCommercialMode() {
   return !!document.getElementById('estimateCommercialToggle')?.checked;
 }
 
+function isEstimateItemizedMode() {
+  return document.getElementById('estimateItemizedToggle')?.checked !== false;
+}
+
 function computeEstimateRowAmount(row) {
   const quantity = num(row.querySelector('[name="quantity"]')?.value);
   const unitPrice = num(row.querySelector('[name="unitPrice"]')?.value);
@@ -149,14 +158,37 @@ export function setEstimateCommercialMode(enabled, { recompute = true } = {}) {
   getEstimateItemsEl()?.querySelectorAll('.line-item-row').forEach(row => {
     const amountInput = row.querySelector('[name="amount"]');
     if (!amountInput) return;
-    if (enabled) amountInput.value = computeEstimateRowAmount(row);
+    if (enabled && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(row);
     amountInput.readOnly = !!enabled || el.estimateForm.classList.contains('form-locked');
   });
   if (recompute) recomputeEstimateTotals();
 }
 
+export function setEstimateItemizedMode(enabled, { recompute = true, prefill = true } = {}) {
+  const toggle = document.getElementById('estimateItemizedToggle');
+  const shell = getEstimateItemsEl()?.closest('.estimate-items-shell');
+  const lumpSumInput = document.getElementById('estimateLumpSumTotal');
+  const lumpSumRow = document.getElementById('estimateLumpSumRow');
+  if (!enabled && prefill && lumpSumInput) {
+    const itemsSubtotal = readEstimateItemsFromDom().reduce((sum, item) => sum + num(item.amount), 0);
+    const finalPercent = num(el.estimateForm.finalPercent?.value);
+    const itemizedTotal = itemsSubtotal + itemsSubtotal * (finalPercent / 100) + num(el.estimateForm.permitsFees?.value);
+    lumpSumInput.value = itemizedTotal || '';
+  }
+  if (enabled && lumpSumInput) lumpSumInput.value = '';
+  if (toggle) toggle.checked = !!enabled;
+  if (shell) shell.classList.toggle('lump-sum-mode', !enabled);
+  if (lumpSumRow) lumpSumRow.hidden = !!enabled;
+  if (enabled && isEstimateCommercialMode()) setEstimateCommercialMode(true, { recompute: false });
+  if (recompute) recomputeEstimateTotals();
+}
+
 export function handleEstimateCommercialToggle(event) {
   setEstimateCommercialMode(!!event.currentTarget.checked);
+}
+
+export function handleEstimateItemizedToggle(event) {
+  setEstimateItemizedMode(!!event.currentTarget.checked);
 }
 
 // Deposit percent from the dropdown (or the custom input when "Custom…").
@@ -209,6 +241,7 @@ export function hydrateEstimateForm() {
   if (!el.estimateForm.estimateId.value) syncEstimateClientPhone();
   if (!el.estimateForm.estimateId.value) applyEstimateLock(false);
   if (!el.estimateForm.estimateId.value) {
+    setEstimateItemizedMode(isEstimateItemizedMode(), { recompute: false, prefill: false });
     setEstimateCommercialMode(isEstimateCommercialMode(), { recompute: false });
   }
   // Fresh form (no record loaded) with no rows → seed one default row. Description
@@ -253,7 +286,7 @@ export function handleUseClientPhoneToggle() {
 export function readEstimateItemsFromDom() {
   const wrap = getEstimateItemsEl();
   if (!wrap) return [];
-  const commercialJob = isEstimateCommercialMode();
+  const commercialJob = isEstimateCommercialMode() && isEstimateItemizedMode();
   return [...wrap.querySelectorAll('.line-item-row')].map(row => {
     const quantity = num(row.querySelector('[name="quantity"]').value);
     const unitPrice = num(row.querySelector('[name="unitPrice"]').value);
@@ -285,7 +318,7 @@ export function addEstimateRow(item = {}) {
   const seededAmount = item.amount != null ? num(item.amount) : computeEstimateRowAmount(node);
   amountInput.value = seededAmount || '';
   const refresh = () => {
-    if (isEstimateCommercialMode()) amountInput.value = computeEstimateRowAmount(node);
+    if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(node);
     recomputeEstimateTotals();
   };
   descriptionInput.addEventListener('input', () => autoGrowTextarea(descriptionInput));
@@ -297,7 +330,7 @@ export function addEstimateRow(item = {}) {
   wrap.appendChild(node);
   autoGrowTextarea(descriptionInput);
   amountInput.readOnly = isEstimateCommercialMode() || el.estimateForm.classList.contains('form-locked');
-  if (isEstimateCommercialMode()) amountInput.value = computeEstimateRowAmount(node);
+  if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(node);
 }
 
 export function loadTemplateItems() {
@@ -347,13 +380,15 @@ export function collectEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
   const finalPercent = num(data.finalPercent);
   const items = readEstimateItemsFromDom();
-  // Subtotal is always the sum of line items (no legacy lumped-pricing fallback).
-  const subtotal = items.reduce((sum, it) => sum + num(it.amount), 0);
+  const itemizedMode = isEstimateItemizedMode();
+  const itemizedSubtotal = items.reduce((sum, it) => sum + num(it.amount), 0);
+  const lumpSumTotal = itemizedMode ? 0 : num(document.getElementById('estimateLumpSumTotal')?.value);
+  const subtotal = itemizedMode ? itemizedSubtotal : lumpSumTotal;
   const taxPercent = 0;
   const permitsFees = num(data.permitsFees);
-  const finalPay = finalPercent > 0 ? subtotal * (finalPercent / 100) : 0;
+  const finalPay = itemizedMode && finalPercent > 0 ? subtotal * (finalPercent / 100) : 0;
   const taxAmount = 0;
-  const estimatedCost = subtotal + finalPay + permitsFees;
+  const estimatedCost = itemizedMode ? subtotal + finalPay + permitsFees : lumpSumTotal;
   const depositPercent = getDepositPercent();
   const depositAmount = estimatedCost * (depositPercent / 100);
   const linkedClient = data.clientId && data.clientId !== '__new__' ? findClient(data.clientId) : null;
@@ -369,7 +404,7 @@ export function collectEstimateFromForm() {
     measurementType: '', rate: 0, quantity: 0, materialCost: 0, materialPercent: 0,
     pricingMode: 'labor', laborPercent: 0, finalPercent, depositPercent,
     laborBase: 0, materialMarkup: 0, laborMarkup: 0, finalPay,
-    items, subtotal, taxPercent, taxAmount, permitsFees,
+    items, subtotal, taxPercent, taxAmount, permitsFees, itemizedMode, lumpSumTotal,
     commercialJob: isEstimateCommercialMode(),
     validUntil: data.validUntil || '',
     termsAndConditions: (data.termsAndConditions != null ? data.termsAndConditions : ''),
@@ -393,8 +428,8 @@ export function renderEstimateSummary(estimate) {
   const fees = num(estimate.permitsFees);
   const total = num(estimate.estimatedCost);
   if (el.estimateSummary) {
-    const feesRow = fees > 0 ? `<div class="isum-row"><span>Permits / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
-    const finalRow = num(estimate.finalPay) > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>` : '';
+    const feesRow = estimate.itemizedMode !== false && fees > 0 ? `<div class="isum-row"><span>Permits / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
+    const finalRow = estimate.itemizedMode !== false && num(estimate.finalPay) > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>` : '';
     el.estimateSummary.innerHTML = `
       <div class="isum-row"><span>Total</span><strong>${money.format(subtotal)}</strong></div>
       ${feesRow}${finalRow}
@@ -487,6 +522,9 @@ export function loadEstimateIntoForm(id) {
   const termsInput = document.getElementById('estimateTerms');
   if (termsInput) termsInput.value = item.termsAndConditions != null ? item.termsAndConditions : DEFAULT_ESTIMATE_TERMS;
   if (el.estimateForm.signatureBlockEnabled) el.estimateForm.signatureBlockEnabled.checked = item.signatureBlockEnabled === true;
+  const lumpSumInput = document.getElementById('estimateLumpSumTotal');
+  if (lumpSumInput) lumpSumInput.value = num(item.lumpSumTotal != null ? item.lumpSumTotal : item.estimatedCost) || '';
+  setEstimateItemizedMode(item.itemizedMode !== false, { recompute: false, prefill: false });
   setEstimateCommercialMode(item.commercialJob === true, { recompute: false });
   const wrap = getEstimateItemsEl();
   if (wrap) {

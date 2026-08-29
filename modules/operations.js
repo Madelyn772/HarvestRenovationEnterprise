@@ -141,7 +141,7 @@ export function renderInvoiceCardViews() {
 
 export function readInvoiceItemsFromDom() {
   if (!el.invoiceItems) return [];
-  const commercialJob = isInvoiceCommercialMode();
+  const commercialJob = isInvoiceCommercialMode() && isInvoiceItemizedMode();
   return [...el.invoiceItems.querySelectorAll('.line-item-row')].map(row => {
     const qtyRaw = row.querySelector('[name="quantity"]').value;
     const quantity = qtyRaw.trim() === '' ? 1 : num(qtyRaw);
@@ -169,6 +169,10 @@ function isInvoiceCommercialMode() {
   return !!document.getElementById('invoiceCommercialToggle')?.checked;
 }
 
+function isInvoiceItemizedMode() {
+  return document.getElementById('invoiceItemizedToggle')?.checked !== false;
+}
+
 function computeInvoiceRowAmount(row) {
   const qtyRaw = row.querySelector('[name="quantity"]')?.value || '';
   const quantity = qtyRaw.trim() === '' ? 1 : num(qtyRaw);
@@ -183,14 +187,37 @@ export function setInvoiceCommercialMode(enabled, { recompute = true } = {}) {
   el.invoiceItems?.querySelectorAll('.line-item-row').forEach(row => {
     const amountInput = row.querySelector('[name="amount"]');
     if (!amountInput) return;
-    if (enabled) amountInput.value = computeInvoiceRowAmount(row);
+    if (enabled && isInvoiceItemizedMode()) amountInput.value = computeInvoiceRowAmount(row);
     amountInput.readOnly = !!enabled;
   });
   if (recompute) renderInvoiceBalanceCallout();
 }
 
+export function setInvoiceItemizedMode(enabled, { recompute = true, prefill = true } = {}) {
+  const toggle = document.getElementById('invoiceItemizedToggle');
+  const shell = el.invoiceItems?.closest('.invoice-items-shell');
+  const lumpSumInput = document.getElementById('invoiceLumpSumTotal');
+  const lumpSumRow = document.getElementById('invoiceLumpSumRow');
+  if (!enabled && prefill && lumpSumInput) {
+    const itemsSubtotal = readInvoiceItemsFromDom().reduce((sum, item) => sum + num(item.amount), 0);
+    const finalPercent = num(document.getElementById('invoiceFinalPercent')?.value);
+    const itemizedTotal = itemsSubtotal + itemsSubtotal * (finalPercent / 100) + num(document.getElementById('invoicePermitsFees')?.value);
+    lumpSumInput.value = itemizedTotal || '';
+  }
+  if (enabled && lumpSumInput) lumpSumInput.value = '';
+  if (toggle) toggle.checked = !!enabled;
+  if (shell) shell.classList.toggle('lump-sum-mode', !enabled);
+  if (lumpSumRow) lumpSumRow.hidden = !!enabled;
+  if (enabled && isInvoiceCommercialMode()) setInvoiceCommercialMode(true, { recompute: false });
+  if (recompute) renderInvoiceBalanceCallout();
+}
+
 export function handleInvoiceCommercialToggle(event) {
   setInvoiceCommercialMode(!!event.currentTarget.checked);
+}
+
+export function handleInvoiceItemizedToggle(event) {
+  setInvoiceItemizedMode(!!event.currentTarget.checked);
 }
 
 export function readPaymentsFromDom() {
@@ -216,6 +243,7 @@ export function computeInvoiceBalances(invoice) {
 function invoiceAmountsChanged(a, b) {
   if (Math.round(num(a.total) * 100) !== Math.round(num(b.total) * 100)) return true;
   if (num(a.finalPercent) !== num(b.finalPercent)) return true;
+  if ((a.itemizedMode !== false) !== (b.itemizedMode !== false)) return true;
   if ((a.commercialJob === true) !== (b.commercialJob === true)) return true;
   const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice), num(it.amount)]));
   return norm(a.items) !== norm(b.items);
@@ -228,13 +256,16 @@ export function collectInvoiceFromForm() {
   const payments = [];
   // Invoice date shares the name "date" with payment rows — read it directly.
   const dateInput = document.getElementById('invoiceDate');
-  const sub = items.reduce((s, item) => s + num(item.amount), 0);
+  const itemizedMode = isInvoiceItemizedMode();
+  const itemizedSubtotal = items.reduce((s, item) => s + num(item.amount), 0);
+  const lumpSumTotal = itemizedMode ? 0 : num(document.getElementById('invoiceLumpSumTotal')?.value);
+  const sub = itemizedMode ? itemizedSubtotal : lumpSumTotal;
   const taxPct = 0;
   const fees = num(data.permitsFees);
   const finalPercent = num(data.finalPercent);
-  const finalPay = finalPercent > 0 ? sub * (finalPercent / 100) : 0;
+  const finalPay = itemizedMode && finalPercent > 0 ? sub * (finalPercent / 100) : 0;
   const taxAmount = 0;
-  const total = sub + finalPay + fees;
+  const total = itemizedMode ? sub + finalPay + fees : lumpSumTotal;
   const depositPercent = num(data.depositPercent);
   return {
     id: data.invoiceId || '',
@@ -253,6 +284,8 @@ export function collectInvoiceFromForm() {
     items,
     payments,
     commercialJob: isInvoiceCommercialMode(),
+    itemizedMode,
+    lumpSumTotal,
     permitsFees: fees,
     taxPercent: taxPct,
     taxAmount,
@@ -281,7 +314,7 @@ export function addInvoiceRow(item = {}) {
   const seededAmount = item.amount != null ? num(item.amount) : computeInvoiceRowAmount(node);
   amountEl.value = seededAmount || '';
   const refresh = () => {
-    if (isInvoiceCommercialMode()) amountEl.value = computeInvoiceRowAmount(node);
+    if (isInvoiceCommercialMode() && isInvoiceItemizedMode()) amountEl.value = computeInvoiceRowAmount(node);
     renderInvoiceBalanceCallout();
   };
   descriptionInput.addEventListener('input', () => autoGrowTextarea(descriptionInput));
@@ -293,7 +326,7 @@ export function addInvoiceRow(item = {}) {
   el.invoiceItems.appendChild(node);
   autoGrowTextarea(descriptionInput);
   amountEl.readOnly = isInvoiceCommercialMode();
-  if (isInvoiceCommercialMode()) amountEl.value = computeInvoiceRowAmount(node);
+  if (isInvoiceCommercialMode() && isInvoiceItemizedMode()) amountEl.value = computeInvoiceRowAmount(node);
   renderInvoiceBalanceCallout();
 }
 
@@ -353,11 +386,14 @@ export function setInvoiceDeposit(pct) {
 
 export function renderInvoiceBalanceCallout() {
   const items = readInvoiceItemsFromDom();
-  const subtotal = items.reduce((s, it) => s + num(it.amount), 0);
+  const itemizedMode = isInvoiceItemizedMode();
+  const itemizedSubtotal = items.reduce((s, it) => s + num(it.amount), 0);
+  const lumpSumTotal = num(document.getElementById('invoiceLumpSumTotal')?.value);
+  const subtotal = itemizedMode ? itemizedSubtotal : lumpSumTotal;
   const fees = num(document.getElementById('invoicePermitsFees')?.value);
   const finalPct = num(document.getElementById('invoiceFinalPercent')?.value);
-  const finalPay = finalPct > 0 ? subtotal * (finalPct / 100) : 0;
-  const total = subtotal + finalPay + fees;
+  const finalPay = itemizedMode && finalPct > 0 ? subtotal * (finalPct / 100) : 0;
+  const total = itemizedMode ? subtotal + finalPay + fees : lumpSumTotal;
   // Payments live on the saved invoice record (recorded via the payment dialog).
   const invId = el.invoiceForm?.invoiceId?.value || '';
   const savedInv = invId ? state.store.invoices.find(i => i.id === invId) : null;
@@ -370,11 +406,12 @@ export function renderInvoiceBalanceCallout() {
   if (summary) {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
     const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
-    const finalRow = finalPay > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(finalPay)}</strong></div>` : '';
+    const finalRow = itemizedMode && finalPay > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(finalPay)}</strong></div>` : '';
+    const feesRow = itemizedMode && fees > 0 ? `<div class="isum-row"><span>Permit / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
     summary.innerHTML = `
       <div class="isum-row"><span>Total</span><strong>${money.format(subtotal)}</strong></div>
       ${finalRow}
-      <div class="isum-row"><span>Permit / Fees</span><strong>${money.format(fees)}</strong></div>
+      ${feesRow}
       <div class="isum-divide"></div>
       <div class="isum-row isum-total"><span>Total Due</span><strong>${money.format(total)}</strong></div>
       ${paidRow}
@@ -429,6 +466,7 @@ export function hydrateInvoiceForm() {
   const numInput = document.getElementById('invoiceNumber');
   if (numInput && !numInput.value) numInput.value = autoNumber('INV');
   if (!el.invoiceForm.invoiceId.value) setInvoiceDeposit(0);
+  setInvoiceItemizedMode(isInvoiceItemizedMode(), { recompute: false, prefill: false });
   setInvoiceCommercialMode(isInvoiceCommercialMode(), { recompute: false });
 }
 
@@ -529,6 +567,9 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   if (taxEl) taxEl.value = 0;
   if (finalEl) finalEl.value = num(estimate.finalPercent) || '';
   setInvoiceDeposit(0);
+  const lumpSumInput = document.getElementById('invoiceLumpSumTotal');
+  if (lumpSumInput) lumpSumInput.value = num(estimate.lumpSumTotal != null ? estimate.lumpSumTotal : estimate.estimatedCost) || '';
+  setInvoiceItemizedMode(estimate.itemizedMode !== false, { recompute: false, prefill: false });
   setInvoiceCommercialMode(estimate.commercialJob === true, { recompute: false });
   renderInvoiceCardViews();
   renderInvoiceBalanceCallout();

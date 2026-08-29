@@ -42,18 +42,23 @@ export function buildBrandedDocHtml(opts) {
     validUntil = '', dueDate = '', preparedBy = '',
     subtotal = null, taxPercent = 0, taxAmount = 0, permitsFees = 0, finalPay = 0,
     paymentsReceived = 0, paymentsRows = [],
-    terms = '', signatureBlockEnabled = false, commercialJob = false
+    terms = '', signatureBlockEnabled = false, commercialJob = false, itemizedMode = true
   } = opts;
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
   const scopeBlock = scope
-    ? commercialJob
+    ? !itemizedMode
+      ? `<div class="item-row lump-sum scope"><div class="desc">${scopeToHtml(scope)}</div></div>`
+      : commercialJob
       ? `<div class="item-row commercial scope"><div class="desc">${scopeToHtml(scope)}</div></div>`
       : `<div class="item-row scope"><div class="desc">${scopeToHtml(scope)}</div><div class="amt"></div></div>`
     : '';
   const itemRows = rows.map(r => {
     const descHtml = r.descHtml != null ? r.descHtml : escapeHtml(r.desc || '');
+    if (!itemizedMode) {
+      return `<div class="item-row lump-sum"><div class="desc">${descHtml}${r.subHtml || ''}</div></div>`;
+    }
     if (commercialJob) {
       return `<div class="item-row commercial"><div class="desc">${descHtml}</div><div class="qty">${escapeHtml(r.quantity == null ? '' : String(r.quantity))}</div><div class="unit">${escapeHtml(r.unit || '')}</div><div class="price">${money.format(num(r.unitPrice))}</div><div class="amt">${r.amount == null ? '' : money.format(num(r.amount))}</div></div>`;
     }
@@ -71,8 +76,8 @@ export function buildBrandedDocHtml(opts) {
   const metaHtml = metaRows.map(([l, v]) => `<div class="mrow"><span class="ml">${l}</span><span class="mv">${v}</span></div>`).join('');
   const summaryRows = [];
   if (subtotal != null) summaryRows.push(['Total', money.format(num(subtotal))]);
-  if (num(finalPay) > 0) summaryRows.push(['Final markup', money.format(num(finalPay))]);
-  if (num(permitsFees) > 0) summaryRows.push(['Permits & fees', money.format(num(permitsFees))]);
+  if (itemizedMode && num(finalPay) > 0) summaryRows.push(['Final markup', money.format(num(finalPay))]);
+  if (itemizedMode && num(permitsFees) > 0) summaryRows.push(['Permits & fees', money.format(num(permitsFees))]);
   if (num(paymentsReceived) > 0) summaryRows.push(['Payments received', '−' + money.format(num(paymentsReceived))]);
   const summaryHtml = summaryRows.map(([l, v]) => `<div class="sumrow"><span>${escapeHtml(l)}</span><span>${v}</span></div>`).join('');
   const payTable = (paymentsRows && paymentsRows.length)
@@ -127,6 +132,7 @@ export function buildBrandedDocHtml(opts) {
     .items{padding:0 26px;margin-top:18px}
     .items .ihead{display:grid;grid-template-columns:1fr 150px;background:#0f0c08}
     .items .ihead.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
+    .items .ihead.lump-sum{grid-template-columns:1fr}
     .items .ihead span{padding:8px 12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#caa05a}
     .items .ihead span:last-child{text-align:right}
     .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
@@ -136,6 +142,7 @@ export function buildBrandedDocHtml(opts) {
     .items .ihead.pay span:last-child{text-align:left}
     .item-row{display:grid;grid-template-columns:1fr 150px;border-bottom:1px solid #f0e8da}
     .item-row.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
+    .item-row.lump-sum{grid-template-columns:1fr}
     .item-row.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
     .item-row.pay div{padding:9px 12px;font-size:12px;color:#2c2419}
     .item-row .desc{padding:11px 12px;font-size:13px;color:#2c2419;white-space:pre-wrap}
@@ -192,7 +199,9 @@ export function buildBrandedDocHtml(opts) {
         <div class="body">${billLines}</div>
       </div>
       <div class="items">
-        ${commercialJob
+        ${!itemizedMode
+          ? '<div class="ihead lump-sum"><span>Description</span></div>'
+          : commercialJob
           ? '<div class="ihead commercial"><span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span></div>'
           : '<div class="ihead"><span>Description</span><span>Amount</span></div>'}
         <div class="ibody">${scopeBlock}${itemRows}</div>
@@ -221,6 +230,7 @@ export function buildBrandedDocHtml(opts) {
 
 export function buildEstimateDocHtml(estimate) {
   const items = estimate.items || [];
+  const itemizedMode = estimate.itemizedMode !== false;
   let rows;
   if (items.length) {
     rows = items.map(it => {
@@ -242,8 +252,10 @@ export function buildEstimateDocHtml(estimate) {
     if (num(estimate.finalPay)) rows.push({ desc: 'Final markup', amount: num(estimate.finalPay) });
     if (!rows.length) rows.push({ desc: estimate.trade || 'Project scope', amount: num(estimate.estimatedCost) });
   }
-  const subtotal = estimate.subtotal != null ? num(estimate.subtotal) : rows.reduce((sum, row) => sum + num(row.amount), 0);
-  const taxFreeTotal = subtotal + num(estimate.finalPay) + num(estimate.permitsFees);
+  const itemizedSubtotal = estimate.subtotal != null ? num(estimate.subtotal) : rows.reduce((sum, row) => sum + num(row.amount), 0);
+  const lumpSumTotal = num(estimate.lumpSumTotal != null ? estimate.lumpSumTotal : estimate.estimatedCost);
+  const subtotal = itemizedMode ? itemizedSubtotal : lumpSumTotal;
+  const taxFreeTotal = itemizedMode ? subtotal + num(estimate.finalPay) + num(estimate.permitsFees) : lumpSumTotal;
   return buildBrandedDocHtml({
     kind: 'ESTIMATE',
     number: estimate.estimateNumber || '',
@@ -259,6 +271,7 @@ export function buildEstimateDocHtml(estimate) {
     comments: estimate.comments,
     rows,
     commercialJob: estimate.commercialJob === true,
+    itemizedMode,
     balanceLabel: 'BALANCE DUE',
     balance: taxFreeTotal,
     depositPercent: num(estimate.depositPercent),
@@ -284,6 +297,7 @@ export function printEstimate(estimate) {
 
 export function buildInvoiceDocHtml(invoice) {
   const items = invoice.items || [];
+  const itemizedMode = invoice.itemizedMode !== false;
   const rows = items.map(item => {
     const q = num(item.quantity);
     return {
@@ -294,11 +308,13 @@ export function buildInvoiceDocHtml(invoice) {
       amount: num(item.amount != null ? item.amount : q * num(item.unitPrice))
     };
   });
-  const sub = items.reduce((s, it) => s + num(it.amount != null ? it.amount : num(it.quantity) * num(it.unitPrice)), 0);
+  const itemizedSubtotal = items.reduce((s, it) => s + num(it.amount != null ? it.amount : num(it.quantity) * num(it.unitPrice)), 0);
   const finalPercent = num(invoice.finalPercent);
-  const finalPay = finalPercent > 0 ? sub * (finalPercent / 100) : 0;
+  const finalPay = itemizedMode && finalPercent > 0 ? itemizedSubtotal * (finalPercent / 100) : 0;
   const fees = num(invoice.permitsFees);
-  const total = sub + finalPay + fees;
+  const lumpSumTotal = num(invoice.lumpSumTotal != null ? invoice.lumpSumTotal : invoice.total);
+  const total = itemizedMode ? itemizedSubtotal + finalPay + fees : lumpSumTotal;
+  const sub = itemizedMode ? itemizedSubtotal : lumpSumTotal;
   const payments = invoice.payments || [];
   const paid = payments.reduce((s, p) => s + num(p.amount), 0);
   const balance = total - paid;
@@ -311,6 +327,7 @@ export function buildInvoiceDocHtml(invoice) {
     bill: { name: invoice.clientName, address: invoice.address, phone: invoice.phone, email: invoice.email },
     rows,
     commercialJob: invoice.commercialJob === true,
+    itemizedMode,
     balanceLabel: 'BALANCE DUE',
     balance,
     balanceColor: balance > 0.01 ? '#c62828' : '#2e7d32',

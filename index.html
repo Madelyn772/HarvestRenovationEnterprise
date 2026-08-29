@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260829-75" />
+  <link rel="stylesheet" href="./styles.css?v=20260829-76" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -539,6 +539,11 @@
                     <div class="line-item-tools">
                       <button type="button" class="ghost-btn" id="loadTemplateItems">Load Template</button>
                       <button type="button" class="ghost-btn" id="addEstimateRow">+ Add Item</button>
+                      <label class="commercial-toggle itemized-toggle">
+                        <span class="commercial-toggle-label">Itemized amounts</span>
+                        <input type="checkbox" name="itemizedMode" id="estimateItemizedToggle" checked />
+                        <span class="commercial-toggle-track itemized-toggle-track" aria-hidden="true"></span>
+                      </label>
                       <label class="commercial-toggle">
                         <span class="commercial-toggle-label">Commercial job</span>
                         <input type="checkbox" name="commercialJob" id="estimateCommercialToggle" />
@@ -547,10 +552,13 @@
                     </div>
                   </div>
                   <div class="line-items-head">
-                    <span>Description</span><span class="commercial-cols">Qty</span><span class="commercial-cols">Unit</span><span class="commercial-cols">Unit price</span><span>Amount</span><span></span>
+                    <span>Description</span><span class="commercial-cols">Qty</span><span class="commercial-cols">Unit</span><span class="commercial-cols">Unit price</span><span class="itemized-amount">Amount</span><span></span>
                   </div>
                   <div id="estimateItems" class="stack compact-stack"></div>
                   <button type="button" class="add-item-row" id="addEstimateRowBottom">+ Add Another Item</button>
+                  <div class="lump-sum-total-row" id="estimateLumpSumRow" hidden>
+                    <label for="estimateLumpSumTotal"><span>Total</span><input type="number" name="lumpSumTotal" id="estimateLumpSumTotal" min="0" step="0.01" placeholder="0.00" /></label>
+                  </div>
                   <div class="line-items-totals" id="estimateLineTotals"></div>
                 </div>
                 <aside class="doc-split-side">
@@ -729,6 +737,11 @@
                   <div class="split-head"><strong>Line Items</strong>
                     <div class="line-item-tools">
                       <button type="button" class="ghost-btn" id="addInvoiceRow">+ Add item</button>
+                      <label class="commercial-toggle itemized-toggle">
+                        <span class="commercial-toggle-label">Itemized amounts</span>
+                        <input type="checkbox" name="itemizedMode" id="invoiceItemizedToggle" checked />
+                        <span class="commercial-toggle-track itemized-toggle-track" aria-hidden="true"></span>
+                      </label>
                       <label class="commercial-toggle">
                         <span class="commercial-toggle-label">Commercial job</span>
                         <input type="checkbox" name="commercialJob" id="invoiceCommercialToggle" />
@@ -737,10 +750,13 @@
                     </div>
                   </div>
                   <div class="line-items-head invoice-line">
-                    <span>Description</span><span class="commercial-cols">Qty</span><span class="commercial-cols">Unit</span><span class="commercial-cols">Unit price</span><span>Amount</span><span></span>
+                    <span>Description</span><span class="commercial-cols">Qty</span><span class="commercial-cols">Unit</span><span class="commercial-cols">Unit price</span><span class="itemized-amount">Amount</span><span></span>
                   </div>
                   <div id="invoiceItems" class="stack compact-stack"></div>
                   <button type="button" class="add-item-row" id="addInvoiceRowBottom">+ Add Another Item</button>
+                  <div class="lump-sum-total-row" id="invoiceLumpSumRow" hidden>
+                    <label for="invoiceLumpSumTotal"><span>Total</span><input type="number" name="lumpSumTotal" id="invoiceLumpSumTotal" min="0" step="0.01" placeholder="0.00" /></label>
+                  </div>
                   <div class="line-items-totals" id="invoiceLineTotals"></div>
                 </div>
                 <aside class="doc-split-side">
@@ -1419,7 +1435,7 @@
       <input class="commercial-cols" name="quantity" type="number" step="0.01" placeholder="1" />
       <select class="commercial-cols" name="unit"><option>EA</option><option>SF</option><option>LF</option><option>HR</option><option value="day">day</option><option selected>LS</option></select>
       <input class="commercial-cols" name="unitPrice" type="number" step="0.01" placeholder="0.00" />
-      <input class="line-amount" name="amount" data-line-amount type="number" step="0.01" placeholder="0.00" aria-label="Line amount" />
+      <input class="line-amount itemized-amount" name="amount" data-line-amount type="number" step="0.01" placeholder="0.00" aria-label="Line amount" />
       <div class="line-row-actions">
         <button type="button" class="icon-btn line-row-menu-btn" aria-label="Row actions">⋮</button>
         <div class="line-row-menu">
@@ -1435,7 +1451,7 @@
       <input class="commercial-cols" name="quantity" type="number" step="0.01" placeholder="1" />
       <select class="commercial-cols" name="unit"><option>EA</option><option>SF</option><option>LF</option><option>HR</option><option value="day">day</option><option selected>LS</option></select>
       <input class="commercial-cols" name="unitPrice" type="number" step="0.01" placeholder="0.00" />
-      <input class="line-amount" name="amount" data-line-amount type="number" step="0.01" placeholder="0.00" aria-label="Line amount" />
+      <input class="line-amount itemized-amount" name="amount" data-line-amount type="number" step="0.01" placeholder="0.00" aria-label="Line amount" />
       <div class="line-row-actions">
         <button type="button" class="icon-btn line-row-menu-btn" aria-label="Row actions">⋮</button>
         <div class="line-row-menu">
@@ -1464,7 +1480,7 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260829-75"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260829-76"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>
