@@ -313,7 +313,7 @@ export function numberInUse(type, number, currentId = '') {
   const inReserved = (state.store.reservedNumbers || []).some(row => row.type === type && String(row.number || '').trim().toLowerCase() === target);
   const inChangeOrders = (state.store.changeOrders || []).some(c => String(c.changeOrderNumber || '').trim().toLowerCase() === target);
   const inReceipts = (state.store.receipts || []).some(r => String(r.receiptNumber || '').trim().toLowerCase() === target);
-  const inContracts = (state.store.contracts || []).some(c => String(c.contractNumber || '').trim().toLowerCase() === target);
+  const inContracts = (state.store.contracts || []).some(c => c.id !== currentId && String(c.contractNumber || '').trim().toLowerCase() === target);
   return inRecords || inUploads || inReserved || inChangeOrders || inReceipts || inContracts;
 }
 

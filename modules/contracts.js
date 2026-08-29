@@ -21,6 +21,7 @@ export function hydrateContractForm() {
     seedDefaultPaymentSchedule();
   }
   recomputeContractTotals();
+  if (!form.contractId.value) applyContractLock(false);
 }
 
 function seedDefaultPaymentSchedule() {
@@ -70,7 +71,7 @@ export function collectContractFromForm() {
   if (!form) return {};
   const data = objectFromForm(form);
   const contractAmount = num(data.contractAmount);
-  const depositPercent = num(data.depositPercent);
+  const depositPercent = num(form.depositPercent?.value);
   const depositAmount = contractAmount * (depositPercent / 100);
   const paymentSchedule = readPaymentScheduleFromDom();
   paymentSchedule.forEach(p => { p.amount = contractAmount * (p.percent / 100); });
@@ -90,7 +91,7 @@ export function collectContractFromForm() {
     paymentSchedule,
     scope: data.scope || '',
     terms: data.terms || DEFAULT_CONTRACT_TERMS,
-    status: data.status || 'Draft',
+    status: form.status?.value || 'Draft',
     notes: data.notes || '',
     billingAddress: data.billingAddress || (linkedClient ? linkedClient.address || '' : ''),
     billingPhone: data.billingPhone || (linkedClient ? linkedClient.phone || '' : ''),
@@ -186,6 +187,10 @@ export function saveContractFromForm() {
     payload.signedAt = existing.signedAt || '';
     payload.signedBy = existing.signedBy || '';
     payload.contractorSignedAt = existing.contractorSignedAt || '';
+    if (['Sent', 'Signed'].includes(existing.status) && contractFinancialsChanged(existing, payload)) {
+      showToast('This contract was sent or signed — financial fields are locked.', 'error');
+      return null;
+    }
   }
   upsertArray('contracts', payload, 'id');
   form.contractId.value = payload.id;
@@ -194,6 +199,28 @@ export function saveContractFromForm() {
   populateClientSelects();
   renderAll();
   return payload;
+}
+
+function contractFinancialsChanged(a, b) {
+  if (Math.round(num(a.contractAmount) * 100) !== Math.round(num(b.contractAmount) * 100)) return true;
+  if (num(a.depositPercent) !== num(b.depositPercent)) return true;
+  if ((a.scope || '') !== (b.scope || '')) return true;
+  const norm = rows => JSON.stringify((rows || []).map(row => [row.label || '', num(row.percent), row.dueDescription || '']));
+  return norm(a.paymentSchedule) !== norm(b.paymentSchedule);
+}
+
+export function applyContractLock(locked) {
+  const form = el.contractForm;
+  if (!form) return;
+  if (form.contractAmount) form.contractAmount.readOnly = locked;
+  if (form.scope) form.scope.readOnly = locked;
+  if (form.depositPercent) form.depositPercent.disabled = locked;
+  if (form.status) form.status.disabled = locked;
+  document.querySelectorAll('#contractPayments input').forEach(input => { input.readOnly = locked; });
+  document.querySelectorAll('#contractPayments .remove-pay-row').forEach(button => { button.disabled = locked; });
+  const addPaymentButton = document.getElementById('addContractPayment');
+  if (addPaymentButton) addPaymentButton.disabled = locked;
+  form.classList.toggle('form-locked', locked);
 }
 
 export async function handleContractSave(event) {
@@ -224,6 +251,7 @@ export function loadContractIntoForm(id) {
     (item.paymentSchedule || []).forEach(p => addPaymentScheduleRow(p));
   }
   recomputeContractTotals();
+  applyContractLock(['Sent', 'Signed'].includes(item.status));
   setView('contracts');
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -252,7 +280,7 @@ export function renderContracts() {
     const meta = [escapeHtml(item.clientName || 'Client'), formatDate(item.date)].filter(Boolean).join(' • ');
     return `<div class="invoice-row">
       <div class="invoice-row-info">
-        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${statusBadge}</div>
+        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${['Sent', 'Signed'].includes(status) ? '<span class="lock-icon" title="Sent contract — financial fields are locked">🔒</span>' : ''}${statusBadge}</div>
         <p class="muted tiny">${meta}</p>
         ${signedInfo}
       </div>

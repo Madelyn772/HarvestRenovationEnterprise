@@ -32,10 +32,10 @@ export function saveEstimateFromForm() {
   if (existingRec) {
     payload.depositReceivedAt = existingRec.depositReceivedAt || '';
     payload.depositReceivedBy = existingRec.depositReceivedBy || '';
-    // Chain guard: financials are locked once approved/invoiced.
-    const locked = existingRec.status === 'Approved' || state.store.invoices.some(i => i.relatedEstimate === existingRec.id);
+    // Chain guard: financials are locked once sent, approved, or invoiced.
+    const locked = ['Sent', 'Approved'].includes(existingRec.status) || state.store.invoices.some(i => i.relatedEstimate === existingRec.id);
     if (locked && estimateFinancialsChanged(existingRec, payload)) {
-      showToast('Financial fields are locked because this estimate is approved/invoiced. Duplicate it to bill additional work, or create a change order.', 'error');
+      showToast('Financial fields are locked because this estimate was sent, approved, or invoiced. Duplicate it to make changes.', 'error');
       return null;
     }
   }
@@ -99,6 +99,7 @@ export function applyEstimateLock(locked) {
   if (itemizedToggle) itemizedToggle.disabled = locked;
   const lumpSumInput = document.getElementById('estimateLumpSumTotal');
   if (lumpSumInput) lumpSumInput.readOnly = locked;
+  if (F.status) F.status.disabled = locked;
   if (el.sendEstimate) el.sendEstimate.disabled = locked;
   F.classList.toggle('form-locked', locked);
   document.querySelectorAll('#estimateItems [name="amount"]').forEach(input => {
@@ -380,7 +381,7 @@ export function collectEstimateFromForm() {
     billingPhone: phoneInput ? phoneInput.value : (linkedClient ? (linkedClient.phone || '') : (data.clientPhone || '')),
     billingEmail: data.billingEmail || (linkedClient ? (linkedClient.email || '') : (data.clientEmail || '')),
     billingAddress: data.billingAddress || (linkedClient ? (linkedClient.address || '') : ''),
-    status: data.status,
+    status: el.estimateForm.status?.value || 'Draft',
     clientName: data.clientId && data.clientId !== '__new__' ? lookupClientName(data.clientId) : (data.clientName || ''),
     value: estimatedCost
   };
@@ -496,7 +497,7 @@ export function loadEstimateIntoForm(id) {
     (item.items || []).forEach(row => addEstimateRow(row));
   }
   recomputeEstimateTotals();
-  applyEstimateLock(item.status === 'Approved' || state.store.invoices.some(i => i.relatedEstimate === item.id));
+  applyEstimateLock(['Sent', 'Approved'].includes(item.status) || state.store.invoices.some(i => i.relatedEstimate === item.id));
   el.estimateForm.dataset.dirty = 'false';
   setView('estimating');
 }
@@ -528,7 +529,7 @@ export function renderEstimates() {
     const coCount = state.store.changeOrders.filter(c => c.parentEstimateId === item.id).length;
     const coLine = (status === 'Approved' && coCount > 0) ? `<p class="muted tiny">Change Orders (${coCount})</p>` : '';
     const linkedInvoice = state.store.invoices.find(i => i.relatedEstimate === item.id);
-    const lockIcon = (status === 'Approved' || linkedInvoice) ? '<span class="lock-icon" title="Signed agreement — create a change order to modify scope">🔒</span>' : '';
+    const lockIcon = (['Sent', 'Approved'].includes(status) || linkedInvoice) ? '<span class="lock-icon" title="Sent estimate — financial fields are locked">🔒</span>' : '';
     const invoiceBtn = linkedInvoice
       ? `<button class="ghost-btn estimate-view-invoice" data-invoice-id="${linkedInvoice.id}">View Invoice ${escapeHtml(linkedInvoice.invoiceNumber || '')}</button>`
       : `<button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button>`;

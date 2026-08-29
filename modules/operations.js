@@ -66,12 +66,12 @@ export function saveInvoiceFromForm() {
   }
   const resolved = resolveFormClient(data, { name: data.clientName, phone: data.phone, email: data.email, address: data.address });
   const payload = collectInvoiceFromForm();
-  // Chain guard: a Paid invoice's amounts are locked (edit notes only).
+  // Chain guard: billable amounts are locked once an invoice leaves Draft.
   const existingInv = payload.id ? state.store.invoices.find(i => i.id === payload.id) : null;
   // Payments live on the invoice record (recorded via the payment dialog) — preserve them.
   payload.payments = existingInv ? (existingInv.payments || []) : [];
-  if (existingInv && existingInv.status === 'Paid' && invoiceAmountsChanged(existingInv, payload)) {
-    showToast('This invoice is paid — amounts are locked. Duplicate the estimate or create a change order to bill more.', 'error');
+  if (existingInv && ['Sent', 'Signed', 'Partial', 'Paid'].includes(existingInv.status) && invoiceAmountsChanged(existingInv, payload)) {
+    showToast('This invoice was sent, signed, or paid — billable amounts are locked.', 'error');
     return null;
   }
   // Auto-transition status from recorded payments (user's explicit choice wins).
@@ -250,6 +250,22 @@ function invoiceAmountsChanged(a, b) {
   return norm(a.items) !== norm(b.items);
 }
 
+export function applyInvoiceLock(locked) {
+  const form = el.invoiceForm;
+  if (!form) return;
+  document.querySelectorAll('#invoiceItems .line-item-row input, #invoiceItems .line-item-row textarea').forEach(input => { input.readOnly = locked; });
+  document.querySelectorAll('#invoiceItems .line-item-row select, #invoiceItems .remove-line-row').forEach(control => { control.disabled = locked; });
+  ['addInvoiceRowBottom', 'invoiceItemizedToggle', 'invoiceCommercialToggle', 'invoiceDepositSelect', 'invoiceDepositCustom'].forEach(id => {
+    const control = document.getElementById(id);
+    if (control) control.disabled = locked;
+  });
+  const lumpSumInput = document.getElementById('invoiceLumpSumTotal');
+  if (lumpSumInput) lumpSumInput.readOnly = locked;
+  if (form.status) form.status.disabled = locked;
+  if (el.sendInvoice) el.sendInvoice.disabled = locked;
+  form.classList.toggle('form-locked', locked);
+}
+
 export function collectInvoiceFromForm() {
   const data = objectFromForm(el.invoiceForm);
   const items = readInvoiceItemsFromDom();
@@ -278,7 +294,7 @@ export function collectInvoiceFromForm() {
     dueDate: data.dueDate || '',
     paymentTerms: data.paymentTerms || '',
     clientName: data.clientName || lookupClientName(data.clientId),
-    status: data.status,
+    status: el.invoiceForm.status?.value || 'Draft',
     phone: data.phone,
     email: data.email,
     address: data.address,
@@ -470,6 +486,7 @@ export function hydrateInvoiceForm() {
   if (!el.invoiceForm.invoiceId.value) setInvoiceDeposit(0);
   setInvoiceItemizedMode(isInvoiceItemizedMode(), { recompute: false, prefill: false });
   setInvoiceCommercialMode(isInvoiceCommercialMode(), { recompute: false });
+  if (!el.invoiceForm.invoiceId.value) applyInvoiceLock(false);
 }
 
 export function renderInvoices() {
@@ -479,7 +496,7 @@ export function renderInvoices() {
     const status = item.status || 'Draft';
     const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent' || status === 'Signed') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
-    const lockIcon = status === 'Paid' ? '<span class="lock-icon" title="Paid invoice — amounts cannot be changed">🔒</span>' : '';
+    const lockIcon = ['Sent', 'Signed', 'Partial', 'Paid'].includes(status) ? '<span class="lock-icon" title="Sent invoice — billable amounts are locked">🔒</span>' : '';
     const balanceLine = balance > 0.01 ? `<span class="invoice-bal">Balance ${money.format(balance)}</span>` : '';
     const payBtns = balance > 0.01
       ? `<button class="ghost-btn invoice-record-payment" data-invoice-id="${item.id}">Record Payment</button><button class="ghost-btn invoice-mark-paid" data-invoice-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Mark Paid</button>`

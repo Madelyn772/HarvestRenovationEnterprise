@@ -1,10 +1,10 @@
 import { state, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate, formatDateTime } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
-import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup } from './store.js';
+import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup, saveStore } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, handleEstimateSave, saveEstimateFromForm, addEstimateRow, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode, setInvoiceDeposit } from './operations.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, handleEstimateSave, saveEstimateFromForm, addEstimateRow, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle, applyEstimateLock } from './estimating.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode, setInvoiceDeposit, applyInvoiceLock } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { handleBugReportSave, renderBugReports, openBugReportCount, myUnreadCommentCount, markMyCommentsSeen } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
@@ -15,10 +15,10 @@ import { renderDocuments, handleDocumentUpload, handleReservedNumberAdd, renderR
 import { renderTrash, softDelete } from './trash.js';
 import { printEstimate, printInvoice, printContract } from './pdf.js';
 import { handleLogout } from './auth.js';
-import { sendInvoice } from './documenso.js';
+import { sendEstimate, sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
-import { renderReceipts, handlePaymentDialogSubmit, openPaymentDialog } from './receipts.js';
-import { saveContractFromForm, handleContractSave, hydrateContractForm, renderContracts, addPaymentScheduleRow, recomputeContractTotals, fillContractFromEstimate } from './contracts.js';
+import { renderReceipts, handlePaymentDialogSubmit, openPaymentDialog, markPaid } from './receipts.js';
+import { saveContractFromForm, handleContractSave, hydrateContractForm, renderContracts, addPaymentScheduleRow, recomputeContractTotals, fillContractFromEstimate, applyContractLock } from './contracts.js';
 
 export function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
@@ -113,9 +113,13 @@ export function bindAppUi() {
   if (el.sendEstimate) el.sendEstimate.addEventListener('click', () => {
     const saved = saveEstimateFromForm();
     if (!saved) return;
-    printEstimate(saved, { autoPrint: true });
-    showToast(`Estimate ${saved.estimateNumber || saved.id} saved. Print dialog ready.`, 'success');
+    sendEstimate(saved);
+    el.estimateForm.status.value = 'Sent';
+    applyEstimateLock(true);
+    syncManualStatusActions(el.estimateForm);
   });
+  document.getElementById('markEstimateSent')?.addEventListener('click', () => markEstimateStatus('Sent'));
+  document.getElementById('approveEstimate')?.addEventListener('click', () => markEstimateStatus('Approved'));
   el.jobForm.addEventListener('submit', handleJobSave);
   el.calendarForm.addEventListener('submit', handleCalendarSave);
   el.invoiceForm.addEventListener('submit', handleInvoiceSave);
@@ -129,7 +133,12 @@ export function bindAppUi() {
     const saved = saveInvoiceFromForm();
     if (!saved) return;
     sendInvoice(saved);
+    el.invoiceForm.status.value = 'Sent';
+    applyInvoiceLock(true);
+    syncManualStatusActions(el.invoiceForm);
   });
+  document.getElementById('markInvoiceSent')?.addEventListener('click', () => markInvoiceStatus('Sent'));
+  document.getElementById('markInvoicePaid')?.addEventListener('click', () => markInvoiceStatus('Paid'));
   el.noteForm.addEventListener('submit', handleNoteSave);
   el.campaignForm.addEventListener('submit', handleCampaignSave);
   if (el.scorecardPeriod) el.scorecardPeriod.addEventListener('change', () => { renderScorecard(); renderDeclineReasons(); });
@@ -220,6 +229,8 @@ export function bindAppUi() {
     printContract(saved);
     showToast(`Contract ${saved.contractNumber || saved.id} saved. Preview ready.`, 'success');
   });
+  document.getElementById('markContractSent')?.addEventListener('click', () => markContractStatus('Sent'));
+  document.getElementById('markContractSigned')?.addEventListener('click', () => markContractStatus('Signed'));
   const contractDepositSel = document.getElementById('contractDepositPercent');
   if (contractDepositSel) contractDepositSel.addEventListener('change', () => recomputeContractTotals());
   if (el.contractForm) {
@@ -234,6 +245,7 @@ export function bindAppUi() {
     const payWrap = document.getElementById('contractPayments');
     if (payWrap) payWrap.innerHTML = '';
     hydrateContractForm();
+    updateDocMeta(el.contractForm);
   });
   el.contractClientSelect?.addEventListener('change', e => {
     const client = e.target.value && e.target.value !== '__new__' ? findClient(e.target.value) : null;
@@ -757,6 +769,7 @@ export function populateEstimateSelects() {
 // Populate the meta line under a doc-editor title.
 export function updateDocMeta(form) {
   if (!form) return;
+  syncManualStatusActions(form);
   const meta = form.querySelector('[data-doc-meta]');
   if (!meta) return;
   const dueEl = form.querySelector('[name="dueDate"]');
@@ -772,6 +785,73 @@ export function updateDocMeta(form) {
   const parts = [dateVal ? `Created ${formatDate(dateVal)}` : 'New document'];
   if (user) parts.push(`Prepared by ${user}`);
   meta.textContent = parts.join(' • ');
+}
+
+function syncManualStatusActions(form) {
+  if (!form) return;
+  const status = form.status?.value || 'Draft';
+  const controls = form === el.estimateForm
+    ? [['markEstimateSent', status !== 'Draft'], ['approveEstimate', status !== 'Sent']]
+    : form === el.invoiceForm
+      ? [['markInvoiceSent', status !== 'Draft'], ['markInvoicePaid', !['Sent', 'Signed', 'Partial'].includes(status)]]
+      : form === el.contractForm
+        ? [['markContractSent', !['Draft', 'Ready for Signature'].includes(status)], ['markContractSigned', status !== 'Sent']]
+        : [];
+  controls.forEach(([id, hidden]) => {
+    const button = document.getElementById(id);
+    if (button) button.hidden = hidden;
+  });
+}
+
+function markEstimateStatus(status) {
+  const saved = saveEstimateFromForm();
+  if (!saved) return;
+  const estimate = state.store.estimates.find(item => item.id === saved.id);
+  if (!estimate) return;
+  estimate.status = status;
+  if (status === 'Sent') estimate.sentAt = estimate.sentAt || new Date().toISOString();
+  if (status === 'Approved') estimate.signedAt = estimate.signedAt || new Date().toISOString();
+  el.estimateForm.status.value = status;
+  saveStore(`Estimate marked as ${status}`);
+  applyEstimateLock(true);
+  renderAll();
+  syncManualStatusActions(el.estimateForm);
+  showToast(status === 'Sent' ? 'Estimate marked as sent and locked' : 'Estimate approved', 'success');
+}
+
+function markInvoiceStatus(status) {
+  const saved = saveInvoiceFromForm();
+  if (!saved) return;
+  if (status === 'Paid') {
+    markPaid(saved.id);
+  } else {
+    const invoice = state.store.invoices.find(item => item.id === saved.id);
+    if (!invoice) return;
+    invoice.status = 'Sent';
+    invoice.sentAt = invoice.sentAt || new Date().toISOString();
+    saveStore('Invoice marked as Sent');
+    renderAll();
+    showToast('Invoice marked as sent and locked', 'success');
+  }
+  el.invoiceForm.status.value = status;
+  applyInvoiceLock(true);
+  syncManualStatusActions(el.invoiceForm);
+}
+
+function markContractStatus(status) {
+  const saved = saveContractFromForm();
+  if (!saved) return;
+  const contract = state.store.contracts.find(item => item.id === saved.id);
+  if (!contract) return;
+  contract.status = status;
+  if (status === 'Sent') contract.sentAt = contract.sentAt || new Date().toISOString();
+  if (status === 'Signed') contract.signedAt = contract.signedAt || new Date().toISOString();
+  el.contractForm.status.value = status;
+  saveStore(`Contract marked as ${status}`);
+  applyContractLock(true);
+  renderAll();
+  syncManualStatusActions(el.contractForm);
+  showToast(status === 'Sent' ? 'Contract marked as sent and locked' : 'Contract marked as signed', 'success');
 }
 
 export function renderAll() {

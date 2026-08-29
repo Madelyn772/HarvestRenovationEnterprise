@@ -3465,6 +3465,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 }
 
 .doc-editor-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.doc-editor-actions button[hidden] { display: none; }
 .doc-editor-actions .ghost-btn,
 .doc-editor-actions .primary-btn,
 .doc-editor-actions .gold-btn {
