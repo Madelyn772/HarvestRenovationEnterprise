@@ -15,7 +15,7 @@ import { renderDocuments, handleDocumentUpload, handleReservedNumberAdd, renderR
 import { renderTrash, softDelete } from './trash.js';
 import { printEstimate, printInvoice, printContract } from './pdf.js';
 import { handleLogout } from './auth.js';
-import { sendEstimate, sendInvoice } from './documenso.js';
+import { sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
 import { renderReceipts, handlePaymentDialogSubmit, openPaymentDialog } from './receipts.js';
 import { saveContractFromForm, handleContractSave, hydrateContractForm, renderContracts, addPaymentScheduleRow, recomputeContractTotals, fillContractFromEstimate } from './contracts.js';
@@ -113,7 +113,8 @@ export function bindAppUi() {
   if (el.sendEstimate) el.sendEstimate.addEventListener('click', () => {
     const saved = saveEstimateFromForm();
     if (!saved) return;
-    sendEstimate(saved);
+    printEstimate(saved, { autoPrint: true });
+    showToast(`Estimate ${saved.estimateNumber || saved.id} saved. Print dialog ready.`, 'success');
   });
   el.jobForm.addEventListener('submit', handleJobSave);
   el.calendarForm.addEventListener('submit', handleCalendarSave);

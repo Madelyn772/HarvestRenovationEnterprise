@@ -52,9 +52,10 @@ export function reportFormValidity(form) {
   return false;
 }
 
-export function openPrintWindow(html) {
+export function openPrintWindow(html, { autoPrint = false } = {}) {
   const win = window.open('', '_blank', 'width=980,height=800');
   if (!win) return showToast('Popup blocked. Please allow popups to print.', 'error');
+  if (autoPrint) win.addEventListener('load', () => setTimeout(() => win.print(), 250), { once: true });
   win.document.open();
   win.document.write(html);
   win.document.close();

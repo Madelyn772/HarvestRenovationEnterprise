@@ -299,11 +299,11 @@ export function buildEstimateDocHtml(estimate) {
   });
 }
 
-export function printEstimate(estimate) {
+export function printEstimate(estimate, options) {
   const html = buildEstimateDocHtml(estimate);
   saveDocument('estimate', estimate.estimateNumber || estimate.id || autoNumber('EST'), estimate.clientName, estimate.estimatedCost, html, estimate.user || currentUserName());
   renderDocuments();
-  openPrintWindow(html);
+  openPrintWindow(html, options);
 }
 
 export function buildInvoiceDocHtml(invoice) {
