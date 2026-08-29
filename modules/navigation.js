@@ -1,9 +1,9 @@
-import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate, formatDateTime } from './state.js';
+import { state, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate, formatDateTime } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle } from './estimating.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, handleEstimateSave, saveEstimateFromForm, addEstimateRow, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { handleBugReportSave, renderBugReports, openBugReportCount, myUnreadCommentCount, markMyCommentsSeen } from './feedback.js';
@@ -144,8 +144,6 @@ export function bindAppUi() {
   // Itemized estimate + invoice controls.
   const addEstBtn = document.getElementById('addEstimateRow');
   if (addEstBtn) addEstBtn.addEventListener('click', () => addEstimateRow());
-  const loadTplBtn = document.getElementById('loadTemplateItems');
-  if (loadTplBtn) loadTplBtn.addEventListener('click', () => loadTemplateItems());
   const estimateCommercialToggle = document.getElementById('estimateCommercialToggle');
   if (estimateCommercialToggle) estimateCommercialToggle.addEventListener('change', handleEstimateCommercialToggle);
   const estimateItemizedToggle = document.getElementById('estimateItemizedToggle');
@@ -187,8 +185,6 @@ export function bindAppUi() {
     const node = document.getElementById(id);
     if (node) node.addEventListener('click', () => clearFormForButton(id));
   });
-
-  el.estimateTemplateSelect.addEventListener('change', () => applyEstimateTemplate({ fromUser: true }));
 
   // Show the "new client info" fields only when the estimate dropdown is set
   // to the "client not on the list" option.
@@ -664,17 +660,9 @@ export function hydrateForms() {
   if (el.estimateForm.date) el.estimateForm.date.max = todayInputValue();
   if (el.contractForm && el.contractForm.user && !el.contractForm.user.value) el.contractForm.user.value = fullName;
   applyAdminViewMode();
-  populateTemplateSelect();
   populateClientSelects();
   populateEstimateSelects();
   if (!el.invoiceItems.children.length) addInvoiceRow();
-}
-
-export function populateTemplateSelect() {
-  el.estimateTemplateSelect.innerHTML = Object.keys(estimateTemplates).map(key => `<option value="${escapeHtml(key)}">${escapeHtml(key)}</option>`).join('');
-  // Default to "Other" = blank slate (no starter items, no scope).
-  el.estimateTemplateSelect.value = 'Other';
-  applyEstimateTemplate();
 }
 
 export function populateClientSelects() {
@@ -865,7 +853,6 @@ export function clearFormForButton(id) {
   if (form === el.estimateForm) {
     const estItems = document.getElementById('estimateItems');
     if (estItems) estItems.innerHTML = '';
-    applyEstimateTemplate();
     el.estimateForm.user.value = state.profile?.full_name || state.session?.user?.user_metadata?.full_name || '';
     hydrateEstimateForm();
   }

@@ -1,9 +1,9 @@
-import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, isQualifiedStage, tradeOptionsHtml, TRADE_CATEGORIES } from './state.js';
+import { state, integer, sortDateDesc, initials, uid, lookupClientName, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, isQualifiedStage, tradeOptionsHtml, TRADE_CATEGORIES } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { softDelete } from './trash.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
-import { applyEstimateTemplate, renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
+import { renderEstimateSummary, collectEstimateFromForm } from './estimating.js';
 import { promptDeclineReason } from './documenso.js';
 
 // Clickable contact links: tel: opens the dialer/call prompt, mailto: the email app.
@@ -347,10 +347,6 @@ export function convertLeadToEstimate(leadId) {
   el.estimateForm.user.value = state.profile?.full_name || '';
   el.estimateForm.trade.value = lead.service || '';
   el.estimateForm.scope.value = lead.notes || '';
-  if (el.estimateTemplateSelect && estimateTemplates[lead.service]) {
-    el.estimateTemplateSelect.value = lead.service;
-    applyEstimateTemplate();
-  }
   setView('estimating');
   el.estimateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   renderEstimateSummary(collectEstimateFromForm());

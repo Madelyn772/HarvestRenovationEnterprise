@@ -6,7 +6,7 @@ export function cacheDom() {
     'sidebarUserName','sidebarUserMeta','sidebarRole','sidebarInitials','pageTitle','pageSubtitle','toastStack','openSettingsPanelBtn','logoutBtn',
     'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','checklistAddForm','clientForm','leadForm','clientList','leadTable',
     'actionItemsList','actionItemsDate','receivablesBody','avgResponseTime','avgResponseTrend','sameDayRate','sameDayTrend','leadFunnelChart','revenueFunnelChart',
-    'clientDetailTitle','clientDetailBody','clientSearch','estimateForm','estimateTemplateSelect','estimateClientSelect','estimateNumber','estimateDate',
+    'clientDetailTitle','clientDetailBody','clientSearch','estimateForm','estimateClientSelect','estimateNumber','estimateDate',
     'estimateSummary','estimateList','calculateEstimate','printEstimate','jobForm','leadClientSelect','jobClientSelect','calendarForm','calendarClientSelect','invoiceForm',
     'invoiceClientSelect','relatedEstimate','invoiceNumber','invoiceDate','invoiceItems','addInvoiceRow','printInvoice','noteForm','noteClientSelect',
     'jobBoard','calendarList','invoiceList','noteList','campaignForm','campaignList','leadSourceSummary','mainWebsiteVisits','landingPageVisits','scorecardBody','scorecardTotals','scorecardPeriod','declineReasonSummary','jobsWonChart','chartPeriod',

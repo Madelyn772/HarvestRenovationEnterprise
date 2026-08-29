@@ -1,4 +1,4 @@
-import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, estimateTemplates, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate, todayISO } from './state.js';
+import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate, todayISO } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, updateNewClientFieldsVisibility, renderAll, setView } from './navigation.js';
@@ -89,12 +89,9 @@ export function applyEstimateLock(locked) {
   // Selects/buttons are read directly (not via FormData), so disable them.
   const depSel = document.getElementById('estimateDepositPercent');
   if (depSel) depSel.disabled = locked;
-  if (el.estimateTemplateSelect) el.estimateTemplateSelect.disabled = locked;
   document.querySelectorAll('#estimateItems .line-item-row select, #estimateItems .remove-line-row').forEach(i => { i.disabled = locked; });
   const addBtn = document.getElementById('addEstimateRow');
   if (addBtn) addBtn.disabled = locked;
-  const loadBtn = document.getElementById('loadTemplateItems');
-  if (loadBtn) loadBtn.disabled = locked;
   const commercialToggle = document.getElementById('estimateCommercialToggle');
   if (commercialToggle) commercialToggle.disabled = locked;
   const itemizedToggle = document.getElementById('estimateItemizedToggle');
@@ -333,15 +330,6 @@ export function addEstimateRow(item = {}) {
   if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(node);
 }
 
-export function loadTemplateItems() {
-  const template = estimateTemplates[el.estimateTemplateSelect.value];
-  const wrap = getEstimateItemsEl();
-  if (!template || !wrap) return;
-  wrap.innerHTML = '';
-  (template.items || []).forEach(item => addEstimateRow(item));
-  recomputeEstimateTotals();
-}
-
 export function recomputeEstimateTotals() {
   const estimate = collectEstimateFromForm();
   const totalsEl = document.getElementById('estimateLineTotals');
@@ -353,27 +341,6 @@ export function recomputeEstimateTotals() {
     totalsEl.innerHTML = rows.join('');
   }
   renderEstimateSummary(estimate);
-}
-
-export function applyEstimateTemplate({ fromUser = false } = {}) {
-  const template = estimateTemplates[el.estimateTemplateSelect.value];
-  if (!template) return;
-  // Starter items only: derive the trade from the pick; never touch scope or the
-  // legacy calc fields (those are gone). Line items describe the work now.
-  if (el.estimateForm.trade) el.estimateForm.trade.value = template.trade || '';
-  const wrap = getEstimateItemsEl();
-  const hasItems = wrap && wrap.querySelectorAll('.line-item-row').length > 0;
-  if (fromUser) {
-    if (!hasItems || confirm('Replace current line items with the starter items?')) {
-      loadTemplateItems();
-    } else {
-      recomputeEstimateTotals();
-    }
-  } else if (!hasItems) {
-    loadTemplateItems();
-  } else {
-    recomputeEstimateTotals();
-  }
 }
 
 export function collectEstimateFromForm() {
