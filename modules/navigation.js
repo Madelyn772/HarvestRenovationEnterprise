@@ -139,11 +139,7 @@ export function bindAppUi() {
   if (el.tipNext) el.tipNext.addEventListener('click', nextTip);
   if (el.tipPrev) el.tipPrev.addEventListener('click', prevTip);
   if (el.tipDeleteBtn) el.tipDeleteBtn.addEventListener('click', removeCurrentTip);
-  el.addInvoiceRow.addEventListener('click', () => addInvoiceRow());
-
   // Itemized estimate + invoice controls.
-  const addEstBtn = document.getElementById('addEstimateRow');
-  if (addEstBtn) addEstBtn.addEventListener('click', () => addEstimateRow());
   const estimateCommercialToggle = document.getElementById('estimateCommercialToggle');
   if (estimateCommercialToggle) estimateCommercialToggle.addEventListener('change', handleEstimateCommercialToggle);
   const estimateItemizedToggle = document.getElementById('estimateItemizedToggle');

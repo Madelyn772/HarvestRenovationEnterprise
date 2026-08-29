@@ -90,7 +90,7 @@ export function applyEstimateLock(locked) {
   const depSel = document.getElementById('estimateDepositPercent');
   if (depSel) depSel.disabled = locked;
   document.querySelectorAll('#estimateItems .line-item-row select, #estimateItems .remove-line-row').forEach(i => { i.disabled = locked; });
-  const addBtn = document.getElementById('addEstimateRow');
+  const addBtn = document.getElementById('addEstimateRowBottom');
   if (addBtn) addBtn.disabled = locked;
   const commercialToggle = document.getElementById('estimateCommercialToggle');
   if (commercialToggle) commercialToggle.disabled = locked;
