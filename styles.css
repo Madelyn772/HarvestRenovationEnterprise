@@ -2935,6 +2935,27 @@ html:not(.theme-light) .sidebar {
 .contacts-table .contacts-head th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .contacts-table .link-card { background: transparent; border: 0; color: inherit; cursor: pointer; font-weight: 600; text-align: left; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
 .contacts-table td .ghost-btn { padding: .3rem .55rem; margin-right: .3rem; min-height: 0; }
+.contact-name-wrap { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.pipeline-contact-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .12rem .42rem;
+  border: 1px solid rgba(176, 125, 42, .35);
+  border-radius: 999px;
+  background: rgba(202, 160, 90, .12);
+  color: #8a6520;
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+html:not(.theme-light) .pipeline-contact-badge {
+  border-color: rgba(216, 184, 120, .38);
+  background: rgba(202, 160, 90, .16);
+  color: #e1bf82;
+}
 
 .lead-source-row { margin-bottom: .6rem; }
 .lead-source-bar-label { display: flex; justify-content: space-between; font-size: .85rem; margin-bottom: .2rem; }
@@ -2974,6 +2995,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .contacts-table td { border-bottom: 0; padding: .3rem 0; display: flex; justify-content: space-between; gap: 1rem; text-align: right; }
   .contacts-table td::before { content: attr(data-label); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); text-align: left; }
   .contacts-table td[data-label="Name"] { text-align: left; }
+  .contacts-table td[data-label="Name"] .contact-name-wrap { justify-content: flex-end; }
 }
 
 /* ============================================================

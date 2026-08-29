@@ -102,6 +102,12 @@ export const DEFAULT_CONTRACT_TERMS = [
 // HubSpot-style deal pipeline stages (order = left→right on the board).
 export const PIPELINE_STAGES = ['New Lead', 'Contacted', 'Qualified', 'Estimate Scheduled', 'Estimate Completed', 'Proposal Sent', 'Won', 'Lost'];
 
+export function isQualifiedStage(stageName) {
+  const stage = normalizeLeadStatus(stageName);
+  if (stage === 'Lost') return false;
+  return PIPELINE_STAGES.indexOf(stage) >= PIPELINE_STAGES.indexOf('Qualified');
+}
+
 // Lead sources tracked for KPI attribution.
 export const LEAD_SOURCES = ['Yelp', 'Google', 'Referral', 'Website Form', 'Phone Call', 'Repeat Customer', 'Google Business Profile', 'Facebook', 'Other'];
 
@@ -158,7 +164,7 @@ export const DEFAULT_TIPS = [
   'Drag a deal between pipeline stages to move it forward — or use the ▸ menu on a card.',
   'Mark a deal Won or Lost and your KPIs update automatically.',
   'Quick Add Lead only needs a name and a source — great for logging calls fast.',
-  'New deals and quick leads are added to Contacts automatically.',
+  'Quick Add stays lead-only until qualification; Prospect Leads are added to Contacts immediately.',
   'On the pipeline, use “Closed deals” to view This month / quarter / year / All time. Nothing is ever deleted.',
   'Approve or decline an estimate to update the KPI scorecard.',
   'To change a signed (locked) estimate, create a Change Order instead of editing it.',

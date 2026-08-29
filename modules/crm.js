@@ -1,4 +1,4 @@
-import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, tradeOptionsHtml, TRADE_CATEGORIES } from './state.js';
+import { state, integer, sortDateDesc, initials, uid, lookupClientName, estimateTemplates, objectFromForm, money, num, formatDate, todayInputValue, PIPELINE_STAGES, normalizeLeadStatus, isQualifiedStage, tradeOptionsHtml, TRADE_CATEGORIES } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { softDelete } from './trash.js';
@@ -113,6 +113,7 @@ export async function handleClientSave(event) {
   event.preventDefault();
   const data = objectFromForm(el.clientForm);
   const id = data.clientId || uid('CL');
+  const existing = state.store.clients.find(client => client.id === id);
   // Hard stop: no two clients may share the same phone number. Compare digits
   // only so formatting differences (dashes, spaces, +1) don't slip through.
   const digits = (data.phone || '').replace(/\D/g, '');
@@ -123,7 +124,7 @@ export async function handleClientSave(event) {
       return;
     }
   }
-  const payload = { id, name: data.name, phone: data.phone, email: data.email, serviceArea: data.serviceArea, address: data.address, source: data.source, tags: data.tags, notes: data.notes };
+  const payload = { ...existing, id, name: data.name, phone: data.phone, email: data.email, serviceArea: data.serviceArea, address: data.address, source: data.source, tags: data.tags, notes: data.notes };
   upsertArray('clients', payload, 'id');
   state.selectedClientId = id;
   addActivity(`Saved client ${payload.name || 'record'}.`, 'CRM');
@@ -163,27 +164,82 @@ export function resolveFormClient(data, fields) {
   return { clientId: '', clientName: name };
 }
 
-// Ensure a person captured on a lead/deal also exists in the Contacts
-// directory. Links to an existing contact when the phone (digits) or name
-// matches (back-filling a missing phone/email), otherwise creates a new one.
-// Returns the contact id (or '' when there's nothing to save).
-export function findOrCreateContact({ name, phone, email, source }) {
-  const digits = (phone || '').replace(/\D/g, '');
-  const nm = (name || '').trim();
-  let existing = null;
-  if (digits) existing = state.store.clients.find(c => (c.phone || '').replace(/\D/g, '') === digits);
-  if (!existing && nm) existing = state.store.clients.find(c => (c.name || '').trim().toLowerCase() === nm.toLowerCase());
-  if (existing) {
-    if (!existing.phone && phone) existing.phone = phone;
-    if (!existing.email && email) existing.email = email;
-    return existing.id;
+function normalizedPhone(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function normalizedEmail(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function findMatchingContact(lead) {
+  const linkedId = lead.clientId || lead.contactId || '';
+  if (linkedId) {
+    const linked = state.store.clients.find(contact => contact.id === linkedId);
+    if (linked) return linked;
   }
-  if (!nm && !digits) return '';
+  const phone = normalizedPhone(lead.phone);
+  if (phone) {
+    const phoneMatch = state.store.clients.find(contact => normalizedPhone(contact.phone) === phone);
+    if (phoneMatch) return phoneMatch;
+  }
+  const email = normalizedEmail(lead.email);
+  if (email) return state.store.clients.find(contact => normalizedEmail(contact.email) === email) || null;
+  return null;
+}
+
+function promoteLeadToContact(lead) {
+  const existing = findMatchingContact(lead);
+  if (existing) {
+    lead.clientId = existing.id;
+    lead.contactId = existing.id;
+    if (!existing.leadId) existing.leadId = lead.id;
+    return { contact: existing, created: false };
+  }
+  const name = (lead.clientName || lead.name || '').trim();
+  const phone = (lead.phone || '').trim();
+  const email = (lead.email || '').trim();
+  if (!name && !phone && !email) return { contact: null, created: false };
+  const contact = {
+    id: uid('CL'),
+    name: name || 'Unnamed',
+    phone,
+    email,
+    serviceArea: lead.area || '',
+    address: lead.address || '',
+    source: lead.source || 'Lead',
+    tags: '',
+    notes: lead.notes || '',
+    leadId: lead.id,
+    createdAt: new Date().toISOString()
+  };
+  state.store.clients.push(contact);
+  lead.clientId = contact.id;
+  lead.contactId = contact.id;
+  return { contact, created: true };
+}
+
+// Kept as a public compatibility helper for existing callers. Contact matching
+// intentionally uses phone/email only; same-name people remain separate.
+export function findOrCreateContact({ name, phone, email, source }) {
+  const existing = findMatchingContact({ phone, email });
+  if (existing) return existing.id;
+  const contactName = (name || '').trim();
+  const contactPhone = (phone || '').trim();
+  const contactEmail = (email || '').trim();
+  if (!contactName && !contactPhone && !contactEmail) return '';
   const id = uid('CL');
-  upsertArray('clients', {
-    id, name: nm || 'Unnamed', phone: phone || '', email: email || '',
-    serviceArea: '', address: '', source: source || '', tags: '', notes: ''
-  }, 'id');
+  state.store.clients.push({
+    id,
+    name: contactName || 'Unnamed',
+    phone: contactPhone,
+    email: contactEmail,
+    serviceArea: '',
+    address: '',
+    source: source || '',
+    tags: '',
+    notes: ''
+  });
   return id;
 }
 
@@ -215,13 +271,11 @@ export async function handleLeadSave(event) {
   const existing = editingId ? state.store.leads.find(l => l.id === editingId) : null;
   const newStatus = normalizeLeadStatus(data.status || 'New Lead');
   const stageChanged = !existing || existing.status !== newStatus;
-  // Ensure this deal's person is also in Contacts (link existing or create).
-  let contactId = data.clientId && data.clientId !== '__new__' ? data.clientId : (existing?.clientId || '');
-  if (!contactId) contactId = findOrCreateContact({ name: data.clientName, phone: data.phone, email: data.email, source: data.source });
   const payload = {
     id: editingId || uid('L'),
-    clientId: contactId,
-    clientName: data.clientName || lookupClientName(contactId),
+    clientId: data.clientId && data.clientId !== '__new__' ? data.clientId : (existing?.clientId || ''),
+    contactId: existing?.contactId || '',
+    clientName: data.clientName || lookupClientName(data.clientId) || existing?.clientName || '',
     phone: data.phone,
     email: data.email,
     service: data.service,
@@ -233,10 +287,11 @@ export async function handleLeadSave(event) {
     followUpDate: data.followUpDate || '',
     notes: data.notes,
     stageChangedAt: existing ? (stageChanged ? new Date().toISOString() : (existing.stageChangedAt || leadIso)) : leadIso,
-    createdAt: leadIso,
+    createdAt: existing?.createdAt || leadIso,
     lastContactedAt: existing ? (existing.lastContactedAt || '') : '',
     owner: existing?.owner || state.profile?.full_name || ''
   };
+  promoteLeadToContact(payload);
   if (existing) {
     const idx = state.store.leads.findIndex(l => l.id === editingId);
     state.store.leads[idx] = payload;
@@ -281,6 +336,9 @@ export function loadLeadIntoForm(id) {
 export function convertLeadToEstimate(leadId) {
   const lead = state.store.leads.find(item => item.id === leadId);
   if (!lead) return;
+  lead.status = 'Proposal Sent';
+  lead.stageChangedAt = new Date().toISOString();
+  promoteLeadToContact(lead);
   el.estimateForm.reset();
   el.estimateForm.estimateId.value = '';
   populateClientSelects();
@@ -296,9 +354,6 @@ export function convertLeadToEstimate(leadId) {
   setView('estimating');
   el.estimateForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
   renderEstimateSummary(collectEstimateFromForm());
-  // Advance the pipeline: a lead sent to estimating becomes "Proposal Sent".
-  lead.status = 'Proposal Sent';
-  lead.stageChangedAt = new Date().toISOString();
   saveStore('Lead advanced to Proposal Sent');
   showToast('Lead loaded into the estimate builder.', 'success');
 }
@@ -666,9 +721,11 @@ export function moveDealToStage(id, stage) {
   if (!lead || !PIPELINE_STAGES.includes(stage) || normalizeLeadStatus(lead.status) === stage) return;
   lead.status = stage;
   lead.stageChangedAt = new Date().toISOString();
+  const promotion = isQualifiedStage(stage) ? promoteLeadToContact(lead) : { created: false };
   addActivity(`Moved ${leadDisplayName(lead)} to ${stage}.`, 'CRM');
   saveStore('Deal moved to ' + stage);
   renderLeads();
+  if (promotion.created) showToast('Lead promoted to contacts.', 'success');
   if (stage === 'Lost') captureLostReason(lead);
 }
 
@@ -689,8 +746,9 @@ export function renderContactsTable() {
   const rows = clients.map(c => {
     const linked = state.store.leads.filter(l => l.clientId === c.id);
     const lastIso = linked.map(l => l.lastContactedAt || l.stageChangedAt).filter(Boolean).sort().slice(-1)[0] || '';
+    const pipelineBadge = c.leadId ? '<span class="pipeline-contact-badge">Pipeline</span>' : '';
     return `<tr>
-      <td data-label="Name"><button type="button" class="link-card contact-select" data-client-id="${c.id}">${escapeHtml(c.name || 'Unnamed')}</button></td>
+      <td data-label="Name"><span class="contact-name-wrap"><button type="button" class="link-card contact-select" data-client-id="${c.id}">${escapeHtml(c.name || 'Unnamed')}</button>${pipelineBadge}</span></td>
       <td data-label="Phone">${phoneLink(c.phone)}</td>
       <td data-label="Email">${emailLink(c.email)}</td>
       <td data-label="Deals">${linked.length}</td>
@@ -756,10 +814,10 @@ export async function handleQuickAddSave(event) {
   }
   if (data.leadDate && data.leadDate > todayInputValue()) { showToast('Lead date can’t be in the future. Choose today or a past date.', 'error'); return; }
   const now = leadDateToIso(data.leadDate);
-  const contactId = findOrCreateContact({ name: data.clientName, phone: data.phone, email: '', source });
   state.store.leads.unshift({
     id: uid('L'),
-    clientId: contactId,
+    clientId: '',
+    contactId: '',
     clientName: data.clientName,
     phone: data.phone,
     email: '',
