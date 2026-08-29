@@ -229,14 +229,12 @@ export function collectInvoiceFromForm() {
   // Invoice date shares the name "date" with payment rows — read it directly.
   const dateInput = document.getElementById('invoiceDate');
   const sub = items.reduce((s, item) => s + num(item.amount), 0);
-  const taxPct = num(data.taxPercent);
+  const taxPct = 0;
   const fees = num(data.permitsFees);
   const finalPercent = num(data.finalPercent);
   const finalPay = finalPercent > 0 ? sub * (finalPercent / 100) : 0;
-  // Tax applies to the marked-up base (subtotal + final markup), matching estimating.
-  const taxBase = sub + finalPay;
-  const taxAmount = taxBase * (taxPct / 100);
-  const total = taxBase + taxAmount + fees;
+  const taxAmount = 0;
+  const total = sub + finalPay + fees;
   const depositPercent = num(data.depositPercent);
   return {
     id: data.invoiceId || '',
@@ -257,6 +255,7 @@ export function collectInvoiceFromForm() {
     commercialJob: isInvoiceCommercialMode(),
     permitsFees: fees,
     taxPercent: taxPct,
+    taxAmount,
     finalPercent,
     finalPay,
     depositPercent,
@@ -356,12 +355,9 @@ export function renderInvoiceBalanceCallout() {
   const items = readInvoiceItemsFromDom();
   const subtotal = items.reduce((s, it) => s + num(it.amount), 0);
   const fees = num(document.getElementById('invoicePermitsFees')?.value);
-  const taxPct = num(document.getElementById('invoiceTaxPercent')?.value);
   const finalPct = num(document.getElementById('invoiceFinalPercent')?.value);
   const finalPay = finalPct > 0 ? subtotal * (finalPct / 100) : 0;
-  const taxBase = subtotal + finalPay;
-  const tax = taxBase * (taxPct / 100);
-  const total = taxBase + tax + fees;
+  const total = subtotal + finalPay + fees;
   // Payments live on the saved invoice record (recorded via the payment dialog).
   const invId = el.invoiceForm?.invoiceId?.value || '';
   const savedInv = invId ? state.store.invoices.find(i => i.id === invId) : null;
@@ -373,14 +369,12 @@ export function renderInvoiceBalanceCallout() {
   const summary = document.getElementById('invoiceSummary');
   if (summary) {
     const balClass = balance <= 0.01 && paid > 0 ? 'is-paid' : (balance > 0.01 ? 'is-owed' : '');
-    const taxLabel = Number.isInteger(taxPct) ? taxPct : taxPct.toFixed(2);
     const paidRow = paid > 0 ? `<div class="isum-row"><span>Amount Paid</span><strong>${money.format(paid)}</strong></div>` : '';
     const finalRow = finalPay > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(finalPay)}</strong></div>` : '';
     summary.innerHTML = `
-      <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
+      <div class="isum-row"><span>Total</span><strong>${money.format(subtotal)}</strong></div>
       ${finalRow}
       <div class="isum-row"><span>Permit / Fees</span><strong>${money.format(fees)}</strong></div>
-      <div class="isum-row isum-muted"><span>Tax (${taxLabel}%)</span><strong>${money.format(tax)}</strong></div>
       <div class="isum-divide"></div>
       <div class="isum-row isum-total"><span>Total Due</span><strong>${money.format(total)}</strong></div>
       ${paidRow}
@@ -434,6 +428,7 @@ export function hydrateInvoiceForm() {
   if (dueInput && !dueInput.value) dueInput.value = addDaysISO(dateInput ? dateInput.value : todayISO(), 15);
   const numInput = document.getElementById('invoiceNumber');
   if (numInput && !numInput.value) numInput.value = autoNumber('INV');
+  if (!el.invoiceForm.invoiceId.value) setInvoiceDeposit(0);
   setInvoiceCommercialMode(isInvoiceCommercialMode(), { recompute: false });
 }
 
@@ -531,9 +526,9 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   const taxEl = document.getElementById('invoiceTaxPercent');
   const finalEl = document.getElementById('invoiceFinalPercent');
   if (feesEl) feesEl.value = num(estimate.permitsFees) || '';
-  if (taxEl) taxEl.value = num(estimate.taxPercent) || '';
+  if (taxEl) taxEl.value = 0;
   if (finalEl) finalEl.value = num(estimate.finalPercent) || '';
-  setInvoiceDeposit(num(estimate.depositPercent) || 0);
+  setInvoiceDeposit(0);
   setInvoiceCommercialMode(estimate.commercialJob === true, { recompute: false });
   renderInvoiceCardViews();
   renderInvoiceBalanceCallout();

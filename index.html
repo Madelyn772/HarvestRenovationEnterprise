@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260829-72" />
+  <link rel="stylesheet" href="./styles.css?v=20260829-73" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -527,7 +527,6 @@
                     <label><span>Prepared by</span><input name="user" /></label>
                     <label><span>Valid until</span><input name="validUntil" id="estimateValidUntil" type="date" /></label>
                     <label><span>Final markup %</span><input name="finalPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
-                    <label><span>Tax %</span><input name="taxPercent" type="number" min="0" step="0.01" placeholder="0" /></label>
                     <label><span>Permits &amp; fees ($)</span><input name="permitsFees" type="number" min="0" step="0.01" placeholder="0" /></label>
                   </div>
                 </details>
@@ -561,10 +560,10 @@
                       <span class="idc-label">Deposit</span>
                       <span class="idc-pct">
                         <select name="depositPercent" id="estimateDepositPercent" aria-label="Deposit percent">
-                          <option value="0">No deposit</option>
+                          <option value="0" selected>No deposit</option>
                           <option value="10">10%</option>
                           <option value="20">20%</option>
-                          <option value="30" selected>30%</option>
+                          <option value="30">30%</option>
                           <option value="40">40%</option>
                           <option value="50">50%</option>
                           <option value="custom">Custom…</option>
@@ -575,7 +574,7 @@
                       <em class="idc-note">Due at acceptance</em>
                     </div>
                     <div id="estimateRailMeta" class="isum-meta"></div>
-                    <label class="isum-toggle-row"><span>Signature Block</span><span class="switch"><input type="checkbox" name="signatureBlockEnabled" checked /><span class="switch-track" aria-hidden="true"></span></span></label>
+                    <label class="isum-toggle-row"><span>Signature Block</span><span class="switch"><input type="checkbox" name="signatureBlockEnabled" /><span class="switch-track" aria-hidden="true"></span></span></label>
                     <p class="isum-sign-note muted tiny">Print signature block on the PDF</p>
                   </div>
                 </aside>
@@ -1465,7 +1464,7 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260829-72"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260829-73"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>

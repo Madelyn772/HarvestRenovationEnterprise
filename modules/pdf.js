@@ -66,15 +66,12 @@ export function buildBrandedDocHtml(opts) {
     ? `<span class="status">${escapeHtml(status)}</span>`
     : '';
   const metaRows = [[`${kindLabel} No.`, escapeHtml(number || '—')], ['Date', escapeHtml(formatDate(date) || '—')]];
-  if (bill.name) metaRows.push(['Client', escapeHtml(bill.name)]);
   if (validUntil) metaRows.push(['Valid until', escapeHtml(formatDate(validUntil))]);
   if (dueDate) metaRows.push(['Due date', escapeHtml(formatDate(dueDate))]);
-  if (preparedBy) metaRows.push(['Prepared by', escapeHtml(preparedBy)]);
   const metaHtml = metaRows.map(([l, v]) => `<div class="mrow"><span class="ml">${l}</span><span class="mv">${v}</span></div>`).join('');
   const summaryRows = [];
-  if (subtotal != null) summaryRows.push(['Subtotal', money.format(num(subtotal))]);
+  if (subtotal != null) summaryRows.push(['Total', money.format(num(subtotal))]);
   if (num(finalPay) > 0) summaryRows.push(['Final markup', money.format(num(finalPay))]);
-  if (num(taxAmount) > 0) summaryRows.push([`Tax (${num(taxPercent)}%)`, money.format(num(taxAmount))]);
   if (num(permitsFees) > 0) summaryRows.push(['Permits & fees', money.format(num(permitsFees))]);
   if (num(paymentsReceived) > 0) summaryRows.push(['Payments received', '−' + money.format(num(paymentsReceived))]);
   const summaryHtml = summaryRows.map(([l, v]) => `<div class="sumrow"><span>${escapeHtml(l)}</span><span>${v}</span></div>`).join('');
@@ -118,7 +115,7 @@ export function buildBrandedDocHtml(opts) {
     .contact{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:14px 26px;border-bottom:1px solid #eadfce}
     .contact .lines div{font-size:13px;color:#7a6a4f;line-height:1.55}
     .contact .lines a{color:#7a6a4f;text-decoration:none}
-    .meta{border:1px solid #0f0c08;min-width:240px;border-radius:6px;overflow:hidden}
+    .meta{border:1px solid #0f0c08;min-width:240px;border-radius:6px;overflow:visible}
     .meta .mrow{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #eadfce}
     .meta .mrow:last-child{border-bottom:none}
     .meta .ml{padding:7px 12px;font-size:11px;letter-spacing:.08em;color:#fff;background:#0f0c08;text-transform:uppercase}
@@ -170,7 +167,9 @@ export function buildBrandedDocHtml(opts) {
     .sigs .siglabel{font-size:11px;color:#6b5d46;margin-top:6px;text-transform:uppercase;letter-spacing:.08em}
     .sigs .sigline{border-bottom:1px solid #b9a888;height:32px}
     .verse{background:#0f0c08;color:#caa05a;text-align:center;font-size:12px;letter-spacing:.02em;padding:12px 20px;margin-top:18px}
-    @media print{.bar{display:none}body{background:#fff}.sheet{margin:0 auto;width:auto;box-shadow:none}@page{margin:0}}
+    .item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}
+    @media screen and (max-width:780px){body{overflow-x:hidden}.sheet{width:100%;max-width:none;margin:8px 0;box-shadow:none}.top{align-items:flex-start;flex-wrap:wrap;padding:18px 14px}.brand-logo{max-width:190px;height:auto}.title strong{font-size:28px}.contact{flex-direction:column;padding:12px 14px}.meta{width:100%;min-width:0}.billto,.items,.terms{padding-left:12px;padding-right:12px}.foot{grid-template-columns:1fr;padding:16px 14px 4px}.sigs{grid-template-columns:minmax(0,1fr) 86px;gap:16px;padding:20px 14px 8px}.item-row{grid-template-columns:minmax(0,1fr) 112px}.items .ihead{grid-template-columns:minmax(0,1fr) 112px}}
+    @media print{@page{margin:.5in}.bar{display:none}body{background:#fff}.sheet{width:auto;max-width:none;margin:0;box-shadow:none}.item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}}
   </style></head>
   <body>
     <div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
@@ -205,7 +204,7 @@ export function buildBrandedDocHtml(opts) {
           ${kind === 'ESTIMATE' && depPct > 0 ? `<div class="term"><strong>${dep}% Upfront:</strong> A deposit of ${dep}%${depAmountText} is required upfront to cover material costs.</div>` : ''}
           <div class="qnote">For questions concerning this ${kind.toLowerCase()}, please contact<br/>${escapeHtml(BRAND.contact)}, ${escapeHtml(BRAND.phone)}, ${escapeHtml(BRAND.email)}<br/><a href="https://${escapeHtml(BRAND.website)}">${escapeHtml(BRAND.website)}</a></div>
         </div>
-        <div class="foot-right">
+        <div class="foot-right summary">
           ${summaryHtml}
           <div class="balance"><span>${escapeHtml(effBalanceLabel)}</span><strong${effBalanceColor ? ` style="color:${effBalanceColor}"` : ''}>${money.format(num(balance))}</strong></div>
           ${hasComments ? `<div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments)}</div></div>` : ''}
@@ -243,6 +242,8 @@ export function buildEstimateDocHtml(estimate) {
     if (num(estimate.finalPay)) rows.push({ desc: 'Final markup', amount: num(estimate.finalPay) });
     if (!rows.length) rows.push({ desc: estimate.trade || 'Project scope', amount: num(estimate.estimatedCost) });
   }
+  const subtotal = estimate.subtotal != null ? num(estimate.subtotal) : rows.reduce((sum, row) => sum + num(row.amount), 0);
+  const taxFreeTotal = subtotal + num(estimate.finalPay) + num(estimate.permitsFees);
   return buildBrandedDocHtml({
     kind: 'ESTIMATE',
     number: estimate.estimateNumber || '',
@@ -259,12 +260,12 @@ export function buildEstimateDocHtml(estimate) {
     rows,
     commercialJob: estimate.commercialJob === true,
     balanceLabel: 'BALANCE DUE',
-    balance: num(estimate.estimatedCost),
+    balance: taxFreeTotal,
     depositPercent: num(estimate.depositPercent),
     depositAmount: num(estimate.depositAmount),
     validUntil: estimate.validUntil || '',
     preparedBy: estimate.user || currentUserName(),
-    subtotal: estimate.subtotal != null ? num(estimate.subtotal) : num(estimate.estimatedCost),
+    subtotal,
     taxPercent: num(estimate.taxPercent),
     taxAmount: num(estimate.taxAmount),
     permitsFees: num(estimate.permitsFees),
@@ -296,11 +297,8 @@ export function buildInvoiceDocHtml(invoice) {
   const sub = items.reduce((s, it) => s + num(it.amount != null ? it.amount : num(it.quantity) * num(it.unitPrice)), 0);
   const finalPercent = num(invoice.finalPercent);
   const finalPay = finalPercent > 0 ? sub * (finalPercent / 100) : 0;
-  const taxPct = num(invoice.taxPercent);
   const fees = num(invoice.permitsFees);
-  const taxBase = sub + finalPay;
-  const taxAmount = taxBase * (taxPct / 100);
-  const total = taxBase + taxAmount + fees;
+  const total = sub + finalPay + fees;
   const payments = invoice.payments || [];
   const paid = payments.reduce((s, p) => s + num(p.amount), 0);
   const balance = total - paid;
@@ -318,8 +316,8 @@ export function buildInvoiceDocHtml(invoice) {
     balanceColor: balance > 0.01 ? '#c62828' : '#2e7d32',
     preparedBy: invoice.user || currentUserName(),
     subtotal: sub,
-    taxPercent: taxPct,
-    taxAmount,
+    taxPercent: 0,
+    taxAmount: 0,
     permitsFees: fees,
     finalPay,
     paymentsReceived: paid,
@@ -357,6 +355,8 @@ export function buildContractDocHtml(contract) {
     depositAmount: num(contract.depositAmount),
     preparedBy: contract.user || currentUserName(),
     subtotal: num(contract.contractAmount),
+    taxPercent: 0,
+    taxAmount: 0,
     terms: contract.terms || DEFAULT_CONTRACT_TERMS,
     signatureBlockEnabled: true
   });

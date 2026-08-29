@@ -849,6 +849,7 @@ export function clearFormForButton(id) {
   }
   if (form === el.invoiceForm) {
     el.invoiceItems.innerHTML = '';
+    setInvoiceDeposit(0);
     setInvoiceCommercialMode(false, { recompute: false });
     addInvoiceRow();
   }

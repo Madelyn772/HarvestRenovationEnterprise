@@ -57,12 +57,15 @@ export function saveEstimateFromForm() {
 
 function estFinEq(a, b) { return Math.round(num(a) * 100) === Math.round(num(b) * 100); }
 
+function taxFreeEstimateTotal(estimate) {
+  return num(estimate.estimatedCost) - num(estimate.taxAmount);
+}
+
 // True if any locked (financial) estimate field differs between two records.
 function estimateFinancialsChanged(a, b) {
-  if (!estFinEq(a.estimatedCost, b.estimatedCost)) return true;
+  if (!estFinEq(taxFreeEstimateTotal(a), taxFreeEstimateTotal(b))) return true;
   if (!estFinEq(a.subtotal, b.subtotal)) return true;
   if (num(a.depositPercent) !== num(b.depositPercent)) return true;
-  if (!estFinEq(a.taxPercent, b.taxPercent)) return true;
   if (!estFinEq(a.permitsFees, b.permitsFees)) return true;
   if (!estFinEq(a.finalPercent, b.finalPercent)) return true;
   if ((a.trade || '') !== (b.trade || '')) return true;
@@ -310,8 +313,7 @@ export function recomputeEstimateTotals() {
   const estimate = collectEstimateFromForm();
   const totalsEl = document.getElementById('estimateLineTotals');
   if (totalsEl) {
-    const rows = [`<div class="row"><span>Subtotal</span><strong>${money.format(num(estimate.subtotal))}</strong></div>`];
-    if (num(estimate.taxAmount) > 0) rows.push(`<div class="row"><span>Tax (${num(estimate.taxPercent)}%)</span><strong>${money.format(num(estimate.taxAmount))}</strong></div>`);
+    const rows = [`<div class="row"><span>Total</span><strong>${money.format(num(estimate.subtotal))}</strong></div>`];
     if (num(estimate.permitsFees) > 0) rows.push(`<div class="row"><span>Permits &amp; fees</span><strong>${money.format(num(estimate.permitsFees))}</strong></div>`);
     if (num(estimate.finalPay) > 0) rows.push(`<div class="row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>`);
     rows.push(`<div class="row total"><span>Estimate total</span><strong>${money.format(num(estimate.estimatedCost))}</strong></div>`);
@@ -347,13 +349,11 @@ export function collectEstimateFromForm() {
   const items = readEstimateItemsFromDom();
   // Subtotal is always the sum of line items (no legacy lumped-pricing fallback).
   const subtotal = items.reduce((sum, it) => sum + num(it.amount), 0);
-  const taxPercent = num(data.taxPercent);
+  const taxPercent = 0;
   const permitsFees = num(data.permitsFees);
-  // Tax applies to the marked-up base (subtotal + final markup), matching invoicing.
   const finalPay = finalPercent > 0 ? subtotal * (finalPercent / 100) : 0;
-  const taxBase = subtotal + finalPay;
-  const taxAmount = taxBase * taxPercent / 100;
-  const estimatedCost = taxBase + taxAmount + permitsFees;
+  const taxAmount = 0;
+  const estimatedCost = subtotal + finalPay + permitsFees;
   const depositPercent = getDepositPercent();
   const depositAmount = estimatedCost * (depositPercent / 100);
   const linkedClient = data.clientId && data.clientId !== '__new__' ? findClient(data.clientId) : null;
@@ -391,17 +391,13 @@ export function renderEstimateSummary(estimate) {
   if (!estimate) return;
   const subtotal = num(estimate.subtotal);
   const fees = num(estimate.permitsFees);
-  const taxPct = num(estimate.taxPercent);
-  const tax = num(estimate.taxAmount);
   const total = num(estimate.estimatedCost);
-  const taxLabel = Number.isInteger(taxPct) ? taxPct : taxPct.toFixed(2);
   if (el.estimateSummary) {
     const feesRow = fees > 0 ? `<div class="isum-row"><span>Permits / Fees</span><strong>${money.format(fees)}</strong></div>` : '';
     const finalRow = num(estimate.finalPay) > 0 ? `<div class="isum-row"><span>Final markup</span><strong>${money.format(num(estimate.finalPay))}</strong></div>` : '';
     el.estimateSummary.innerHTML = `
-      <div class="isum-row"><span>Subtotal</span><strong>${money.format(subtotal)}</strong></div>
+      <div class="isum-row"><span>Total</span><strong>${money.format(subtotal)}</strong></div>
       ${feesRow}${finalRow}
-      <div class="isum-row isum-muted"><span>Tax (${taxLabel}%)</span><strong>${money.format(tax)}</strong></div>
       <div class="isum-divide"></div>
       <div class="isum-row isum-total"><span>Total</span><strong>${money.format(total)}</strong></div>`;
   }
