@@ -1582,6 +1582,8 @@ textarea:disabled {
 #docGroupToggle.active { background: var(--gold, #c9a227); color: #fff; border-color: var(--gold, #c9a227); }
 
 .doc-item { border-left: 4px solid transparent; padding-left: 1rem; }
+.doc-client-name { font-size: 1.05rem; font-weight: 800; }
+.doc-title-separator { color: #6b5d46; }
 .doc-type-estimate { border-left-color: #c9a227; }
 .doc-type-invoice { border-left-color: #5b8def; }
 .doc-type-contract { border-left-color: #16a34a; }
