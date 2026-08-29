@@ -143,6 +143,7 @@ export function buildBrandedDocHtml(opts) {
     .items .ihead.lump-sum{grid-template-columns:1fr}
     .items .ihead span{padding:8px 12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#caa05a}
     .items .ihead span:last-child{text-align:right}
+    .items .ihead span:first-child{text-align:left}
     .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
     .items.paytable{margin-top:14px}
     .items.paytable .ibody{min-height:0}
