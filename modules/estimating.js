@@ -539,7 +539,7 @@ export function renderEstimates() {
     const meta = [escapeHtml(item.user || ''), escapeHtml(item.trade || ''), formatDate(item.date)].filter(Boolean).join(' • ');
     return `<div class="invoice-row">
       <div class="invoice-row-info">
-        <div class="invoice-row-top"><strong>${escapeHtml(item.estimateNumber || item.id)}</strong>${lockIcon}${statusBadge}${depositPill}</div>
+        <div class="invoice-row-top"><strong class="proposal-client-name">${escapeHtml(item.clientName || 'Client')}</strong><span class="proposal-estimate-number">— ${escapeHtml(item.estimateNumber || item.id)}</span>${lockIcon}${statusBadge}${depositPill}</div>
         <p class="muted tiny">${meta}</p>
         ${declineLine}${coLine}
       </div>

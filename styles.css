@@ -1582,8 +1582,6 @@ textarea:disabled {
 #docGroupToggle.active { background: var(--gold, #c9a227); color: #fff; border-color: var(--gold, #c9a227); }
 
 .doc-item { border-left: 4px solid transparent; padding-left: 1rem; }
-.doc-client-name { font-size: 1.05rem; font-weight: 800; }
-.doc-title-separator { color: #6b5d46; }
 .doc-type-estimate { border-left-color: #c9a227; }
 .doc-type-invoice { border-left-color: #5b8def; }
 .doc-type-contract { border-left-color: #16a34a; }
@@ -3944,6 +3942,8 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .invoice-row-info { flex: 1; min-width: 0; }
 .invoice-row-top { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
 .invoice-row-top strong { font-size: 1rem; letter-spacing: -.01em; }
+.invoice-row-top .proposal-client-name { font-size: 1.08rem; font-weight: 800; }
+.proposal-estimate-number { color: var(--muted); font-weight: 700; }
 .invoice-row-info p { margin: .2rem 0 0; }
 .invoice-row-amount {
   display: flex;
