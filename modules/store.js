@@ -7,6 +7,8 @@ import { renderAll } from './navigation.js';
 // ── Cloud sync (Option A: one shared JSON record for the whole company) ──
 const CLOUD_TABLE = 'portal_shared_data';
 const CLOUD_ROW_ID = 1;
+const BACKUP_TABLE = 'portal_backups';
+const BACKUP_THROTTLE_MS = 60 * 1000;
 // Unique id for THIS browser tab, so we can ignore realtime echoes of our own writes.
 const CLIENT_ID = `${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
 const PORTAL_STORAGE_PREFIX = STORAGE_KEY;
@@ -17,6 +19,7 @@ let cloudPushTimer = null;
 let applyingRemote = false;     // guards against re-pushing data we just received
 let cloudChannel = null;
 let lastCloudUpdatedAt = null;  // updated_at we last saw, for optimistic-concurrency conflict detection
+let lastBackupAt = 0;
 
 export function isTestMode() {
   return PORTAL_TEST_MODE;
@@ -208,13 +211,115 @@ async function pushCloud() {
       return;
     }
     const stamp = new Date().toISOString();
+    const storeData = structuredClone(state.store);
     const { error } = await state.supabase
       .from(CLOUD_TABLE)
-      .upsert({ id: CLOUD_ROW_ID, data: state.store, updated_at: stamp, updated_by: CLIENT_ID }, { onConflict: 'id' });
+      .upsert({ id: CLOUD_ROW_ID, data: storeData, updated_at: stamp, updated_by: CLIENT_ID }, { onConflict: 'id' });
     if (error) throw error;
     lastCloudUpdatedAt = stamp;
+    void pushBackupSnapshot(storeData);
   } catch (e) {
     console.warn('cloud push failed (data is safe locally)', e);
+  }
+}
+
+async function pushBackupSnapshot(storeData, forceCreate = false) {
+  if (PORTAL_TEST_MODE || !state.supabase || !state.session?.user?.id) return false;
+  const now = Date.now();
+  if (!forceCreate && now - lastBackupAt < BACKUP_THROTTLE_MS) return false;
+
+  const { data, error } = await state.supabase.rpc('create_portal_backup', {
+    store_data: structuredClone(storeData),
+    force_create: forceCreate
+  });
+  if (error) {
+    console.warn('[portal] backup snapshot failed:', error.message || error);
+    return false;
+  }
+  if (data !== null) lastBackupAt = now;
+  return data !== null;
+}
+
+export async function listBackups() {
+  if (PORTAL_TEST_MODE || !state.supabase || !state.session?.user?.id) return [];
+  const { data, error } = await state.supabase
+    .from(BACKUP_TABLE)
+    .select('id, created_at, record_count')
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) {
+    console.warn('[portal] listBackups error:', error.message || error);
+    throw error;
+  }
+  return data || [];
+}
+
+async function fetchBackup(backupId) {
+  if (PORTAL_TEST_MODE || !state.supabase || !state.session?.user?.id) return null;
+  const { data, error } = await state.supabase
+    .from(BACKUP_TABLE)
+    .select('id, created_at, data, record_count')
+    .eq('id', backupId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function createBackupNow() {
+  if (PORTAL_TEST_MODE) return false;
+  const created = await pushBackupSnapshot(state.store, true);
+  if (created) showToast('Backup saved.', 'success');
+  else showToast('Could not save backup. Check your connection.', 'error');
+  return created;
+}
+
+export async function restoreBackup(backupId) {
+  if (PORTAL_TEST_MODE) return false;
+  try {
+    const backup = await fetchBackup(backupId);
+    if (!backup) return false;
+    const stamp = formatDateTime(backup.created_at);
+    if (!window.confirm(`Restore from ${stamp}? This will replace all current data.`)) return false;
+    state.store = normalizeStoreShape(structuredClone(backup.data));
+    addActivity(`Restored portal data from cloud backup ${stamp}.`, 'System');
+    saveStore('Restored from backup');
+    renderAll();
+    showToast(`Restored from backup ${stamp}.`, 'success');
+    return true;
+  } catch (error) {
+    console.warn('[portal] restoreBackup error:', error.message || error);
+    showToast('Could not restore backup. Check your connection.', 'error');
+    return false;
+  }
+}
+
+export async function downloadBackup(backupId) {
+  if (PORTAL_TEST_MODE) return false;
+  try {
+    const backup = await fetchBackup(backupId);
+    if (!backup) return false;
+    const payload = {
+      app: 'harvest-portal-pro-crm',
+      version: 1,
+      exportedAt: backup.created_at,
+      exportedBy: currentUserName(),
+      backupId: backup.id,
+      store: backup.data
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `harvest-portal-backup-${String(backup.created_at).slice(0, 10)}-${backup.id}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
+  } catch (error) {
+    console.warn('[portal] downloadBackup error:', error.message || error);
+    showToast('Could not download backup. Check your connection.', 'error');
+    return false;
   }
 }
 

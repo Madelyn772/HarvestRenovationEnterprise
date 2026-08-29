@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260829-71" />
+  <link rel="stylesheet" href="./styles.css?v=20260829-72" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -1353,6 +1353,18 @@
             <input type="file" id="importDataInput" accept="application/json,.json" class="hidden" />
           </div>
         </article>
+        <article class="card real-admin-only hidden" id="backupHistoryCard">
+          <div class="card-head">
+            <div><p class="eyebrow">Cloud protection</p><h3>Backup History</h3></div>
+            <div class="form-actions backup-history-actions">
+              <button type="button" class="primary-btn" id="createBackupNowBtn">Create backup now</button>
+              <button type="button" class="ghost-btn" id="refreshBackupsBtn">Refresh</button>
+            </div>
+          </div>
+          <div id="backupHistoryList" class="backup-history-list">
+            <div class="empty-state">Open Settings to load backup history.</div>
+          </div>
+        </article>
         <article class="card">
           <div class="card-head"><div><p class="eyebrow">Cloud sync</p><h3>Share data across computers</h3></div></div>
           <p class="muted">Once set up in the cloud, your data syncs automatically and both users see the same records from any computer. Click below <strong>once</strong>, on the computer with your most complete data, to move all your existing data to the cloud. After this, both users will see the same data.</p>
@@ -1453,7 +1465,7 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260829-71"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260829-72"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>

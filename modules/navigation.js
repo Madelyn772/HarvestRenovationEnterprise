@@ -1,6 +1,6 @@
-import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate } from './state.js';
+import { state, estimateTemplates, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate, formatDateTime } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
-import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
+import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle } from './estimating.js';
@@ -301,6 +301,26 @@ export function bindAppUi() {
     el.importDataInput.addEventListener('change', handleBackupFile);
   }
   if (el.migrateToSupabaseBtn) el.migrateToSupabaseBtn.addEventListener('click', migrateToCloud);
+  if (el.refreshBackupsBtn) el.refreshBackupsBtn.addEventListener('click', renderBackupHistory);
+  if (el.createBackupNowBtn) el.createBackupNowBtn.addEventListener('click', async () => {
+    el.createBackupNowBtn.disabled = true;
+    try {
+      if (await createBackupNow()) await renderBackupHistory();
+    } finally {
+      el.createBackupNowBtn.disabled = false;
+    }
+  });
+  if (el.backupHistoryList) el.backupHistoryList.addEventListener('click', async event => {
+    const button = event.target.closest('[data-backup-action]');
+    if (!button) return;
+    button.disabled = true;
+    try {
+      if (button.dataset.backupAction === 'download') await downloadBackup(button.dataset.backupId);
+      if (button.dataset.backupAction === 'restore' && await restoreBackup(button.dataset.backupId)) await renderBackupHistory();
+    } finally {
+      button.disabled = false;
+    }
+  });
   if (el.uploadDocForm) el.uploadDocForm.addEventListener('submit', handleDocumentUpload);
   if (el.reservedNumberForm) el.reservedNumberForm.addEventListener('submit', handleReservedNumberAdd);
   if (el.feedbackForm) {
@@ -497,6 +517,37 @@ export function setView(view) {
   // relevant on the Documents tab, which has its own Upload control.
   if (el.topbarActions) el.topbarActions.classList.toggle('hidden', view === 'documents');
   renderCurrentView();
+  if (view === 'settings' && isRealAdmin()) void renderBackupHistory();
+}
+
+async function renderBackupHistory() {
+  if (!el.backupHistoryList || !isRealAdmin()) return;
+  el.backupHistoryList.innerHTML = '<div class="empty-state">Loading backups...</div>';
+  try {
+    const backups = await listBackups();
+    if (!backups.length) {
+      el.backupHistoryList.innerHTML = '<div class="empty-state">No backups yet. Click Create backup now to save your first snapshot.</div>';
+      return;
+    }
+    const countKeys = ['clients', 'leads', 'estimates', 'invoices', 'documents'];
+    el.backupHistoryList.innerHTML = backups.map(backup => {
+      const counts = countKeys
+        .map(key => `${Number(backup.record_count?.[key] || 0)} ${key}`)
+        .join(', ');
+      return `<div class="backup-history-row">
+        <div class="backup-history-copy">
+          <strong>${escapeHtml(formatDateTime(backup.created_at))}</strong>
+          <span class="muted">${escapeHtml(counts)}</span>
+        </div>
+        <div class="backup-history-row-actions">
+          <button type="button" class="ghost-btn" data-backup-action="download" data-backup-id="${escapeHtml(backup.id)}">Download</button>
+          <button type="button" class="danger-btn" data-backup-action="restore" data-backup-id="${escapeHtml(backup.id)}">Restore</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    el.backupHistoryList.innerHTML = '<div class="empty-state">Could not load backups. Check your connection.</div>';
+  }
 }
 
 export function renderCurrentView() {
