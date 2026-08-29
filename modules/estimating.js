@@ -67,7 +67,8 @@ function estimateFinancialsChanged(a, b) {
   if (!estFinEq(a.finalPercent, b.finalPercent)) return true;
   if ((a.trade || '') !== (b.trade || '')) return true;
   if ((a.scope || '') !== (b.scope || '')) return true;
-  const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice)]));
+  if ((a.commercialJob === true) !== (b.commercialJob === true)) return true;
+  const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice), num(it.amount)]));
   return norm(a.items) !== norm(b.items);
 }
 
@@ -80,7 +81,7 @@ export function applyEstimateLock(locked) {
     const inp = F.querySelector(`[name="${n}"]`);
     if (inp) inp.readOnly = locked;
   });
-  document.querySelectorAll('#estimateItems .line-item-row input').forEach(i => { i.readOnly = locked; });
+  document.querySelectorAll('#estimateItems .line-item-row input, #estimateItems .line-item-row textarea').forEach(i => { i.readOnly = locked; });
   // Selects/buttons are read directly (not via FormData), so disable them.
   const depSel = document.getElementById('estimateDepositPercent');
   if (depSel) depSel.disabled = locked;
@@ -90,8 +91,13 @@ export function applyEstimateLock(locked) {
   if (addBtn) addBtn.disabled = locked;
   const loadBtn = document.getElementById('loadTemplateItems');
   if (loadBtn) loadBtn.disabled = locked;
+  const commercialToggle = document.getElementById('estimateCommercialToggle');
+  if (commercialToggle) commercialToggle.disabled = locked;
   if (el.sendEstimate) el.sendEstimate.disabled = locked;
   F.classList.toggle('form-locked', locked);
+  document.querySelectorAll('#estimateItems [name="amount"]').forEach(input => {
+    input.readOnly = locked || !!commercialToggle?.checked;
+  });
 }
 
 // Belt-and-suspenders chain summary used before invoice/receipt actions.
@@ -113,6 +119,41 @@ export async function handleEstimateSave(event) {
 
 export function getEstimateItemsEl() {
   return document.getElementById('estimateItems');
+}
+
+function autoGrowTextarea(textarea) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  const borderHeight = textarea.offsetHeight - textarea.clientHeight;
+  textarea.style.height = `${textarea.scrollHeight + borderHeight}px`;
+}
+
+function isEstimateCommercialMode() {
+  return !!document.getElementById('estimateCommercialToggle')?.checked;
+}
+
+function computeEstimateRowAmount(row) {
+  const quantity = num(row.querySelector('[name="quantity"]')?.value);
+  const unitPrice = num(row.querySelector('[name="unitPrice"]')?.value);
+  return quantity * unitPrice;
+}
+
+export function setEstimateCommercialMode(enabled, { recompute = true } = {}) {
+  const toggle = document.getElementById('estimateCommercialToggle');
+  const shell = getEstimateItemsEl()?.closest('.estimate-items-shell');
+  if (toggle) toggle.checked = !!enabled;
+  if (shell) shell.classList.toggle('commercial-mode', !!enabled);
+  getEstimateItemsEl()?.querySelectorAll('.line-item-row').forEach(row => {
+    const amountInput = row.querySelector('[name="amount"]');
+    if (!amountInput) return;
+    if (enabled) amountInput.value = computeEstimateRowAmount(row);
+    amountInput.readOnly = !!enabled || el.estimateForm.classList.contains('form-locked');
+  });
+  if (recompute) recomputeEstimateTotals();
+}
+
+export function handleEstimateCommercialToggle(event) {
+  setEstimateCommercialMode(!!event.currentTarget.checked);
 }
 
 // Deposit percent from the dropdown (or the custom input when "Custom…").
@@ -164,6 +205,9 @@ export function hydrateEstimateForm() {
   // Only auto-sync the phone on a fresh form; a loaded record keeps its saved value.
   if (!el.estimateForm.estimateId.value) syncEstimateClientPhone();
   if (!el.estimateForm.estimateId.value) applyEstimateLock(false);
+  if (!el.estimateForm.estimateId.value) {
+    setEstimateCommercialMode(isEstimateCommercialMode(), { recompute: false });
+  }
   // Fresh form (no record loaded) with no rows → seed one default row. Description
   // stays empty so the "General Scope" placeholder shows; agent types the price.
   const wrap = getEstimateItemsEl();
@@ -206,6 +250,7 @@ export function handleUseClientPhoneToggle() {
 export function readEstimateItemsFromDom() {
   const wrap = getEstimateItemsEl();
   if (!wrap) return [];
+  const commercialJob = isEstimateCommercialMode();
   return [...wrap.querySelectorAll('.line-item-row')].map(row => {
     const quantity = num(row.querySelector('[name="quantity"]').value);
     const unitPrice = num(row.querySelector('[name="unitPrice"]').value);
@@ -213,11 +258,11 @@ export function readEstimateItemsFromDom() {
     return {
       id: row.dataset.itemId || uid('ITM'),
       description: description || 'General Scope',
-      category: row.querySelector('[name="category"]')?.value || 'Other',
+      category: 'Other',
       quantity,
       unit: row.querySelector('[name="unit"]')?.value || 'LS',
       unitPrice,
-      amount: quantity * unitPrice
+      amount: commercialJob ? quantity * unitPrice : num(row.querySelector('[name="amount"]')?.value)
     };
   });
 }
@@ -228,26 +273,28 @@ export function addEstimateRow(item = {}) {
   if (!tpl || !wrap) return;
   const node = tpl.content.firstElementChild.cloneNode(true);
   node.dataset.itemId = item.id || uid('ITM');
-  if (item.description != null) node.querySelector('[name="description"]').value = item.description;
-  if (item.category) node.querySelector('[name="category"]').value = item.category;
+  const descriptionInput = node.querySelector('[name="description"]');
+  if (item.description != null) descriptionInput.value = item.description;
   if (item.quantity != null) node.querySelector('[name="quantity"]').value = item.quantity;
   if (item.unit) node.querySelector('[name="unit"]').value = item.unit;
   if (item.unitPrice != null) node.querySelector('[name="unitPrice"]').value = item.unitPrice;
+  const amountInput = node.querySelector('[name="amount"]');
+  const seededAmount = item.amount != null ? num(item.amount) : computeEstimateRowAmount(node);
+  amountInput.value = seededAmount || '';
   const refresh = () => {
-    const q = num(node.querySelector('[name="quantity"]').value);
-    const up = num(node.querySelector('[name="unitPrice"]').value);
-    node.querySelector('[data-line-amount]').textContent = money.format(q * up);
+    if (isEstimateCommercialMode()) amountInput.value = computeEstimateRowAmount(node);
     recomputeEstimateTotals();
   };
-  node.querySelectorAll('input, select').forEach(inp => {
+  descriptionInput.addEventListener('input', () => autoGrowTextarea(descriptionInput));
+  node.querySelectorAll('input, select, textarea').forEach(inp => {
     inp.addEventListener('input', refresh);
     inp.addEventListener('change', refresh);
   });
   node.querySelector('.remove-line-row').addEventListener('click', () => { node.remove(); recomputeEstimateTotals(); });
   wrap.appendChild(node);
-  const q = num(node.querySelector('[name="quantity"]').value);
-  const up = num(node.querySelector('[name="unitPrice"]').value);
-  node.querySelector('[data-line-amount]').textContent = money.format(q * up);
+  autoGrowTextarea(descriptionInput);
+  amountInput.readOnly = isEstimateCommercialMode() || el.estimateForm.classList.contains('form-locked');
+  if (isEstimateCommercialMode()) amountInput.value = computeEstimateRowAmount(node);
 }
 
 export function loadTemplateItems() {
@@ -323,6 +370,7 @@ export function collectEstimateFromForm() {
     pricingMode: 'labor', laborPercent: 0, finalPercent, depositPercent,
     laborBase: 0, materialMarkup: 0, laborMarkup: 0, finalPay,
     items, subtotal, taxPercent, taxAmount, permitsFees,
+    commercialJob: isEstimateCommercialMode(),
     validUntil: data.validUntil || '',
     termsAndConditions: (data.termsAndConditions != null ? data.termsAndConditions : ''),
     signatureBlockEnabled: data.signatureBlockEnabled === 'on' || data.signatureBlockEnabled === true,
@@ -443,6 +491,7 @@ export function loadEstimateIntoForm(id) {
   const termsInput = document.getElementById('estimateTerms');
   if (termsInput) termsInput.value = item.termsAndConditions != null ? item.termsAndConditions : DEFAULT_ESTIMATE_TERMS;
   if (el.estimateForm.signatureBlockEnabled) el.estimateForm.signatureBlockEnabled.checked = item.signatureBlockEnabled !== false;
+  setEstimateCommercialMode(item.commercialJob === true, { recompute: false });
   const wrap = getEstimateItemsEl();
   if (wrap) {
     wrap.innerHTML = '';

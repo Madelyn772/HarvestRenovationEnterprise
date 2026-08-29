@@ -42,14 +42,21 @@ export function buildBrandedDocHtml(opts) {
     validUntil = '', dueDate = '', preparedBy = '',
     subtotal = null, taxPercent = 0, taxAmount = 0, permitsFees = 0, finalPay = 0,
     paymentsReceived = 0, paymentsRows = [],
-    terms = '', signatureBlockEnabled = false
+    terms = '', signatureBlockEnabled = false, commercialJob = false
   } = opts;
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
-  const scopeBlock = scope ? `<div class="item-row scope"><div class="desc">${scopeToHtml(scope)}</div><div class="amt"></div></div>` : '';
+  const scopeBlock = scope
+    ? commercialJob
+      ? `<div class="item-row commercial scope"><div class="desc">${scopeToHtml(scope)}</div></div>`
+      : `<div class="item-row scope"><div class="desc">${scopeToHtml(scope)}</div><div class="amt"></div></div>`
+    : '';
   const itemRows = rows.map(r => {
     const descHtml = r.descHtml != null ? r.descHtml : escapeHtml(r.desc || '');
+    if (commercialJob) {
+      return `<div class="item-row commercial"><div class="desc">${descHtml}</div><div class="qty">${escapeHtml(r.quantity == null ? '' : String(r.quantity))}</div><div class="unit">${escapeHtml(r.unit || '')}</div><div class="price">${money.format(num(r.unitPrice))}</div><div class="amt">${r.amount == null ? '' : money.format(num(r.amount))}</div></div>`;
+    }
     return `<div class="item-row"><div class="desc">${descHtml}${r.subHtml || ''}</div><div class="amt">${r.amount == null ? '' : money.format(num(r.amount))}</div></div>`;
   }).join('');
   const depPct = num(depositPercent);
@@ -122,6 +129,7 @@ export function buildBrandedDocHtml(opts) {
     .billto .body div{font-size:13px;line-height:1.6;color:#2c2419}
     .items{padding:0 26px;margin-top:18px}
     .items .ihead{display:grid;grid-template-columns:1fr 150px;background:#0f0c08}
+    .items .ihead.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
     .items .ihead span{padding:8px 12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#caa05a}
     .items .ihead span:last-child{text-align:right}
     .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
@@ -130,10 +138,15 @@ export function buildBrandedDocHtml(opts) {
     .items .ihead.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
     .items .ihead.pay span:last-child{text-align:left}
     .item-row{display:grid;grid-template-columns:1fr 150px;border-bottom:1px solid #f0e8da}
+    .item-row.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
     .item-row.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
     .item-row.pay div{padding:9px 12px;font-size:12px;color:#2c2419}
     .item-row .desc{padding:11px 12px;font-size:13px;color:#2c2419;white-space:pre-wrap}
     .item-row .amt{padding:11px 12px;font-size:13px;font-weight:600;text-align:right;color:#2c2419}
+    .item-row .qty,.item-row .unit,.item-row .price{padding:11px 8px;font-size:12px;color:#2c2419}
+    .item-row .qty,.item-row .unit{text-align:center}
+    .item-row .price{text-align:right}
+    .item-row.commercial.scope .desc{grid-column:1/-1}
     .item-row.scope .desc{color:#181410}
     .line-sub{font-size:11px;color:#8a7a5e;margin-top:2px}
     .scope-list{margin:0;padding-left:18px}
@@ -180,7 +193,9 @@ export function buildBrandedDocHtml(opts) {
         <div class="body">${billLines}</div>
       </div>
       <div class="items">
-        <div class="ihead"><span>Description</span><span>Amount</span></div>
+        ${commercialJob
+          ? '<div class="ihead commercial"><span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span></div>'
+          : '<div class="ihead"><span>Description</span><span>Amount</span></div>'}
         <div class="ibody">${scopeBlock}${itemRows}</div>
       </div>
       ${payTable}
@@ -210,10 +225,14 @@ export function buildEstimateDocHtml(estimate) {
   let rows;
   if (items.length) {
     rows = items.map(it => {
-      const cat = it.category && it.category !== 'Other' ? ` · ${it.category}` : '';
       const q = num(it.quantity);
-      const subHtml = q > 1 ? `<div class="line-sub">${q} ${escapeHtml(it.unit || '')} × ${money.format(num(it.unitPrice))}</div>` : '';
-      return { descHtml: `${escapeHtml(it.description || '')}${escapeHtml(cat)}`, subHtml, amount: num(it.amount != null ? it.amount : q * num(it.unitPrice)) };
+      return {
+        descHtml: escapeHtml(it.description || ''),
+        quantity: q,
+        unit: it.unit || '',
+        unitPrice: num(it.unitPrice),
+        amount: num(it.amount != null ? it.amount : q * num(it.unitPrice))
+      };
     });
   } else {
     rows = [];
@@ -238,6 +257,7 @@ export function buildEstimateDocHtml(estimate) {
     scope: estimate.scope,
     comments: estimate.comments,
     rows,
+    commercialJob: estimate.commercialJob === true,
     balanceLabel: 'BALANCE DUE',
     balance: num(estimate.estimatedCost),
     depositPercent: num(estimate.depositPercent),
@@ -265,8 +285,13 @@ export function buildInvoiceDocHtml(invoice) {
   const items = invoice.items || [];
   const rows = items.map(item => {
     const q = num(item.quantity);
-    const subHtml = q > 1 ? `<div class="line-sub">${q} ${escapeHtml(item.unit || '')} × ${money.format(num(item.unitPrice))}</div>` : '';
-    return { descHtml: escapeHtml(item.description || ''), subHtml, amount: num(item.amount != null ? item.amount : q * num(item.unitPrice)) };
+    return {
+      descHtml: escapeHtml(item.description || ''),
+      quantity: q,
+      unit: item.unit || '',
+      unitPrice: num(item.unitPrice),
+      amount: num(item.amount != null ? item.amount : q * num(item.unitPrice))
+    };
   });
   const sub = items.reduce((s, it) => s + num(it.amount != null ? it.amount : num(it.quantity) * num(it.unitPrice)), 0);
   const finalPercent = num(invoice.finalPercent);
@@ -287,6 +312,7 @@ export function buildInvoiceDocHtml(invoice) {
     status: invoice.status,
     bill: { name: invoice.clientName, address: invoice.address, phone: invoice.phone, email: invoice.email },
     rows,
+    commercialJob: invoice.commercialJob === true,
     balanceLabel: 'BALANCE DUE',
     balance,
     balanceColor: balance > 0.01 ? '#c62828' : '#2e7d32',

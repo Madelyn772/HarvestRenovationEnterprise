@@ -141,6 +141,7 @@ export function renderInvoiceCardViews() {
 
 export function readInvoiceItemsFromDom() {
   if (!el.invoiceItems) return [];
+  const commercialJob = isInvoiceCommercialMode();
   return [...el.invoiceItems.querySelectorAll('.line-item-row')].map(row => {
     const qtyRaw = row.querySelector('[name="quantity"]').value;
     const quantity = qtyRaw.trim() === '' ? 1 : num(qtyRaw);
@@ -148,12 +149,48 @@ export function readInvoiceItemsFromDom() {
     return {
       id: row.dataset.itemId || uid('ITM'),
       description: row.querySelector('[name="description"]').value,
+      category: 'Other',
       quantity,
       unit: row.querySelector('[name="unit"]')?.value || 'LS',
       unitPrice,
-      amount: quantity * unitPrice
+      amount: commercialJob ? quantity * unitPrice : num(row.querySelector('[name="amount"]')?.value)
     };
   }).filter(it => it.description || it.amount || it.unitPrice);
+}
+
+function autoGrowTextarea(textarea) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  const borderHeight = textarea.offsetHeight - textarea.clientHeight;
+  textarea.style.height = `${textarea.scrollHeight + borderHeight}px`;
+}
+
+function isInvoiceCommercialMode() {
+  return !!document.getElementById('invoiceCommercialToggle')?.checked;
+}
+
+function computeInvoiceRowAmount(row) {
+  const qtyRaw = row.querySelector('[name="quantity"]')?.value || '';
+  const quantity = qtyRaw.trim() === '' ? 1 : num(qtyRaw);
+  return quantity * num(row.querySelector('[name="unitPrice"]')?.value);
+}
+
+export function setInvoiceCommercialMode(enabled, { recompute = true } = {}) {
+  const toggle = document.getElementById('invoiceCommercialToggle');
+  const shell = el.invoiceItems?.closest('.invoice-items-shell');
+  if (toggle) toggle.checked = !!enabled;
+  if (shell) shell.classList.toggle('commercial-mode', !!enabled);
+  el.invoiceItems?.querySelectorAll('.line-item-row').forEach(row => {
+    const amountInput = row.querySelector('[name="amount"]');
+    if (!amountInput) return;
+    if (enabled) amountInput.value = computeInvoiceRowAmount(row);
+    amountInput.readOnly = !!enabled;
+  });
+  if (recompute) renderInvoiceBalanceCallout();
+}
+
+export function handleInvoiceCommercialToggle(event) {
+  setInvoiceCommercialMode(!!event.currentTarget.checked);
 }
 
 export function readPaymentsFromDom() {
@@ -179,7 +216,8 @@ export function computeInvoiceBalances(invoice) {
 function invoiceAmountsChanged(a, b) {
   if (Math.round(num(a.total) * 100) !== Math.round(num(b.total) * 100)) return true;
   if (num(a.finalPercent) !== num(b.finalPercent)) return true;
-  const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice)]));
+  if ((a.commercialJob === true) !== (b.commercialJob === true)) return true;
+  const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice), num(it.amount)]));
   return norm(a.items) !== norm(b.items);
 }
 
@@ -216,6 +254,7 @@ export function collectInvoiceFromForm() {
     address: data.address,
     items,
     payments,
+    commercialJob: isInvoiceCommercialMode(),
     permitsFees: fees,
     taxPercent: taxPct,
     finalPercent,
@@ -233,26 +272,30 @@ export function addInvoiceRow(item = {}) {
   const tpl = document.getElementById('invoiceRowTemplate');
   const node = tpl.content.firstElementChild.cloneNode(true);
   node.dataset.itemId = item.id || uid('ITM');
-  node.querySelector('[name="description"]').value = item.description || '';
+  const descriptionInput = node.querySelector('[name="description"]');
+  descriptionInput.value = item.description || '';
   if (item.quantity != null) node.querySelector('[name="quantity"]').value = item.quantity;
   if (item.unit) node.querySelector('[name="unit"]').value = item.unit;
   const seedUnitPrice = item.unitPrice != null ? item.unitPrice : (item.amount != null ? item.amount : '');
   if (seedUnitPrice !== '' && seedUnitPrice != null) node.querySelector('[name="unitPrice"]').value = seedUnitPrice;
   const amountEl = node.querySelector('[data-line-amount]');
+  const seededAmount = item.amount != null ? num(item.amount) : computeInvoiceRowAmount(node);
+  amountEl.value = seededAmount || '';
   const refresh = () => {
-    const qtyRaw = node.querySelector('[name="quantity"]').value;
-    const q = qtyRaw.trim() === '' ? 1 : num(qtyRaw);
-    const up = num(node.querySelector('[name="unitPrice"]').value);
-    if (amountEl) amountEl.textContent = money.format(q * up);
+    if (isInvoiceCommercialMode()) amountEl.value = computeInvoiceRowAmount(node);
     renderInvoiceBalanceCallout();
   };
-  node.querySelectorAll('[name="quantity"],[name="unitPrice"]').forEach(inp => {
+  descriptionInput.addEventListener('input', () => autoGrowTextarea(descriptionInput));
+  node.querySelectorAll('input, select, textarea').forEach(inp => {
     inp.addEventListener('input', refresh);
     inp.addEventListener('change', refresh);
   });
   node.querySelector('.remove-invoice-row').addEventListener('click', () => { node.remove(); renderInvoiceBalanceCallout(); });
   el.invoiceItems.appendChild(node);
-  refresh();
+  autoGrowTextarea(descriptionInput);
+  amountEl.readOnly = isInvoiceCommercialMode();
+  if (isInvoiceCommercialMode()) amountEl.value = computeInvoiceRowAmount(node);
+  renderInvoiceBalanceCallout();
 }
 
 export function addPaymentRow(payment = {}) {
@@ -391,6 +434,7 @@ export function hydrateInvoiceForm() {
   if (dueInput && !dueInput.value) dueInput.value = addDaysISO(dateInput ? dateInput.value : todayISO(), 15);
   const numInput = document.getElementById('invoiceNumber');
   if (numInput && !numInput.value) numInput.value = autoNumber('INV');
+  setInvoiceCommercialMode(isInvoiceCommercialMode(), { recompute: false });
 }
 
 export function renderInvoices() {
@@ -490,12 +534,13 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   if (taxEl) taxEl.value = num(estimate.taxPercent) || '';
   if (finalEl) finalEl.value = num(estimate.finalPercent) || '';
   setInvoiceDeposit(num(estimate.depositPercent) || 0);
+  setInvoiceCommercialMode(estimate.commercialJob === true, { recompute: false });
   renderInvoiceCardViews();
   renderInvoiceBalanceCallout();
   if (switchView) {
     const lineItems = estimate.items && estimate.items.length ? estimate.items : null;
     if (lineItems) {
-      lineItems.forEach(it => addInvoiceRow({ description: it.description, quantity: it.quantity, unit: it.unit, unitPrice: it.unitPrice }));
+      lineItems.forEach(it => addInvoiceRow({ description: it.description, quantity: it.quantity, unit: it.unit, unitPrice: it.unitPrice, amount: it.amount }));
     } else {
       addInvoiceRow({ description: `${estimate.trade || 'Project'} — ${estimate.scope || 'Project work'}`, quantity: 1, unit: 'LS', unitPrice: num(estimate.estimatedCost) });
     }

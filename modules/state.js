@@ -380,6 +380,7 @@ export function migrateEstimate(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
+  if (r.commercialJob == null) r.commercialJob = false;
   // Legacy lumped-pricing subtotal — used only to rescue old records that were
   // saved before the line-item editor and therefore carry no items[].
   const laborBase = num(r.quantity) * num(r.rate);
@@ -416,21 +417,23 @@ export function migrateInvoice(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
-  // Normalize legacy items {description, amount} → add qty/unit/unitPrice.
+  if (r.commercialJob == null) r.commercialJob = false;
+  // Normalize legacy items {description, amount} while retaining extra keys.
   r.items = r.items.map(it => {
     if (!it || typeof it !== 'object') return it;
-    if (it.unitPrice == null || it.quantity == null) {
-      const amount = num(it.amount);
-      return {
-        id: it.id || uid('ITM'),
-        description: it.description || '',
-        quantity: it.quantity != null ? it.quantity : 1,
-        unit: it.unit || 'LS',
-        unitPrice: it.unitPrice != null ? it.unitPrice : amount,
-        amount
-      };
-    }
-    return it;
+    const quantity = it.quantity != null ? num(it.quantity) : 1;
+    const storedAmount = it.amount != null ? num(it.amount) : null;
+    const unitPrice = it.unitPrice != null ? num(it.unitPrice) : num(storedAmount);
+    return {
+      ...it,
+      id: it.id || uid('ITM'),
+      description: it.description || '',
+      category: it.category || 'Other',
+      quantity,
+      unit: it.unit || 'LS',
+      unitPrice,
+      amount: storedAmount != null ? storedAmount : quantity * unitPrice
+    };
   });
   if (!Array.isArray(r.payments)) r.payments = [];
   if (!r.dueDate) r.dueDate = addDaysISO(r.date, 15);

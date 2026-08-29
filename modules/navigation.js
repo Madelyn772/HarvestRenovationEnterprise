@@ -3,8 +3,8 @@ import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { exportBackup, handleBackupFile, migrateToCloud } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
 import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
-import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit } from './estimating.js';
-import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm } from './operations.js';
+import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, applyEstimateTemplate, handleEstimateSave, saveEstimateFromForm, addEstimateRow, loadTemplateItems, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle } from './estimating.js';
+import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, setInvoiceCommercialMode } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
 import { handleBugReportSave, renderBugReports, openBugReportCount, myUnreadCommentCount, markMyCommentsSeen } from './feedback.js';
 import { renderCalendars, handleCompanyCalendarSave } from './calendars.js';
@@ -146,6 +146,10 @@ export function bindAppUi() {
   if (addEstBtn) addEstBtn.addEventListener('click', () => addEstimateRow());
   const loadTplBtn = document.getElementById('loadTemplateItems');
   if (loadTplBtn) loadTplBtn.addEventListener('click', () => loadTemplateItems());
+  const estimateCommercialToggle = document.getElementById('estimateCommercialToggle');
+  if (estimateCommercialToggle) estimateCommercialToggle.addEventListener('change', handleEstimateCommercialToggle);
+  const invoiceCommercialToggle = document.getElementById('invoiceCommercialToggle');
+  if (invoiceCommercialToggle) invoiceCommercialToggle.addEventListener('change', handleInvoiceCommercialToggle);
   const recordPayBtn = document.getElementById('invoiceRecordPaymentBtn');
   if (recordPayBtn) recordPayBtn.addEventListener('click', () => {
     const saved = saveInvoiceFromForm();
@@ -794,6 +798,7 @@ export function clearFormForButton(id) {
   }
   if (form === el.invoiceForm) {
     el.invoiceItems.innerHTML = '';
+    setInvoiceCommercialMode(false, { recompute: false });
     addInvoiceRow();
   }
   if (form === el.estimateForm) {
