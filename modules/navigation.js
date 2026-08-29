@@ -36,6 +36,9 @@ export function bindAppUi() {
     if (parentView?.id) setView(parentView.id.replace('View', ''));
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }));
+  document.querySelectorAll('[data-new-document]').forEach(btn => btn.addEventListener('click', () => {
+    startNewDocument(btn.dataset.newDocument);
+  }));
 
   el.clientSearch.addEventListener('input', debounce(e => { state.filters.clientSearch = e.target.value.toLowerCase(); renderClients(); renderLeads(); }));
   if (el.clearCrmSearch) el.clearCrmSearch.addEventListener('click', () => {
@@ -434,7 +437,7 @@ export function initMobileNav() {
   if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
 
   // Choosing any section (or the settings/quick-jump buttons) closes the drawer.
-  sidebar.querySelectorAll('.nav-btn, [data-jump], #openSettingsPanelBtn').forEach(btn => btn.addEventListener('click', closeDrawer));
+  sidebar.querySelectorAll('.nav-btn, [data-jump], [data-new-document], #openSettingsPanelBtn').forEach(btn => btn.addEventListener('click', closeDrawer));
 
   // The mobile top-bar log-out proxies to the real sidebar button.
   if (mobileLogout) mobileLogout.addEventListener('click', () => document.getElementById('logoutBtn')?.click());
@@ -840,16 +843,37 @@ export function clearFormForButton(id) {
     if (el.leadForm.leadDate) { el.leadForm.leadDate.max = todayInputValue(); el.leadForm.leadDate.value = todayInputValue(); }
   }
   if (form === el.invoiceForm) {
+    el.invoiceForm.invoiceId.value = '';
     el.invoiceItems.innerHTML = '';
+    const payments = document.getElementById('invoicePayments');
+    if (payments) payments.innerHTML = '';
+    el.invoiceForm.dataset.depositEstimateId = '';
+    el.invoiceForm.dataset.changeOrderId = '';
     setInvoiceDeposit(0);
     setInvoiceItemizedMode(false, { recompute: false });
     setInvoiceCommercialMode(false, { recompute: false });
     addInvoiceRow();
+    hydrateInvoiceForm();
+    renderInvoiceBalanceCallout();
+    renderInvoiceCardViews();
+    updateDocMeta(el.invoiceForm);
   }
   if (form === el.estimateForm) {
+    el.estimateForm.estimateId.value = '';
     const estItems = document.getElementById('estimateItems');
     if (estItems) estItems.innerHTML = '';
     el.estimateForm.user.value = state.profile?.full_name || state.session?.user?.user_metadata?.full_name || '';
     hydrateEstimateForm();
+    recomputeEstimateTotals();
+    updateDocMeta(el.estimateForm);
   }
+}
+
+export function startNewDocument(type) {
+  const isInvoice = type === 'invoice';
+  const form = isInvoice ? el.invoiceForm : el.estimateForm;
+  if (!form) return;
+  clearFormForButton(isInvoice ? 'clearInvoiceForm' : 'clearEstimateForm');
+  setView(isInvoice ? 'invoicing' : 'estimating');
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

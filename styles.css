@@ -3480,6 +3480,16 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   font-weight: 700;
 }
 .doc-editor-actions .primary-btn:hover { background: #faf8f3; transform: none; }
+.doc-editor-actions .doc-new-btn {
+  background: #181410;
+  border-color: #181410;
+  color: #ffffff;
+}
+.doc-editor-actions .doc-new-btn:hover {
+  background: #332a20;
+  border-color: #332a20;
+  color: #ffffff;
+}
 
 /* Gold call-to-action (Send/Save). */
 .gold-btn {
@@ -3564,6 +3574,15 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   background: #2a2419;
   color: #f0e2c4;
   border-color: #4a4335;
+}
+.theme-dark .doc-editor-actions .doc-new-btn {
+  background: #caa05a;
+  color: #181410;
+  border-color: #d9ae6b;
+}
+.theme-dark .doc-editor-actions .doc-new-btn:hover {
+  background: #d9ae6b;
+  color: #181410;
 }
 
 /* Mobile: stack info cards, relax the sticky header. */
