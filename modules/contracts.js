@@ -15,7 +15,11 @@ export function hydrateContractForm() {
   if (form.date && !form.date.value) form.date.value = todayISO();
   if (form.contractNumber && !form.contractNumber.value) form.contractNumber.value = autoNumber('CON');
   const terms = document.getElementById('contractTerms');
-  if (terms && !terms.value) terms.value = DEFAULT_CONTRACT_TERMS;
+  if (terms) {
+    if (!terms.value) terms.value = DEFAULT_CONTRACT_TERMS;
+    const termsCard = terms.closest('details');
+    if (termsCard) termsCard.open = true;
+  }
   const payWrap = getContractPaymentsEl();
   if (payWrap && !form.contractId.value && payWrap.querySelectorAll('.payment-schedule-row').length === 0) {
     seedDefaultPaymentSchedule();

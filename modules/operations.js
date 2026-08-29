@@ -483,6 +483,8 @@ export function hydrateInvoiceForm() {
   if (dueInput && !dueInput.value) dueInput.value = addDaysISO(dateInput ? dateInput.value : todayISO(), 15);
   const numInput = document.getElementById('invoiceNumber');
   if (numInput && !numInput.value) numInput.value = autoNumber('INV');
+  const termsInput = document.getElementById('invoiceTerms');
+  if (termsInput && !termsInput.value) termsInput.value = DEFAULT_INVOICE_TERMS;
   if (!el.invoiceForm.invoiceId.value) setInvoiceDeposit(0);
   setInvoiceItemizedMode(isInvoiceItemizedMode(), { recompute: false, prefill: false });
   setInvoiceCommercialMode(isInvoiceCommercialMode(), { recompute: false });
