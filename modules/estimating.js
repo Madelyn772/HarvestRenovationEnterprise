@@ -52,6 +52,7 @@ export function saveEstimateFromForm() {
   el.estimateForm.clientEmail.value = '';
   updateNewClientFieldsVisibility();
   renderAll();
+  el.estimateForm.dataset.dirty = 'false';
   return payload;
 }
 
@@ -323,7 +324,11 @@ export function addEstimateRow(item = {}) {
     inp.addEventListener('input', refresh);
     inp.addEventListener('change', refresh);
   });
-  node.querySelector('.remove-line-row').addEventListener('click', () => { node.remove(); recomputeEstimateTotals(); });
+  node.querySelector('.remove-line-row').addEventListener('click', () => {
+    node.remove();
+    el.estimateForm.dataset.dirty = 'true';
+    recomputeEstimateTotals();
+  });
   wrap.appendChild(node);
   autoGrowTextarea(descriptionInput);
   amountInput.readOnly = isEstimateCommercialMode() || el.estimateForm.classList.contains('form-locked');
@@ -492,6 +497,7 @@ export function loadEstimateIntoForm(id) {
   }
   recomputeEstimateTotals();
   applyEstimateLock(item.status === 'Approved' || state.store.invoices.some(i => i.relatedEstimate === item.id));
+  el.estimateForm.dataset.dirty = 'false';
   setView('estimating');
 }
 

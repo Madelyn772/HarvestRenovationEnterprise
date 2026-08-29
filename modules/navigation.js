@@ -175,6 +175,10 @@ export function bindAppUi() {
   if (validUntilInput) validUntilInput.addEventListener('input', () => { validUntilInput.dataset.auto = 'false'; });
   el.estimateForm.addEventListener('input', debounce(() => recomputeEstimateTotals(), 150));
   el.estimateForm.addEventListener('change', () => recomputeEstimateTotals());
+  [el.estimateForm, el.invoiceForm].forEach(form => {
+    form.addEventListener('input', () => { form.dataset.dirty = 'true'; });
+    form.addEventListener('change', () => { form.dataset.dirty = 'true'; });
+  });
   const invNumInput = document.getElementById('invoiceNumber');
   if (invNumInput) invNumInput.addEventListener('focus', () => { if (!invNumInput.value) invNumInput.value = autoNumber('INV'); });
   const estNumInput = document.getElementById('estimateNumber');
@@ -248,9 +252,17 @@ export function bindAppUi() {
 
   // Collapsible info cards use native <details>; no JS toggle needed.
   const addInvoiceBottom = document.getElementById('addInvoiceRowBottom');
-  if (addInvoiceBottom) addInvoiceBottom.addEventListener('click', () => { addInvoiceRow(); renderInvoiceBalanceCallout(); });
+  if (addInvoiceBottom) addInvoiceBottom.addEventListener('click', () => {
+    addInvoiceRow();
+    el.invoiceForm.dataset.dirty = 'true';
+    renderInvoiceBalanceCallout();
+  });
   const addEstimateBottom = document.getElementById('addEstimateRowBottom');
-  if (addEstimateBottom) addEstimateBottom.addEventListener('click', () => { addEstimateRow(); recomputeEstimateTotals(); });
+  if (addEstimateBottom) addEstimateBottom.addEventListener('click', () => {
+    addEstimateRow();
+    el.estimateForm.dataset.dirty = 'true';
+    recomputeEstimateTotals();
+  });
   const invoiceDepositSelect = document.getElementById('invoiceDepositSelect');
   if (invoiceDepositSelect) invoiceDepositSelect.addEventListener('change', () => renderInvoiceBalanceCallout());
   const invoiceDepositCustom = document.getElementById('invoiceDepositCustom');
@@ -857,6 +869,7 @@ export function clearFormForButton(id) {
     renderInvoiceBalanceCallout();
     renderInvoiceCardViews();
     updateDocMeta(el.invoiceForm);
+    el.invoiceForm.dataset.dirty = 'false';
   }
   if (form === el.estimateForm) {
     el.estimateForm.estimateId.value = '';
@@ -866,6 +879,7 @@ export function clearFormForButton(id) {
     hydrateEstimateForm();
     recomputeEstimateTotals();
     updateDocMeta(el.estimateForm);
+    el.estimateForm.dataset.dirty = 'false';
   }
 }
 
@@ -873,7 +887,24 @@ export function startNewDocument(type) {
   const isInvoice = type === 'invoice';
   const form = isInvoice ? el.invoiceForm : el.estimateForm;
   if (!form) return;
-  clearFormForButton(isInvoice ? 'clearInvoiceForm' : 'clearEstimateForm');
   setView(isInvoice ? 'invoicing' : 'estimating');
+  const recordId = (isInvoice ? form.invoiceId?.value : form.estimateId?.value) || '';
+  const clientId = (form.clientId?.value || '').trim();
+  const clientName = (form.clientName?.value || '').trim();
+  const hasClient = (clientId && clientId !== '__new__') || clientName;
+  const hasUnsavedChanges = form.dataset.dirty === 'true' || (!recordId && !!hasClient);
+  if (hasClient && hasUnsavedChanges) {
+    const saved = isInvoice ? saveInvoiceFromForm() : saveEstimateFromForm();
+    if (!saved) {
+      form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    showToast(isInvoice ? 'Invoice saved' : 'Estimate saved', 'success');
+  }
+  if (!recordId && !hasUnsavedChanges && !hasClient) {
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  clearFormForButton(isInvoice ? 'clearInvoiceForm' : 'clearEstimateForm');
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

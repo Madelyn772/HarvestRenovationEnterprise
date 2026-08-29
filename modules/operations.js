@@ -93,6 +93,7 @@ export function saveInvoiceFromForm() {
   populateClientSelects();
   if (resolved.clientId) el.invoiceForm.clientId.value = resolved.clientId;
   renderAll();
+  el.invoiceForm.dataset.dirty = 'false';
   return payload;
 }
 
@@ -322,7 +323,11 @@ export function addInvoiceRow(item = {}) {
     inp.addEventListener('input', refresh);
     inp.addEventListener('change', refresh);
   });
-  node.querySelector('.remove-invoice-row').addEventListener('click', () => { node.remove(); renderInvoiceBalanceCallout(); });
+  node.querySelector('.remove-invoice-row').addEventListener('click', () => {
+    node.remove();
+    el.invoiceForm.dataset.dirty = 'true';
+    renderInvoiceBalanceCallout();
+  });
   el.invoiceItems.appendChild(node);
   autoGrowTextarea(descriptionInput);
   amountEl.readOnly = isInvoiceCommercialMode();
