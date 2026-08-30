@@ -84,12 +84,18 @@ export function collectContractFromForm() {
     clientId: data.clientId,
     clientName: data.clientId && data.clientId !== '__new__' ? lookupClientName(data.clientId) : (data.clientName || ''),
     linkedEstimateId: data.linkedEstimateId || '',
+    propertyAddress: data.propertyAddress || data.billingAddress || (linkedClient ? linkedClient.address || '' : ''),
+    estimatedStartDate: data.estimatedStartDate || '',
+    estimatedCompletionDate: data.estimatedCompletionDate || '',
+    residentialProject: form.residentialProject?.checked === true,
+    signedAtClientHome: form.signedAtClientHome?.checked === true,
     contractAmount,
     depositPercent,
     depositAmount,
     balance: contractAmount - depositAmount,
     paymentSchedule,
     scope: data.scope || '',
+    exclusions: data.exclusions || '',
     terms: data.terms || DEFAULT_CONTRACT_TERMS,
     status: form.status?.value || 'Draft',
     notes: data.notes || '',
@@ -149,8 +155,9 @@ export function renderContractCardViews(contract) {
   if (proj) {
     const estSel = document.getElementById('contractLinkedEstimate');
     const estLabel = estSel && estSel.value && estSel.selectedOptions[0] ? estSel.selectedOptions[0].textContent : '';
-    proj.innerHTML = c.date || estLabel
-      ? `<p class="dcv-strong">${escapeHtml(estLabel || 'Project')}</p>${c.date ? `<p>${escapeHtml(formatDate(c.date))}</p>` : ''}`
+    const projectDates = [c.estimatedStartDate ? `Start ${formatDate(c.estimatedStartDate)}` : '', c.estimatedCompletionDate ? `Complete ${formatDate(c.estimatedCompletionDate)}` : ''].filter(Boolean).join(' · ');
+    proj.innerHTML = c.date || estLabel || c.propertyAddress || projectDates
+      ? `<p class="dcv-strong">${escapeHtml(estLabel || 'Project')}</p>${c.propertyAddress ? `<p>${escapeHtml(c.propertyAddress)}</p>` : ''}${projectDates ? `<p>${escapeHtml(projectDates)}</p>` : ''}${c.date ? `<p>Agreement ${escapeHtml(formatDate(c.date))}</p>` : ''}`
       : '<p class="dcv-empty">No project details</p>';
   }
   const pricing = f.querySelector('[data-view="pricing"]');
@@ -158,7 +165,11 @@ export function renderContractCardViews(contract) {
     pricing.innerHTML = `<div class="dcv-row"><span>Contract Amount</span><strong>${money.format(num(c.contractAmount))}</strong></div><div class="dcv-row"><span>Deposit</span><strong>${num(c.depositPercent)}%</strong></div>`;
   }
   const scope = f.querySelector('[data-view="scope"]');
-  if (scope) scope.innerHTML = c.scope ? `<p>${escapeHtml(c.scope)}</p>` : '<p class="dcv-empty">No scope added</p>';
+  if (scope) {
+    const scopeText = c.scope ? `<p>${escapeHtml(c.scope)}</p>` : '<p class="dcv-empty">No scope added</p>';
+    const exclusionsText = c.exclusions ? `<p><strong>Exclusions:</strong> ${escapeHtml(c.exclusions)}</p>` : '';
+    scope.innerHTML = scopeText + exclusionsText;
+  }
   const terms = f.querySelector('[data-view="terms"]');
   if (terms) {
     const t = (document.getElementById('contractTerms')?.value || '').trim();
@@ -210,6 +221,12 @@ function contractFinancialsChanged(a, b) {
   if (Math.round(num(a.contractAmount) * 100) !== Math.round(num(b.contractAmount) * 100)) return true;
   if (num(a.depositPercent) !== num(b.depositPercent)) return true;
   if ((a.scope || '') !== (b.scope || '')) return true;
+  if ((a.propertyAddress || a.billingAddress || '') !== (b.propertyAddress || b.billingAddress || '')) return true;
+  if ((a.estimatedStartDate || '') !== (b.estimatedStartDate || '')) return true;
+  if ((a.estimatedCompletionDate || '') !== (b.estimatedCompletionDate || '')) return true;
+  if ((a.exclusions || '') !== (b.exclusions || '')) return true;
+  if ((a.residentialProject !== false) !== (b.residentialProject !== false)) return true;
+  if ((a.signedAtClientHome !== false) !== (b.signedAtClientHome !== false)) return true;
   const norm = rows => JSON.stringify((rows || []).map(row => [row.label || '', num(row.percent), row.dueDescription || '']));
   return norm(a.paymentSchedule) !== norm(b.paymentSchedule);
 }
@@ -219,6 +236,12 @@ export function applyContractLock(locked) {
   if (!form) return;
   if (form.contractAmount) form.contractAmount.readOnly = locked;
   if (form.scope) form.scope.readOnly = locked;
+  if (form.propertyAddress) form.propertyAddress.readOnly = locked;
+  if (form.estimatedStartDate) form.estimatedStartDate.readOnly = locked;
+  if (form.estimatedCompletionDate) form.estimatedCompletionDate.readOnly = locked;
+  if (form.exclusions) form.exclusions.readOnly = locked;
+  if (form.residentialProject) form.residentialProject.disabled = locked;
+  if (form.signedAtClientHome) form.signedAtClientHome.disabled = locked;
   if (form.depositPercent) form.depositPercent.disabled = locked;
   if (form.status) form.status.disabled = locked;
   document.querySelectorAll('#contractPayments input').forEach(input => { input.readOnly = locked; });
@@ -243,10 +266,16 @@ export function loadContractIntoForm(id) {
   form.user.value = item.user || '';
   form.clientId.value = item.clientId || '';
   form.linkedEstimateId.value = item.linkedEstimateId || '';
+  form.propertyAddress.value = item.propertyAddress || item.billingAddress || '';
+  form.estimatedStartDate.value = item.estimatedStartDate || '';
+  form.estimatedCompletionDate.value = item.estimatedCompletionDate || '';
+  form.residentialProject.checked = item.residentialProject !== false;
+  form.signedAtClientHome.checked = item.signedAtClientHome !== false;
   form.contractAmount.value = item.contractAmount || '';
   form.depositPercent.value = item.depositPercent || 30;
   form.status.value = item.status || 'Draft';
   form.scope.value = item.scope || '';
+  form.exclusions.value = item.exclusions || '';
   form.notes.value = item.notes || '';
   const terms = document.getElementById('contractTerms');
   if (terms) terms.value = item.terms || DEFAULT_CONTRACT_TERMS;
@@ -269,6 +298,7 @@ export function fillContractFromEstimate(estimateId) {
   form.contractAmount.value = estimate.estimatedCost || 0;
   form.clientId.value = estimate.clientId || '';
   form.scope.value = estimate.scope || '';
+  form.propertyAddress.value = estimate.billingAddress || '';
   form.depositPercent.value = estimate.depositPercent || 30;
   recomputeContractTotals();
   showToast(`Pre-filled from estimate ${estimate.estimateNumber || estimate.id}.`, 'info');

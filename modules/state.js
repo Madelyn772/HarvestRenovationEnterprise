@@ -520,8 +520,14 @@ export function migrateContract(record) {
   if (r.terms == null) r.terms = DEFAULT_CONTRACT_TERMS;
   if (r.depositPercent == null) r.depositPercent = 30;
   if (r.linkedEstimateId == null) r.linkedEstimateId = '';
+  if (r.propertyAddress == null) r.propertyAddress = r.billingAddress || '';
+  if (r.estimatedStartDate == null) r.estimatedStartDate = '';
+  if (r.estimatedCompletionDate == null) r.estimatedCompletionDate = '';
+  if (r.residentialProject == null) r.residentialProject = true;
+  if (r.signedAtClientHome == null) r.signedAtClientHome = true;
   if (r.owner == null) r.owner = '';
   if (r.scope == null) r.scope = '';
+  if (r.exclusions == null) r.exclusions = '';
   if (r.notes == null) r.notes = '';
   return r;
 }
