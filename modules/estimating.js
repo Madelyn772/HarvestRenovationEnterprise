@@ -570,7 +570,7 @@ export function renderEstimates() {
   el.estimateList.querySelectorAll('.estimate-changeorder').forEach(btn => btn.addEventListener('click', () => openChangeOrderForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-print').forEach(btn => btn.addEventListener('click', () => {
     const estimate = state.store.estimates.find(item => item.id === btn.dataset.estimateId);
-    if (estimate) printEstimate(estimate);
+    if (estimate) printEstimate(estimate, { autoPrint: true });
   }));
   el.estimateList.querySelectorAll('.estimate-approve').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Approved')));
   el.estimateList.querySelectorAll('.estimate-decline').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Declined')));
