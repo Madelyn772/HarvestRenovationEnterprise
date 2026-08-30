@@ -3818,6 +3818,8 @@ html:not(.theme-light) .contract-summary-card .dcv-status { color: #e9d8b6; back
 }
 .switch input:checked + .switch-track { background: #c9a227; }
 .switch input:checked + .switch-track::after { transform: translateX(18px); }
+.form-locked .switch input:disabled { opacity: 0; background: transparent; }
+.form-locked .switch input:disabled + .switch-track { opacity: .6; cursor: not-allowed; }
 .theme-dark .estimate-summary-card .isum-meta,
 .theme-dark .isum-toggle-row { border-top-color: #3a342a; }
 .theme-dark .isum-toggle-row > span:first-child,
