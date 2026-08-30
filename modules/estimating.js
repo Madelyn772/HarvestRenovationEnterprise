@@ -182,7 +182,7 @@ export function setEstimateItemizedMode(enabled, { recompute = true, prefill = t
     const itemsSubtotal = readEstimateItemsFromDom().reduce((sum, item) => sum + num(item.amount), 0);
     const finalPercent = num(el.estimateForm.finalPercent?.value);
     const itemizedTotal = itemsSubtotal + itemsSubtotal * (finalPercent / 100) + num(el.estimateForm.permitsFees?.value);
-    lumpSumInput.value = itemizedTotal || '';
+    lumpSumInput.value = itemizedTotal ? formatLineAmount(itemizedTotal) : '';
   }
   if (enabled && lumpSumInput) lumpSumInput.value = '';
   if (toggle) toggle.checked = !!enabled;
@@ -501,7 +501,8 @@ export function loadEstimateIntoForm(id) {
   if (termsInput) termsInput.value = item.termsAndConditions != null ? item.termsAndConditions : DEFAULT_ESTIMATE_TERMS;
   if (el.estimateForm.signatureBlockEnabled) el.estimateForm.signatureBlockEnabled.checked = item.signatureBlockEnabled === true;
   const lumpSumInput = document.getElementById('estimateLumpSumTotal');
-  if (lumpSumInput) lumpSumInput.value = num(item.lumpSumTotal != null ? item.lumpSumTotal : item.estimatedCost) || '';
+  const lumpSumTotal = num(item.lumpSumTotal != null ? item.lumpSumTotal : item.estimatedCost);
+  if (lumpSumInput) lumpSumInput.value = lumpSumTotal ? formatLineAmount(lumpSumTotal) : '';
   setEstimateItemizedMode(item.itemizedMode !== false, { recompute: false, prefill: false });
   setEstimateCommercialMode(item.commercialJob === true, { recompute: false });
   const wrap = getEstimateItemsEl();

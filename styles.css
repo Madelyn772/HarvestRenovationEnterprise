@@ -3441,7 +3441,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   border-bottom: 1px dashed #caa05a !important;
   box-shadow: none !important;
 }
-.doc-edit-hint { color: #b7ac96; font-size: .9rem; }
+.doc-edit-hint { color: #b7ac96; font-size: .9rem; margin-left: .25rem; }
 .doc-meta { margin: 0; color: #6f6552; font-size: .82rem; }
 
 /* Status pill: styled select. */
@@ -3473,6 +3473,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   border-radius: 10px;
   font-size: .85rem;
   box-shadow: none;
+  white-space: nowrap;
 }
 .doc-editor-actions .primary-btn {
   background: #ffffff;
@@ -3600,7 +3601,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .doc-editor-actions { justify-content: stretch; }
   .doc-editor-actions .ghost-btn,
   .doc-editor-actions .primary-btn,
-  .doc-editor-actions .gold-btn { flex: 1; }
+  .doc-editor-actions .gold-btn { flex: 1; min-height: 44px; }
 }
 
 /* ── Icons: buttons + card headers (masked SVG, inherit color) ── */

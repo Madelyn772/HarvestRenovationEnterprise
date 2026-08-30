@@ -213,7 +213,7 @@ export function setInvoiceItemizedMode(enabled, { recompute = true, prefill = tr
     const itemsSubtotal = readInvoiceItemsFromDom().reduce((sum, item) => sum + num(item.amount), 0);
     const finalPercent = num(document.getElementById('invoiceFinalPercent')?.value);
     const itemizedTotal = itemsSubtotal + itemsSubtotal * (finalPercent / 100) + num(document.getElementById('invoicePermitsFees')?.value);
-    lumpSumInput.value = itemizedTotal || '';
+    lumpSumInput.value = itemizedTotal ? formatLineAmount(itemizedTotal) : '';
   }
   if (enabled && lumpSumInput) lumpSumInput.value = '';
   if (toggle) toggle.checked = !!enabled;
@@ -598,7 +598,8 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   if (finalEl) finalEl.value = num(estimate.finalPercent) || '';
   setInvoiceDeposit(0);
   const lumpSumInput = document.getElementById('invoiceLumpSumTotal');
-  if (lumpSumInput) lumpSumInput.value = num(estimate.lumpSumTotal != null ? estimate.lumpSumTotal : estimate.estimatedCost) || '';
+  const lumpSumTotal = num(estimate.lumpSumTotal != null ? estimate.lumpSumTotal : estimate.estimatedCost);
+  if (lumpSumInput) lumpSumInput.value = lumpSumTotal ? formatLineAmount(lumpSumTotal) : '';
   setInvoiceItemizedMode(estimate.itemizedMode !== false, { recompute: false, prefill: false });
   setInvoiceCommercialMode(estimate.commercialJob === true, { recompute: false });
   renderInvoiceCardViews();

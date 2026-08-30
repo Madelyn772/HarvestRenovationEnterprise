@@ -1,4 +1,4 @@
-import { state, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate, formatDateTime } from './state.js';
+import { state, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, todayInputValue, debounce, findClient, autoNumber, formatDate, formatDateTime, num } from './state.js';
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup, saveStore } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
@@ -156,13 +156,25 @@ export function bindAppUi() {
   const estimateItemizedToggle = document.getElementById('estimateItemizedToggle');
   if (estimateItemizedToggle) estimateItemizedToggle.addEventListener('change', handleEstimateItemizedToggle);
   const estimateLumpSumTotal = document.getElementById('estimateLumpSumTotal');
-  if (estimateLumpSumTotal) estimateLumpSumTotal.addEventListener('input', recomputeEstimateTotals);
+  if (estimateLumpSumTotal) {
+    estimateLumpSumTotal.addEventListener('input', recomputeEstimateTotals);
+    estimateLumpSumTotal.addEventListener('blur', () => {
+      if (estimateLumpSumTotal.value.trim()) estimateLumpSumTotal.value = num(estimateLumpSumTotal.value).toFixed(2);
+      recomputeEstimateTotals();
+    });
+  }
   const invoiceCommercialToggle = document.getElementById('invoiceCommercialToggle');
   if (invoiceCommercialToggle) invoiceCommercialToggle.addEventListener('change', handleInvoiceCommercialToggle);
   const invoiceItemizedToggle = document.getElementById('invoiceItemizedToggle');
   if (invoiceItemizedToggle) invoiceItemizedToggle.addEventListener('change', handleInvoiceItemizedToggle);
   const invoiceLumpSumTotal = document.getElementById('invoiceLumpSumTotal');
-  if (invoiceLumpSumTotal) invoiceLumpSumTotal.addEventListener('input', renderInvoiceBalanceCallout);
+  if (invoiceLumpSumTotal) {
+    invoiceLumpSumTotal.addEventListener('input', renderInvoiceBalanceCallout);
+    invoiceLumpSumTotal.addEventListener('blur', () => {
+      if (invoiceLumpSumTotal.value.trim()) invoiceLumpSumTotal.value = num(invoiceLumpSumTotal.value).toFixed(2);
+      renderInvoiceBalanceCallout();
+    });
+  }
   const recordPayBtn = document.getElementById('invoiceRecordPaymentBtn');
   if (recordPayBtn) recordPayBtn.addEventListener('click', () => {
     const saved = saveInvoiceFromForm();
@@ -192,7 +204,7 @@ export function bindAppUi() {
   const estNumInput = document.getElementById('estimateNumber');
   if (estNumInput) estNumInput.addEventListener('focus', () => { if (!estNumInput.value) estNumInput.value = autoNumber('EST'); });
 
-  ['clearClientForm','clearLeadForm','clearEstimateForm','clearJobForm','clearCalendarForm','clearInvoiceForm','clearNoteForm'].forEach(id => {
+  ['clearClientForm','clearLeadForm','clearJobForm','clearCalendarForm','clearInvoiceForm','clearNoteForm'].forEach(id => {
     const node = document.getElementById(id);
     if (node) node.addEventListener('click', () => clearFormForButton(id));
   });
