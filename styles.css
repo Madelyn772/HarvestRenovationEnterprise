@@ -253,7 +253,7 @@ body.sidebar-collapsed { --sidebar-w: 60px; }
   .shell { transition: grid-template-columns .2s ease; }
   body.sidebar-collapsed { --sidebar-w: 60px; }
   body.sidebar-collapsed .shell { grid-template-columns: 60px 1fr !important; }
-  body.sidebar-collapsed .sidebar { padding-left: .5rem; padding-right: .5rem; overflow: visible; }
+  body.sidebar-collapsed .sidebar { z-index: 50; padding-left: .5rem; padding-right: .5rem; overflow: visible; }
   body.sidebar-collapsed .brand-block { width: 100%; grid-template-columns: 1fr; grid-template-areas: none; justify-items: center; }
   body.sidebar-collapsed .sidebar-toggle-btn {
     grid-area: auto;
