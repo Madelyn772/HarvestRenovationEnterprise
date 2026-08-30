@@ -6,7 +6,7 @@ import { saveDocument, renderDocuments } from './documents.js';
 import { renderEstimates } from './estimating.js';
 import { renderInvoices, fillInvoiceFromEstimate } from './operations.js';
 import { renderDashboard } from './dashboard.js';
-import { createProposalLeadForEstimate, moveEstimateLeadToLost } from './estimateLeads.js';
+import { createProposalLeadForEstimate, moveEstimateLeadToLost, reopenEstimateLead } from './estimateLeads.js';
 
 // Documenso is "configured" only when the placeholder URLs have been replaced
 // with real ones. This keeps the Send flow and webhook polling dormant (no
@@ -244,6 +244,7 @@ export function updateEstimateStatus(estimateId, newStatus) {
     return;
   }
 
+  const previousDeclinedAt = estimate.declinedAt;
   estimate.status = newStatus;
   // Stamp the decision date so KPIs bucket it by when it happened (not when
   // the estimate was created). Reopening clears the decline info.
@@ -251,6 +252,7 @@ export function updateEstimateStatus(estimateId, newStatus) {
     estimate.signedAt = estimate.signedAt || new Date().toISOString();
   }
   if (newStatus !== 'Declined') {
+    reopenEstimateLead(estimate, previousDeclinedAt, newStatus);
     delete estimate.declineReason;
     delete estimate.declineReasonOther;
     delete estimate.declinedAt;

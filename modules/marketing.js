@@ -174,15 +174,28 @@ export function renderDeclineReasons() {
     return d >= start && d <= end;
   };
 
-  const counts = new Map();
-  const add = (reason) => { const r = (reason && String(reason).trim()) || 'Unspecified'; counts.set(r, (counts.get(r) || 0) + 1); };
-  // Declined estimates
+  const outcomes = new Map();
+  const outcomeKey = (record, fallback) => record.clientId || fallback;
+  // Add estimates first so their captured reason is authoritative when the
+  // linked pipeline deal represents the same loss.
   state.store.estimates.forEach(e => {
-    if (e.status === 'Declined' && inPeriod(e.declinedAt || e.date, true)) add(e.declineReason);
+    if (e.status !== 'Declined' || !inPeriod(e.declinedAt || e.date, true)) return;
+    const linkedLead = state.store.leads.find(l => l.estimateId === e.id);
+    const key = outcomeKey(e, linkedLead?.clientId || ('estimate:' + e.id));
+    outcomes.set(key, e.declineReason);
   });
-  // Lost CRM deals that captured a reason
+  // Add standalone CRM losses, but do not count an estimate-driven loss twice.
   state.store.leads.forEach(l => {
-    if (normalizeLeadStatus(l.status) === 'Lost' && l.lostReason && inPeriod(l.lostAt || l.stageChangedAt, true)) add(l.lostReason);
+    if (normalizeLeadStatus(l.status) !== 'Lost' || !l.lostReason || !inPeriod(l.lostAt || l.stageChangedAt, true)) return;
+    const linkedEstimate = l.estimateId && state.store.estimates.find(e => e.id === l.estimateId && e.status === 'Declined');
+    const key = outcomeKey(l, linkedEstimate ? ('estimate:' + linkedEstimate.id) : ('lead:' + l.id));
+    if (!outcomes.has(key)) outcomes.set(key, l.lostReason);
+  });
+
+  const counts = new Map();
+  outcomes.forEach(reason => {
+    const normalized = (reason && String(reason).trim()) || 'Unspecified';
+    counts.set(normalized, (counts.get(normalized) || 0) + 1);
   });
 
   if (!counts.size) {

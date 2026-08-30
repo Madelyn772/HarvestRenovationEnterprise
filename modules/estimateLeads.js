@@ -81,17 +81,21 @@ export function createProposalLeadForEstimate(estimate) {
   return lead;
 }
 
-export function moveEstimateLeadToLost(estimate) {
+function findEstimateLead(estimate) {
   if (!estimate) return null;
   const estimateId = String(estimate.id || '').trim();
   const estimateKey = normalizedEstimateNumber(estimate.estimateNumber || estimate.id);
   const phoneKey = normalizedPhone(estimate.billingPhone || estimate.clientPhone);
   const emailKey = normalizedEmail(estimate.billingEmail || estimate.clientEmail);
-  const lead = state.store.leads.find(item =>
+  return state.store.leads.find(item =>
     (estimateId && item.estimateId === estimateId) ||
     (estimateKey && normalizedEstimateNumber(item.estimateNumber) === estimateKey &&
       normalizedPhone(item.phone) === phoneKey && normalizedEmail(item.email) === emailKey)
-  );
+  ) || null;
+}
+
+export function moveEstimateLeadToLost(estimate) {
+  const lead = findEstimateLead(estimate);
   if (!lead) return null;
 
   const changedAt = estimate.declinedAt || new Date().toISOString();
@@ -100,6 +104,24 @@ export function moveEstimateLeadToLost(estimate) {
   lead.lostAt = changedAt;
   lead.lostReason = estimate.declineReason || 'Unspecified';
   lead.lostReasonOther = estimate.declineReason === 'Other' ? (estimate.declineReasonOther || '') : '';
+  lead.lossSourceEstimateId = estimate.id || '';
   lead.followUpDate = '';
+  return lead;
+}
+
+export function reopenEstimateLead(estimate, previousDeclinedAt, newStatus) {
+  const lead = findEstimateLead(estimate);
+  if (!lead || lead.status !== 'Lost') return null;
+
+  const wasMovedByEstimate = lead.lossSourceEstimateId === estimate.id ||
+    (previousDeclinedAt && lead.lostAt === previousDeclinedAt);
+  if (!wasMovedByEstimate) return null;
+
+  lead.status = newStatus === 'Approved' ? 'Won' : 'Proposal Sent';
+  lead.stageChangedAt = new Date().toISOString();
+  delete lead.lostAt;
+  delete lead.lostReason;
+  delete lead.lostReasonOther;
+  delete lead.lossSourceEstimateId;
   return lead;
 }
