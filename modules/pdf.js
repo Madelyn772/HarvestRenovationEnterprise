@@ -151,7 +151,21 @@ function contractMobilePdfScript(pdfFilename, mobileShareText) {
     function printContinuousPdf() {
       if (appleMobilePrintRequired()) return shareAppleMobilePdf();
       if (mobilePdfExportRequired()) return downloadContinuousPdf();
-      window.print();
+      var sheet = document.querySelector('.sheet');
+      if (!sheet) return window.print();
+      document.documentElement.classList.add('measure-print', 'continuous-print');
+      requestAnimationFrame(function () {
+        var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
+        var pageStyle = document.createElement('style');
+        pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
+        document.head.appendChild(pageStyle);
+        document.documentElement.classList.remove('measure-print');
+        window.addEventListener('afterprint', function () {
+          pageStyle.remove();
+          document.documentElement.classList.remove('continuous-print');
+        }, { once: true });
+        window.print();
+      });
     }
     window.addEventListener('load', function () {
       if (appleMobilePrintRequired()) prepareContinuousPdf().catch(function (error) {
@@ -360,6 +374,7 @@ export function buildBrandedDocHtml(opts) {
     html.desktop-print .items .ihead.lump-sum{grid-template-columns:1fr}
     html.desktop-print .items .ihead.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
     html.desktop-print .items .ihead.schedule{grid-template-columns:1.2fr 54px 1.5fr 110px}
+    html.continuous-print .sheet{width:7.5in;max-width:none;margin:.5in;box-shadow:none}
     @media print{@page{margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar{display:none}.sheet{width:calc(100% - 1in);max-width:none;margin:.5in;padding:0;box-shadow:none}.item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}}
   </style>
   <script>
@@ -468,7 +483,21 @@ export function buildBrandedDocHtml(opts) {
     function printContinuousPdf() {
       if (appleMobilePrintRequired()) return shareAppleMobilePdf();
       if (mobilePdfExportRequired()) return downloadContinuousPdf();
-      window.print();
+      var sheet = document.querySelector('.sheet');
+      if (!sheet) return window.print();
+      document.documentElement.classList.add('measure-print', 'continuous-print');
+      requestAnimationFrame(function () {
+        var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
+        var pageStyle = document.createElement('style');
+        pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
+        document.head.appendChild(pageStyle);
+        document.documentElement.classList.remove('measure-print');
+        window.addEventListener('afterprint', function () {
+          pageStyle.remove();
+          document.documentElement.classList.remove('continuous-print');
+        }, { once: true });
+        window.print();
+      });
     }
     window.addEventListener('load', function () {
       if (appleMobilePrintRequired()) prepareContinuousPdf().catch(function (error) {
@@ -746,6 +775,7 @@ export function buildContractDocHtml(contract) {
     html.desktop-print .field-grid{grid-template-columns:120px 1fr}
     html.desktop-print table{font-size:9pt}
     html.desktop-print th,html.desktop-print td{padding:8px}
+    html.continuous-print .sheet{width:7.5in;max-width:none;margin:.5in;box-shadow:none}
     @media print{@page{size:letter;margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar{display:none}.sheet{width:calc(100% - 1in);max-width:none;margin:.5in;padding:0;box-shadow:none}.agreement-section{orphans:3;widows:3}.agreement-section h2{break-after:avoid;page-break-after:avoid}}
   </style>${contractMobilePdfScript(pdfFilename, mobileShareText)}</head><body><div class="bar"><button onclick="printContinuousPdf()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div><main class="sheet">
     <header class="masthead"><div class="brand"><span class="brand-fallback">${brandWheatSvg()}</span><img class="brand-logo" src="${BRAND_LOGO_PATH}" alt="Harvest Renovation LLC" style="display:none" onload="this.style.display='block';this.previousElementSibling.style.display='none'" onerror="this.style.display='none'" /><span class="brand-copy"><span class="brand-name">HARVEST RENOVATION LLC</span><span class="brand-contact">${escapeHtml(BRAND.contact)} | ${escapeHtml(BRAND.phone)} | ${escapeHtml(BRAND.email)}<br>${escapeHtml(BRAND.website)} | Houston, TX 77051</span></span></div><div class="document-title"><h1>SERVICE AGREEMENT<br>&amp; CONTRACT</h1><p>${escapeHtml(contract.status || 'Draft')}</p></div></header>
