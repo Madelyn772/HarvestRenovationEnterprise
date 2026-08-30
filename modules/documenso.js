@@ -6,7 +6,7 @@ import { saveDocument, renderDocuments } from './documents.js';
 import { renderEstimates } from './estimating.js';
 import { renderInvoices, fillInvoiceFromEstimate } from './operations.js';
 import { renderDashboard } from './dashboard.js';
-import { createProposalLeadForEstimate } from './estimateLeads.js';
+import { createProposalLeadForEstimate, moveEstimateLeadToLost } from './estimateLeads.js';
 
 // Documenso is "configured" only when the placeholder URLs have been replaced
 // with real ones. This keeps the Send flow and webhook polling dormant (no
@@ -234,6 +234,7 @@ export function updateEstimateStatus(estimateId, newStatus) {
       estimate.declinedAt = new Date().toISOString();
       estimate.declineReason = reason || 'Unspecified';
       estimate.declineReasonOther = reason === 'Other' ? (otherText || '') : '';
+      moveEstimateLeadToLost(estimate);
       saveStore('Estimate marked as Declined');
       renderEstimates();
       renderDashboard();

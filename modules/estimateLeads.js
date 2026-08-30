@@ -80,3 +80,26 @@ export function createProposalLeadForEstimate(estimate) {
   if (contact && !contact.leadId) contact.leadId = lead.id;
   return lead;
 }
+
+export function moveEstimateLeadToLost(estimate) {
+  if (!estimate) return null;
+  const estimateId = String(estimate.id || '').trim();
+  const estimateKey = normalizedEstimateNumber(estimate.estimateNumber || estimate.id);
+  const phoneKey = normalizedPhone(estimate.billingPhone || estimate.clientPhone);
+  const emailKey = normalizedEmail(estimate.billingEmail || estimate.clientEmail);
+  const lead = state.store.leads.find(item =>
+    (estimateId && item.estimateId === estimateId) ||
+    (estimateKey && normalizedEstimateNumber(item.estimateNumber) === estimateKey &&
+      normalizedPhone(item.phone) === phoneKey && normalizedEmail(item.email) === emailKey)
+  );
+  if (!lead) return null;
+
+  const changedAt = estimate.declinedAt || new Date().toISOString();
+  lead.status = 'Lost';
+  lead.stageChangedAt = changedAt;
+  lead.lostAt = changedAt;
+  lead.lostReason = estimate.declineReason || 'Unspecified';
+  lead.lostReasonOther = estimate.declineReason === 'Other' ? (estimate.declineReasonOther || '') : '';
+  lead.followUpDate = '';
+  return lead;
+}
