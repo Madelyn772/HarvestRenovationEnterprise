@@ -3,6 +3,7 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } f
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { printContract } from './pdf.js';
+import { beginRevision, applyPendingRevision, renderRevisionHistory } from './revisions.js';
 
 export function getContractPaymentsEl() {
   return document.getElementById('contractPayments');
@@ -208,13 +209,29 @@ export function saveContractFromForm() {
       return null;
     }
   }
+  applyPendingRevision(existing, payload, summarizeContractChanges);
   upsertArray('contracts', payload, 'id');
   form.contractId.value = payload.id;
   addActivity(`Saved contract ${payload.contractNumber || payload.id}.`, 'Contracts');
   saveStore('Contract saved');
   populateClientSelects();
   renderAll();
+  renderRevisionHistory('contractRevisionHistory', payload.revisions);
   return payload;
+}
+
+function summarizeContractChanges(before, after) {
+  const changed = fields => fields.some(field => JSON.stringify(before[field] ?? '') !== JSON.stringify(after[field] ?? ''));
+  const groups = [];
+  if (changed(['clientId', 'clientName', 'billingAddress', 'billingPhone', 'billingEmail'])) groups.push('client details');
+  if (changed(['date', 'user', 'linkedEstimateId', 'propertyAddress', 'estimatedStartDate', 'estimatedCompletionDate'])) groups.push('project details');
+  if (changed(['contractAmount', 'depositPercent', 'depositAmount'])) groups.push('contract total');
+  if (changed(['paymentSchedule'])) groups.push('payment schedule');
+  if (changed(['scope', 'exclusions'])) groups.push('scope and exclusions');
+  if (changed(['residentialProject', 'signedAtClientHome'])) groups.push('contract options');
+  if (changed(['terms'])) groups.push('terms');
+  if (changed(['notes'])) groups.push('internal notes');
+  return groups.length ? `Changed ${groups.join(', ')}.` : '';
 }
 
 function contractFinancialsChanged(a, b) {
@@ -266,6 +283,9 @@ export function loadContractIntoForm(id) {
   form.user.value = item.user || '';
   form.clientId.value = item.clientId || '';
   form.linkedEstimateId.value = item.linkedEstimateId || '';
+  form.billingAddress.value = item.billingAddress || '';
+  form.billingPhone.value = item.billingPhone || '';
+  form.billingEmail.value = item.billingEmail || '';
   form.propertyAddress.value = item.propertyAddress || item.billingAddress || '';
   form.estimatedStartDate.value = item.estimatedStartDate || '';
   form.estimatedCompletionDate.value = item.estimatedCompletionDate || '';
@@ -286,6 +306,7 @@ export function loadContractIntoForm(id) {
   }
   recomputeContractTotals();
   applyContractLock(['Sent', 'Signed'].includes(item.status));
+  renderRevisionHistory('contractRevisionHistory', item.revisions);
   setView('contracts');
   form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -309,13 +330,14 @@ export function renderContracts() {
   const items = [...state.store.contracts].sort((a, b) => sortDateDesc(a.date, b.date));
   el.contractList.innerHTML = items.length ? items.map(item => {
     const status = item.status || 'Draft';
+    const locked = ['Sent', 'Signed'].includes(status);
     const statusColor = status === 'Signed' ? '#2e7d32' : (status === 'Sent' || status === 'Ready for Signature') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
     const signedInfo = item.signedAt ? `<p class="muted tiny">Signed ${formatDate(item.signedAt)} by ${escapeHtml(item.signedBy || 'client')}</p>` : '';
     const meta = [escapeHtml(item.clientName || 'Client'), formatDate(item.date)].filter(Boolean).join(' • ');
     return `<div class="invoice-row">
       <div class="invoice-row-info">
-        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${['Sent', 'Signed'].includes(status) ? '<span class="lock-icon" title="Sent contract — financial fields are locked">🔒</span>' : ''}${statusBadge}</div>
+        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${locked ? '<span class="lock-icon" title="Sent contract — financial fields are locked">🔒</span>' : ''}${statusBadge}</div>
         <p class="muted tiny">${meta}</p>
         ${signedInfo}
       </div>
@@ -323,13 +345,55 @@ export function renderContracts() {
       <div class="invoice-row-actions">
         <button class="ghost-btn contract-edit" data-contract-id="${item.id}">Edit</button>
         <button class="ghost-btn contract-print" data-contract-id="${item.id}">Print / PDF</button>
-        ${deleteBtn('contracts', item.id)}
+        ${locked ? `<button class="ghost-btn contract-duplicate" data-contract-id="${item.id}">Duplicate</button>` : ''}
+        ${locked ? `<button class="ghost-btn contract-unlock" data-contract-id="${item.id}">Unlock</button>` : ''}
+        ${locked ? '' : deleteBtn('contracts', item.id)}
       </div>
     </div>`;
   }).join('') : emptyHtml('No contracts yet.');
   el.contractList.querySelectorAll('.contract-edit').forEach(btn => btn.addEventListener('click', () => loadContractIntoForm(btn.dataset.contractId)));
+  el.contractList.querySelectorAll('.contract-duplicate').forEach(btn => btn.addEventListener('click', () => duplicateContract(btn.dataset.contractId)));
+  el.contractList.querySelectorAll('.contract-unlock').forEach(btn => btn.addEventListener('click', () => unlockContract(btn.dataset.contractId)));
   el.contractList.querySelectorAll('.contract-print').forEach(btn => btn.addEventListener('click', () => {
     const contract = state.store.contracts.find(c => c.id === btn.dataset.contractId);
     if (contract) printContract(contract);
   }));
+}
+
+export function unlockContract(id) {
+  const contract = state.store.contracts.find(item => item.id === id);
+  if (!contract || !window.confirm('Unlock this document?')) return;
+  beginRevision(contract);
+  contract.status = 'Draft';
+  addActivity(`Unlocked contract ${contract.contractNumber || contract.id}.`, 'Contracts');
+  renderAll();
+  loadContractIntoForm(contract.id);
+  if (contract._pendingRevision) contract._pendingRevision.baseline = collectContractFromForm();
+  saveStore('Contract unlocked');
+  showToast('Contract unlocked for editing.', 'success');
+}
+
+export function duplicateContract(id) {
+  const src = state.store.contracts.find(contract => contract.id === id);
+  if (!src) return;
+  if (!window.confirm('Duplicate this document? The original stays locked, the copy will be unlocked for editing.')) return;
+  const copy = structuredClone(src);
+  copy.id = uid('CON');
+  copy.contractNumber = autoNumber('CON');
+  copy.status = 'Draft';
+  copy.date = todayInputValue();
+  copy.sentAt = '';
+  copy.signedAt = '';
+  copy.signedBy = '';
+  copy.contractorSignedAt = '';
+  copy.documensoDocId = '';
+  copy.revisions = [];
+  delete copy._pendingRevision;
+  copy.paymentSchedule = (copy.paymentSchedule || []).map(payment => ({ ...payment, id: uid('PMT') }));
+  state.store.contracts.unshift(copy);
+  addActivity(`Duplicated contract ${src.contractNumber || src.id}.`, 'Contracts');
+  saveStore('Contract duplicated');
+  renderAll();
+  loadContractIntoForm(copy.id);
+  showToast('Contract duplicated as a new draft.', 'success');
 }

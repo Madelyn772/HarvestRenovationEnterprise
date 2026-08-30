@@ -6,6 +6,7 @@ import { resolveFormClient } from './crm.js';
 import { printInvoice } from './pdf.js';
 import { updateInvoiceStatus } from './documenso.js';
 import { openPaymentDialog, markPaid, generateReceiptForInvoice } from './receipts.js';
+import { beginRevision, applyPendingRevision, renderRevisionHistory } from './revisions.js';
 
 export async function handleJobSave(event) {
   event.preventDefault();
@@ -85,6 +86,12 @@ export function saveInvoiceFromForm() {
   payload.id = payload.id || uid('INV');
   // Record the creator once; keep the original on re-save.
   payload.createdBy = (existingInv && existingInv.createdBy) || state.profile?.full_name || 'Unknown';
+  if (existingInv) {
+    ['sentAt', 'signedAt', 'signedBy', 'documensoDocId', 'depositAppliedFromEstimateId', 'relatedChangeOrderId'].forEach(key => {
+      payload[key] = existingInv[key] || '';
+    });
+  }
+  applyPendingRevision(existingInv, payload, summarizeInvoiceChanges);
   upsertArray('invoices', payload, 'id');
   // Keep editing the same record so re-saving (or printing) updates in place.
   el.invoiceForm.invoiceId.value = payload.id;
@@ -93,8 +100,21 @@ export function saveInvoiceFromForm() {
   populateClientSelects();
   if (resolved.clientId) el.invoiceForm.clientId.value = resolved.clientId;
   renderAll();
+  renderRevisionHistory('invoiceRevisionHistory', payload.revisions);
   el.invoiceForm.dataset.dirty = 'false';
   return payload;
+}
+
+function summarizeInvoiceChanges(before, after) {
+  const changed = fields => fields.some(field => JSON.stringify(before[field] ?? '') !== JSON.stringify(after[field] ?? ''));
+  const groups = [];
+  if (changed(['clientId', 'clientName', 'phone', 'email', 'address'])) groups.push('client details');
+  if (changed(['date', 'dueDate', 'paymentTerms', 'relatedEstimate', 'relatedChangeOrder'])) groups.push('invoice details');
+  if (changed(['items', 'itemizedMode', 'commercialJob'])) groups.push('line items');
+  if (changed(['subtotal', 'total', 'permitsFees', 'finalPercent', 'taxPercent'])) groups.push('total');
+  if (changed(['depositPercent', 'depositAmount'])) groups.push('deposit');
+  if (changed(['terms'])) groups.push('payment terms and notes');
+  return groups.length ? `Changed ${groups.join(', ')}.` : '';
 }
 
 export async function handleInvoiceSave(event) {
@@ -502,9 +522,12 @@ export function renderInvoices() {
   el.invoiceList.innerHTML = items.length ? items.map(item => {
     const { total, balance } = computeInvoiceBalances(item);
     const status = item.status || 'Draft';
+    const locked = ['Sent', 'Signed', 'Partial', 'Paid'].includes(status);
     const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent' || status === 'Signed') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
-    const lockIcon = ['Sent', 'Signed', 'Partial', 'Paid'].includes(status) ? '<span class="lock-icon" title="Sent invoice — billable amounts are locked">🔒</span>' : '';
+    const lockIcon = locked ? '<span class="lock-icon" title="Sent invoice — billable amounts are locked">🔒</span>' : '';
+    const duplicateBtn = locked ? `<button class="ghost-btn invoice-duplicate" data-invoice-id="${item.id}">Duplicate</button>` : '';
+    const unlockBtn = locked ? `<button class="ghost-btn invoice-unlock" data-invoice-id="${item.id}">Unlock</button>` : '';
     const balanceLine = balance > 0.01 ? `<span class="invoice-bal">Balance ${money.format(balance)}</span>` : '';
     const payBtns = balance > 0.01
       ? `<button class="ghost-btn invoice-record-payment" data-invoice-id="${item.id}">Record Payment</button><button class="ghost-btn invoice-mark-paid" data-invoice-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Mark Paid</button>`
@@ -517,7 +540,7 @@ export function renderInvoices() {
         <p class="muted tiny">${meta}</p>
       </div>
       <div class="invoice-row-amount"><strong>${money.format(total)}</strong>${balanceLine}</div>
-      <div class="invoice-row-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${payBtns}${receiptBtn}${deleteBtn('invoices', item.id)}</div>
+      <div class="invoice-row-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${duplicateBtn}${unlockBtn}${payBtns}${receiptBtn}${locked ? '' : deleteBtn('invoices', item.id)}</div>
     </div>`;
   }).join('') : emptyHtml('No invoices yet.');
   el.invoiceList.querySelectorAll('.invoice-print').forEach(btn => btn.addEventListener('click', () => {
@@ -525,9 +548,93 @@ export function renderInvoices() {
     if (invoice) printInvoice(invoice);
   }));
   el.invoiceList.querySelectorAll('.invoice-email').forEach(btn => btn.addEventListener('click', () => emailInvoice(btn.dataset.invoiceId)));
+  el.invoiceList.querySelectorAll('.invoice-duplicate').forEach(btn => btn.addEventListener('click', () => duplicateInvoice(btn.dataset.invoiceId)));
+  el.invoiceList.querySelectorAll('.invoice-unlock').forEach(btn => btn.addEventListener('click', () => unlockInvoice(btn.dataset.invoiceId)));
   el.invoiceList.querySelectorAll('.invoice-record-payment').forEach(btn => btn.addEventListener('click', () => openPaymentDialog(btn.dataset.invoiceId)));
   el.invoiceList.querySelectorAll('.invoice-mark-paid').forEach(btn => btn.addEventListener('click', () => markPaid(btn.dataset.invoiceId)));
   el.invoiceList.querySelectorAll('.invoice-generate-receipt').forEach(btn => btn.addEventListener('click', () => generateReceiptForInvoice(btn.dataset.invoiceId)));
+}
+
+export function unlockInvoice(id) {
+  const invoice = state.store.invoices.find(item => item.id === id);
+  if (!invoice || !window.confirm('Unlock this document?')) return;
+  beginRevision(invoice);
+  invoice.status = 'Draft';
+  addActivity(`Unlocked invoice ${invoice.invoiceNumber || invoice.id}.`, 'Billing');
+  renderAll();
+  loadInvoiceIntoForm(invoice);
+  if (invoice._pendingRevision) invoice._pendingRevision.baseline = collectInvoiceFromForm();
+  saveStore('Invoice unlocked');
+  showToast('Invoice unlocked for editing.', 'success');
+}
+
+export function duplicateInvoice(id) {
+  const src = state.store.invoices.find(invoice => invoice.id === id);
+  if (!src) return;
+  if (!window.confirm('Duplicate this document? The original stays locked, the copy will be unlocked for editing.')) return;
+  const copy = structuredClone(src);
+  copy.id = uid('INV');
+  copy.invoiceNumber = autoNumber('INV');
+  copy.status = 'Draft';
+  copy.date = todayInputValue();
+  copy.dueDate = addDaysToInputDate(copy.date, 15);
+  copy.payments = [];
+  copy.sentAt = '';
+  copy.signedAt = '';
+  copy.signedBy = '';
+  copy.documensoDocId = '';
+  copy.depositAppliedFromEstimateId = '';
+  copy.relatedChangeOrderId = '';
+  copy.revisions = [];
+  delete copy._pendingRevision;
+  copy.items = (copy.items || []).map(item => ({ ...item, id: uid('ITM') }));
+  state.store.invoices.unshift(copy);
+  addActivity(`Duplicated invoice ${src.invoiceNumber || src.id}.`, 'Billing');
+  saveStore('Invoice duplicated');
+  renderAll();
+  loadInvoiceIntoForm(copy);
+  showToast('Invoice duplicated as a new draft.', 'success');
+}
+
+function loadInvoiceIntoForm(invoice) {
+  const form = el.invoiceForm;
+  if (!form) return;
+  form.reset();
+  el.invoiceItems.innerHTML = '';
+  const payments = document.getElementById('invoicePayments');
+  if (payments) payments.innerHTML = '';
+  populateClientSelects();
+  populateEstimateSelects();
+  form.invoiceId.value = invoice.id;
+  form.invoiceNumber.value = invoice.invoiceNumber || '';
+  form.date.value = invoice.date || '';
+  form.dueDate.value = invoice.dueDate || '';
+  form.paymentTerms.value = invoice.paymentTerms || 'Net 15';
+  form.clientId.value = invoice.clientId || '';
+  form.clientName.value = invoice.clientName || '';
+  form.status.value = invoice.status || 'Draft';
+  form.phone.value = invoice.phone || '';
+  form.email.value = invoice.email || '';
+  form.address.value = invoice.address || '';
+  form.relatedEstimate.value = invoice.relatedEstimate || '';
+  form.relatedChangeOrder.value = invoice.relatedChangeOrder || '';
+  form.finalPercent.value = num(invoice.finalPercent) || '';
+  form.taxPercent.value = num(invoice.taxPercent) || '';
+  form.permitsFees.value = num(invoice.permitsFees) || '';
+  form.terms.value = invoice.terms || DEFAULT_INVOICE_TERMS;
+  form.dataset.depositEstimateId = '';
+  form.dataset.changeOrderId = '';
+  setInvoiceItemizedMode(invoice.itemizedMode !== false, { recompute: false, prefill: false });
+  setInvoiceCommercialMode(invoice.commercialJob === true, { recompute: false });
+  document.getElementById('invoiceLumpSumTotal').value = num(invoice.lumpSumTotal) || '';
+  setInvoiceDeposit(num(invoice.depositPercent));
+  (invoice.items || []).forEach(item => addInvoiceRow(item));
+  applyInvoiceLock(false);
+  renderRevisionHistory('invoiceRevisionHistory', invoice.revisions);
+  renderInvoiceCardViews();
+  renderInvoiceBalanceCallout();
+  setView('invoicing');
+  form.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 export function renderNotes() {

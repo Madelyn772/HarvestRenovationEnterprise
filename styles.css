@@ -3600,6 +3600,32 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   gap: .5rem;
   flex-wrap: wrap;
 }
+.revision-history {
+  border-top: 1px solid #eae6dc;
+  padding-top: .75rem;
+}
+.revision-history summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 700;
+}
+.revision-history-list {
+  display: grid;
+  gap: .5rem;
+  margin-top: .65rem;
+}
+.revision-entry {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .15rem .65rem;
+  padding: .55rem .7rem;
+  border-left: 2px solid var(--gold, #caa05a);
+  background: rgba(120, 120, 120, .05);
+  font-size: .76rem;
+}
+.revision-entry span { color: var(--muted); }
+.revision-entry p { grid-column: 1 / -1; margin: 0; }
 
 /* Dark theme. */
 .theme-dark .doc-editor-head {

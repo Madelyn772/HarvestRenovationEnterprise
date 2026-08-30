@@ -393,6 +393,7 @@ export function migrateEstimate(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
+  if (!Array.isArray(r.revisions)) r.revisions = [];
   if (r.commercialJob == null) r.commercialJob = false;
   if (r.itemizedMode == null) r.itemizedMode = true;
   // Legacy lumped-pricing subtotal — used only to rescue old records that were
@@ -432,6 +433,7 @@ export function migrateInvoice(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (!Array.isArray(r.items)) r.items = [];
+  if (!Array.isArray(r.revisions)) r.revisions = [];
   if (r.commercialJob == null) r.commercialJob = false;
   if (r.itemizedMode == null) r.itemizedMode = true;
   // Normalize legacy items {description, amount} while retaining extra keys.
@@ -522,6 +524,7 @@ export function migrateContract(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (!Array.isArray(r.paymentSchedule)) r.paymentSchedule = [];
+  if (!Array.isArray(r.revisions)) r.revisions = [];
   if (r.status == null) r.status = 'Draft';
   if (r.sentAt == null) r.sentAt = '';
   if (r.signedAt == null) r.signedAt = '';

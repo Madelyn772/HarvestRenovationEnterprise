@@ -254,6 +254,7 @@ export function bindAppUi() {
     el.contractForm.reset();
     const payWrap = document.getElementById('contractPayments');
     if (payWrap) payWrap.innerHTML = '';
+    resetRevisionHistory('contractRevisionHistory');
     hydrateContractForm();
     updateDocMeta(el.contractForm);
   });
@@ -958,6 +959,7 @@ export function clearFormForButton(id) {
     hydrateInvoiceForm();
     renderInvoiceBalanceCallout();
     renderInvoiceCardViews();
+    resetRevisionHistory('invoiceRevisionHistory');
     updateDocMeta(el.invoiceForm);
     el.invoiceForm.dataset.dirty = 'false';
   }
@@ -968,9 +970,21 @@ export function clearFormForButton(id) {
     el.estimateForm.user.value = state.profile?.full_name || state.session?.user?.user_metadata?.full_name || '';
     hydrateEstimateForm();
     recomputeEstimateTotals();
+    resetRevisionHistory('estimateRevisionHistory');
     updateDocMeta(el.estimateForm);
     el.estimateForm.dataset.dirty = 'false';
   }
+}
+
+function resetRevisionHistory(id) {
+  const root = document.getElementById(id);
+  if (!root) return;
+  root.hidden = true;
+  root.open = false;
+  const summary = root.querySelector('summary');
+  const list = root.querySelector('[data-revision-list]');
+  if (summary) summary.textContent = 'Revision history (0)';
+  if (list) list.innerHTML = '';
 }
 
 export function startNewDocument(type) {

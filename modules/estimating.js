@@ -7,6 +7,7 @@ import { fillInvoiceFromEstimate, renderInvoices, computeInvoiceBalances } from 
 import { printEstimate } from './pdf.js';
 import { updateEstimateStatus } from './documenso.js';
 import { openChangeOrderForm } from './changeOrders.js';
+import { beginRevision, applyPendingRevision, renderRevisionHistory } from './revisions.js';
 
 export function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
@@ -32,13 +33,16 @@ export function saveEstimateFromForm() {
   if (existingRec) {
     payload.depositReceivedAt = existingRec.depositReceivedAt || '';
     payload.depositReceivedBy = existingRec.depositReceivedBy || '';
+    ['sentAt', 'signedAt', 'signedBy', 'documensoDocId'].forEach(key => { payload[key] = existingRec[key] || ''; });
     // Chain guard: financials are locked once sent, approved, or invoiced.
-    const locked = ['Sent', 'Approved'].includes(existingRec.status) || state.store.invoices.some(i => i.relatedEstimate === existingRec.id);
+    const linkedInvoice = state.store.invoices.some(i => i.relatedEstimate === existingRec.id);
+    const locked = ['Sent', 'Approved'].includes(existingRec.status) || (linkedInvoice && existingRec.status !== 'Draft');
     if (locked && estimateFinancialsChanged(existingRec, payload)) {
       showToast('Financial fields are locked because this estimate was sent, approved, or invoiced. Duplicate it to make changes.', 'error');
       return null;
     }
   }
+  applyPendingRevision(existingRec, payload, summarizeEstimateChanges);
   upsertArray('estimates', payload, 'id');
   // Keep editing the same record so re-saving (or printing) updates in place.
   el.estimateForm.estimateId.value = payload.id;
@@ -52,8 +56,23 @@ export function saveEstimateFromForm() {
   el.estimateForm.clientEmail.value = '';
   updateNewClientFieldsVisibility();
   renderAll();
+  renderRevisionHistory('estimateRevisionHistory', payload.revisions);
   el.estimateForm.dataset.dirty = 'false';
   return payload;
+}
+
+function summarizeEstimateChanges(before, after) {
+  const changed = (fields) => fields.some(field => JSON.stringify(before[field] ?? '') !== JSON.stringify(after[field] ?? ''));
+  const groups = [];
+  if (changed(['clientId', 'clientName', 'billingAddress', 'billingEmail', 'billingPhone'])) groups.push('client details');
+  if (changed(['trade', 'date', 'user', 'validUntil'])) groups.push('project details');
+  if (changed(['items', 'itemizedMode', 'commercialJob'])) groups.push('line items');
+  if (changed(['subtotal', 'estimatedCost', 'permitsFees', 'finalPercent', 'taxPercent'])) groups.push('total');
+  if (changed(['depositPercent', 'depositAmount'])) groups.push('deposit');
+  if (changed(['scope', 'comments'])) groups.push('additional details');
+  if (changed(['termsAndConditions'])) groups.push('terms');
+  if (changed(['signatureBlockEnabled'])) groups.push('signature block');
+  return groups.length ? `Changed ${groups.join(', ')}.` : '';
 }
 
 function estFinEq(a, b) { return Math.round(num(a) * 100) === Math.round(num(b) * 100); }
@@ -506,7 +525,9 @@ export function loadEstimateIntoForm(id) {
     (item.items || []).forEach(row => addEstimateRow(row));
   }
   recomputeEstimateTotals();
-  applyEstimateLock(['Sent', 'Approved'].includes(item.status) || state.store.invoices.some(i => i.relatedEstimate === item.id));
+  const linkedInvoice = state.store.invoices.some(i => i.relatedEstimate === item.id);
+  applyEstimateLock(['Sent', 'Approved'].includes(item.status) || (linkedInvoice && item.status !== 'Draft'));
+  renderRevisionHistory('estimateRevisionHistory', item.revisions);
   el.estimateForm.dataset.dirty = 'false';
   setView('estimating');
 }
@@ -538,13 +559,14 @@ export function renderEstimates() {
     const coCount = state.store.changeOrders.filter(c => c.parentEstimateId === item.id).length;
     const coLine = (status === 'Approved' && coCount > 0) ? `<p class="muted tiny">Change Orders (${coCount})</p>` : '';
     const linkedInvoice = state.store.invoices.find(i => i.relatedEstimate === item.id);
-    const lockIcon = (['Sent', 'Approved'].includes(status) || linkedInvoice) ? '<span class="lock-icon" title="Sent estimate — financial fields are locked">🔒</span>' : '';
+    const locked = ['Sent', 'Approved'].includes(status) || (!!linkedInvoice && status !== 'Draft');
+    const lockIcon = locked ? '<span class="lock-icon" title="Sent estimate — financial fields are locked">🔒</span>' : '';
     const invoiceBtn = linkedInvoice
       ? `<button class="ghost-btn estimate-view-invoice" data-invoice-id="${linkedInvoice.id}">View Invoice ${escapeHtml(linkedInvoice.invoiceNumber || '')}</button>`
       : `<button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button>`;
-    const approvedExtra = status === 'Approved'
-      ? `<button class="ghost-btn estimate-duplicate" data-estimate-id="${item.id}">Duplicate</button><button class="ghost-btn estimate-changeorder" data-estimate-id="${item.id}">Change Order</button>`
-      : '';
+    const duplicateBtn = locked ? `<button class="ghost-btn estimate-duplicate" data-estimate-id="${item.id}">Duplicate</button>` : '';
+    const unlockBtn = locked ? `<button class="ghost-btn estimate-unlock" data-estimate-id="${item.id}">Unlock</button>` : '';
+    const changeOrderBtn = status === 'Approved' ? `<button class="ghost-btn estimate-changeorder" data-estimate-id="${item.id}">Change Order</button>` : '';
     const meta = [escapeHtml(item.user || ''), escapeHtml(item.trade || ''), formatDate(item.date)].filter(Boolean).join(' • ');
     return `<div class="invoice-row">
       <div class="invoice-row-info">
@@ -553,7 +575,7 @@ export function renderEstimates() {
         ${declineLine}${coLine}
       </div>
       <div class="invoice-row-amount"><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div>
-      <div class="invoice-row-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${approvedExtra}${recordDepositBtn}${actionButtons}${deleteBtn('estimates', item.id)}</div>
+      <div class="invoice-row-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${duplicateBtn}${unlockBtn}${changeOrderBtn}${recordDepositBtn}${actionButtons}${locked ? '' : deleteBtn('estimates', item.id)}</div>
     </div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
@@ -562,6 +584,7 @@ export function renderEstimates() {
   el.estimateList.querySelectorAll('.estimate-email').forEach(btn => btn.addEventListener('click', () => emailEstimate(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-record-deposit').forEach(btn => btn.addEventListener('click', () => openRecordDepositDialog(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-duplicate').forEach(btn => btn.addEventListener('click', () => duplicateEstimate(btn.dataset.estimateId)));
+  el.estimateList.querySelectorAll('.estimate-unlock').forEach(btn => btn.addEventListener('click', () => unlockEstimate(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-changeorder').forEach(btn => btn.addEventListener('click', () => openChangeOrderForm(btn.dataset.estimateId)));
   el.estimateList.querySelectorAll('.estimate-print').forEach(btn => btn.addEventListener('click', () => {
     const estimate = state.store.estimates.find(item => item.id === btn.dataset.estimateId);
@@ -570,6 +593,19 @@ export function renderEstimates() {
   el.estimateList.querySelectorAll('.estimate-approve').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Approved')));
   el.estimateList.querySelectorAll('.estimate-decline').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Declined')));
   el.estimateList.querySelectorAll('.estimate-reopen').forEach(btn => btn.addEventListener('click', () => updateEstimateStatus(btn.dataset.estimateId, 'Sent')));
+}
+
+export function unlockEstimate(id) {
+  const estimate = state.store.estimates.find(item => item.id === id);
+  if (!estimate || !window.confirm('Unlock this document?')) return;
+  beginRevision(estimate);
+  estimate.status = 'Draft';
+  addActivity(`Unlocked estimate ${estimate.estimateNumber || estimate.id}.`, 'Estimating');
+  renderAll();
+  loadEstimateIntoForm(estimate.id);
+  if (estimate._pendingRevision) estimate._pendingRevision.baseline = collectEstimateFromForm();
+  saveStore('Estimate unlocked');
+  showToast('Estimate unlocked for editing.', 'success');
 }
 
 // Open the "record deposit" dialog for an approved estimate with a linked invoice.
@@ -619,6 +655,7 @@ export function handleRecordDepositSubmit(event) {
 export function duplicateEstimate(id) {
   const src = state.store.estimates.find(e => e.id === id);
   if (!src) return;
+  if (!window.confirm('Duplicate this document? The original stays locked, the copy will be unlocked for editing.')) return;
   const copy = structuredClone(src);
   copy.id = uid('EST');
   copy.estimateNumber = autoNumber('EST');
@@ -627,6 +664,14 @@ export function duplicateEstimate(id) {
   copy.validUntil = addDaysToInputDate(copy.date, 30);
   copy.depositReceivedAt = '';
   copy.depositReceivedBy = '';
+  copy.sentAt = '';
+  copy.signedAt = '';
+  copy.signedBy = '';
+  copy.documensoDocId = '';
+  copy.declineReason = '';
+  copy.declineReasonOther = '';
+  copy.revisions = [];
+  delete copy._pendingRevision;
   copy.items = (copy.items || []).map(it => ({ ...it, id: uid('ITM') }));
   state.store.estimates.unshift(copy);
   addActivity(`Duplicated estimate ${src.estimateNumber || src.id}.`, 'Estimating');
