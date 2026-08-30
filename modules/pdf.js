@@ -44,6 +44,127 @@ function documentDate(value) {
   return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T00:00:00` : text);
 }
 
+function contractMobilePdfScript(pdfFilename, mobileShareText) {
+  return `<script>
+    function mobilePdfExportRequired() {
+      return window.matchMedia('(max-width:780px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
+    function appleMobilePrintRequired() {
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    var preparedMobilePdf = null;
+    var preparedMobilePdfPromise = null;
+    async function prepareContinuousPdf() {
+      if (preparedMobilePdf) return preparedMobilePdf;
+      if (preparedMobilePdfPromise) return preparedMobilePdfPromise;
+      var sheet = document.querySelector('.sheet');
+      var button = document.querySelector('.bar button');
+      if (!sheet) return;
+      var originalLabel = button ? button.textContent : '';
+      preparedMobilePdfPromise = (async function () {
+        if (button) { button.disabled = true; button.textContent = 'Creating PDF…'; }
+        var modules = await Promise.all([
+          import('https://esm.sh/html2canvas@1.4.1'),
+          import('https://esm.sh/jspdf@2.5.2')
+        ]);
+        var html2canvas = modules[0].default;
+        var Pdf = modules[1].jsPDF;
+        document.documentElement.classList.add('measure-print', 'desktop-print');
+        await Promise.all(Array.from(sheet.querySelectorAll('img')).map(function (image) {
+          return image.complete ? Promise.resolve() : new Promise(function (resolve) {
+            var timeout = setTimeout(resolve, 3000);
+            function finish() { clearTimeout(timeout); resolve(); }
+            image.addEventListener('load', finish, { once: true });
+            image.addEventListener('error', finish, { once: true });
+          });
+        }));
+        await new Promise(function (resolve) { requestAnimationFrame(function () { requestAnimationFrame(resolve); }); });
+        var canvas = await Promise.race([
+          html2canvas(sheet, {
+            backgroundColor: '#ffffff',
+            logging: false,
+            scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
+            useCORS: false,
+            windowWidth: 816
+          }),
+          new Promise(function (_, reject) {
+            setTimeout(function () { reject(new Error('PDF rendering timed out')); }, 20000);
+          })
+        ]);
+        var pageWidth = 612;
+        var contentWidth = 540;
+        var contentHeight = canvas.height * contentWidth / canvas.width;
+        var pageHeight = Math.min(14400, Math.ceil(contentHeight + 72));
+        var fittedHeight = Math.min(contentHeight, pageHeight - 72);
+        var pdf = new Pdf({ orientation: 'portrait', unit: 'pt', format: [pageWidth, pageHeight], compress: true });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 36, 36, contentWidth, fittedHeight, undefined, 'FAST');
+        var blob = pdf.output('blob');
+        var url = URL.createObjectURL(blob);
+        preparedMobilePdf = {
+          file: new File([blob], ${JSON.stringify(pdfFilename)}, { type: 'application/pdf' }),
+          url: url,
+          filename: ${JSON.stringify(pdfFilename)},
+          size: blob.size,
+          pages: pdf.getNumberOfPages()
+        };
+        return preparedMobilePdf;
+      })();
+      try {
+        return await preparedMobilePdfPromise;
+      } finally {
+        document.documentElement.classList.remove('measure-print', 'desktop-print');
+        if (button) { button.disabled = false; button.textContent = originalLabel; }
+        if (!preparedMobilePdf) preparedMobilePdfPromise = null;
+      }
+    }
+    async function downloadContinuousPdf() {
+      try {
+        var prepared = await prepareContinuousPdf();
+        if (!prepared) return;
+        window.location.href = prepared.url;
+        return { filename: prepared.filename, size: prepared.size, pages: prepared.pages, opened: true };
+      } catch (error) {
+        console.error('Mobile PDF generation failed', error);
+        alert('Unable to create the PDF file. Check your connection and try again.');
+      }
+    }
+    async function shareAppleMobilePdf() {
+      try {
+        var prepared = preparedMobilePdf || await prepareContinuousPdf();
+        if (!prepared) return;
+        if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [prepared.file] }))) {
+          await navigator.share({
+            files: [prepared.file],
+            title: prepared.filename,
+            text: ${JSON.stringify(mobileShareText)}
+          });
+          return;
+        }
+        window.location.href = prepared.url;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+        console.error('Apple PDF sharing failed', error);
+        alert('Unable to open the PDF. Please try again.');
+      }
+    }
+    function printContinuousPdf() {
+      if (appleMobilePrintRequired()) return shareAppleMobilePdf();
+      if (mobilePdfExportRequired()) return downloadContinuousPdf();
+      document.documentElement.classList.add('desktop-print');
+      window.addEventListener('afterprint', function () {
+        document.documentElement.classList.remove('desktop-print');
+      }, { once: true });
+      window.print();
+    }
+    window.addEventListener('load', function () {
+      if (appleMobilePrintRequired()) prepareContinuousPdf().catch(function (error) {
+        console.error('Apple PDF preparation failed', error);
+      });
+    }, { once: true });
+  </script>`;
+}
+
 // Shared, branded estimate/invoice document modeled on the Harvest Renovation
 // letterhead (black + gold, wheat mark, bill-to, line items, terms, signature).
 export function buildBrandedDocHtml(opts) {
@@ -58,10 +179,16 @@ export function buildBrandedDocHtml(opts) {
     paymentScheduleRows = [], terms = '', signatureBlockEnabled = false, commercialJob = false, itemizedMode = true
   } = opts;
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
-  const pdfFilename = `${String(kind || 'document').toLowerCase()}-${String(number || 'document')}`
-    .replace(/[^a-z0-9._-]+/gi, '-') + '.pdf';
-  const mobileShareText = kind === 'ESTIMATE'
-    ? `Hi ${String(bill.name || 'there').trim() || 'there'},\n\nYour estimate is ready. Please see the attached.\n\nIf you have any questions or would like to make any adjustments, please don't hesitate to reach out — we're happy to help.\n\nBest regards,\nJuan\nHarvest Renovation`
+  const shareDocumentLabel = kind === 'INVOICE' ? 'Invoice' : 'Estimate';
+  const pdfFilename = ['ESTIMATE', 'INVOICE'].includes(kind)
+    ? `Harvest Renovation - ${shareDocumentLabel} - ${String(bill.name || 'Client').trim() || 'Client'}- ${String(number || shareDocumentLabel).trim() || shareDocumentLabel}`
+      .replace(/[\\/:*?"<>|]+/g, '-') + '.pdf'
+    : `${String(kind || 'document').toLowerCase()}-${String(number || 'document')}`
+      .replace(/[^a-z0-9._-]+/gi, '-') + '.pdf';
+  const billedFirstName = String(bill.name || '').trim().split(/\s+/)[0] || 'there';
+  const shareSenderName = String(currentUserName() || preparedBy || BRAND.contact || 'Harvest Renovation').trim();
+  const mobileShareText = ['ESTIMATE', 'INVOICE'].includes(kind)
+    ? `Hi ${billedFirstName},\n\nYour ${shareDocumentLabel.toLowerCase()} is ready! I’ve attached it for you to review.\n\nIf you have any questions, would like to make any adjustments, or want to go over any of the details, please feel free to reach out. We’re happy to work with you and make sure everything fits what you have in mind.\n\nWe’d love the opportunity to bring your project to life and look forward to working with you!\n\nBest regards,\n${shareSenderName}\nHarvest Renovation`
     : '';
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
@@ -555,6 +682,12 @@ function contractSection(number, title, body, className = '') {
 export function buildContractDocHtml(contract) {
   const number = escapeHtml(contract.contractNumber || '—');
   const date = escapeHtml(contractDate(contract.date) || '—');
+  const clientName = String(contract.clientName || 'Client').trim() || 'Client';
+  const clientFirstName = clientName.split(/\s+/)[0] || 'there';
+  const senderName = String(currentUserName() || contract.user || BRAND.contact || 'Harvest Renovation').trim();
+  const pdfFilename = `Harvest Renovation - Contract - ${clientName}- ${String(contract.contractNumber || 'Contract').trim() || 'Contract'}`
+    .replace(/[\\/:*?"<>|]+/g, '-') + '.pdf';
+  const mobileShareText = `Hi ${clientFirstName},\n\nYour contract is ready! I’ve attached it for you to review.\n\nIf you have any questions, would like to make any adjustments, or want to go over any of the details, please feel free to reach out. We’re happy to work with you and make sure everything fits what you have in mind.\n\nWe’d love the opportunity to bring your project to life and look forward to working with you!\n\nBest regards,\n${senderName}\nHarvest Renovation`;
   const propertyAddress = contract.propertyAddress || contract.billingAddress || '';
   const estimatedStartDate = contract.estimatedStartDate ? escapeHtml(contractDate(contract.estimatedStartDate)) : '________________';
   const estimatedCompletionDate = contract.estimatedCompletionDate ? escapeHtml(contractDate(contract.estimatedCompletionDate)) : '________________';
@@ -619,6 +752,7 @@ export function buildContractDocHtml(contract) {
     table{width:100%;border-collapse:collapse;margin-top:8px;font-size:9pt}th{background:#181410;color:#caa05a;text-align:left;text-transform:uppercase;letter-spacing:.06em}th,td{padding:8px;border:1px solid #d8c9b2}th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:right}.date-lines{display:grid;grid-template-columns:1fr 1fr;gap:24px}.project-terms{margin-top:16px;padding:12px;border:1px solid #d8c9b2;background:#faf7f1}.project-terms h3,.cancellation-form h3,.signature-party h3{margin:0 0 8px;font-size:10pt}.terms-list{margin:0;padding-left:20px}
     .statutory-section{break-inside:auto;page-break-inside:auto}.statutory{font-size:10pt;font-weight:700;line-height:1.48}.statutory p{font-size:10pt}.notice-box{margin-top:8px;padding:12px;border:2px solid #181410;background:#faf7f1}.cancellation-form{margin-top:14px;padding:14px;border:2px dashed #6b5d46;break-before:page;page-break-before:always;break-inside:avoid}.signature-party{margin-top:20px;break-inside:avoid}.signature-notice{margin:8px 0 12px;padding:10px;border:2px solid #181410;background:#faf7f1;font-size:10pt;line-height:1.4}.signature-grid{display:grid;grid-template-columns:1.6fr 1.2fr .7fr;gap:18px}.signature-grid div{display:flex;flex-direction:column}.signature-grid i{height:35px;border-bottom:1px solid #181410}.signature-grid span{padding-top:5px;font-size:8pt;color:#6b5d46}.verse{padding:12px 24px;background:#181410;color:#caa05a;text-align:center;font-size:9pt}.page-break{break-before:page;page-break-before:always}
     @media screen and (max-width:700px){.sheet{width:100%;max-width:none;margin:0;box-shadow:none}.masthead{align-items:flex-start;flex-direction:column;padding:18px}.document-title{text-align:left}.agreement-intro,.agreement-body{padding-left:16px;padding-right:16px}.agreement-meta,.date-lines,.signature-grid{grid-template-columns:1fr}.field-grid{grid-template-columns:100px 1fr}table{font-size:8pt}th,td{padding:6px 4px}}
+    html.measure-print .bar{display:none}
     html.desktop-print .sheet{width:7.5in;max-width:none;margin:0;box-shadow:none}
     html.desktop-print .masthead{align-items:center;flex-direction:row;padding:24px 34px}
     html.desktop-print .document-title{text-align:right}
@@ -631,7 +765,7 @@ export function buildContractDocHtml(contract) {
     html.desktop-print table{font-size:9pt}
     html.desktop-print th,html.desktop-print td{padding:8px}
     @media print{@page{size:letter;margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar{display:none}.sheet{width:calc(100% - 1in);max-width:none;margin:.5in;padding:0;box-shadow:none}.agreement-section{orphans:3;widows:3}.agreement-section h2{break-after:avoid;page-break-after:avoid}}
-  </style><script>function printDesktopPdf(){document.documentElement.classList.add('desktop-print');window.addEventListener('afterprint',function(){document.documentElement.classList.remove('desktop-print')},{once:true});window.print()}</script></head><body><div class="bar"><button onclick="printDesktopPdf()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div><main class="sheet">
+  </style>${contractMobilePdfScript(pdfFilename, mobileShareText)}</head><body><div class="bar"><button onclick="printContinuousPdf()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div><main class="sheet">
     <header class="masthead"><div class="brand"><span class="brand-fallback">${brandWheatSvg()}</span><img class="brand-logo" src="${BRAND_LOGO_PATH}" alt="Harvest Renovation LLC" style="display:none" onload="this.style.display='block';this.previousElementSibling.style.display='none'" onerror="this.style.display='none'" /><span class="brand-copy"><span class="brand-name">HARVEST RENOVATION LLC</span><span class="brand-contact">${escapeHtml(BRAND.contact)} | ${escapeHtml(BRAND.phone)} | ${escapeHtml(BRAND.email)}<br>${escapeHtml(BRAND.website)} | Houston, TX 77051</span></span></div><div class="document-title"><h1>SERVICE AGREEMENT<br>&amp; CONTRACT</h1><p>${escapeHtml(contract.status || 'Draft')}</p></div></header>
     <div class="agreement-intro"><p>THIS SERVICE AGREEMENT &amp; CONTRACT ("Agreement") is made and entered into on the date below by and between the parties listed herein.</p><div class="agreement-meta"><div class="meta-cell"><span>Agreement No.</span><strong>${number}</strong></div><div class="meta-cell"><span>Date</span><strong>${date}</strong></div></div></div>
     <div class="agreement-body">${sections}${projectTerms}${disclosure}${liabilityNotice}${homeownerNotice}${cancellationNotice}${acknowledgments}</div><footer class="verse">${escapeHtml(BRAND.verse)}</footer>
