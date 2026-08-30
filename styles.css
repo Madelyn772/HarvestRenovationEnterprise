@@ -3673,7 +3673,8 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .invoice-summary .isum-total { padding: .7rem 0; }
 .invoice-summary .isum-total span { color: #1f1a12; font-weight: 700; font-size: 1.05rem; }
 .invoice-summary .isum-total strong { font-size: 1.35rem; }
-.invoice-summary .isum-balance {
+.invoice-summary .isum-balance,
+.estimate-summary-card .isum-total {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -3684,8 +3685,10 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   background: #faf3e6;
   border: 1px solid #ecdcbd;
 }
-.invoice-summary .isum-balance span { color: #8a6520; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; }
-.invoice-summary .isum-balance strong { color: #b07d2a; font-size: 1.25rem; }
+.invoice-summary .isum-balance span,
+.estimate-summary-card .isum-total span { color: #8a6520; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; }
+.invoice-summary .isum-balance strong,
+.estimate-summary-card .isum-total strong { color: #b07d2a; font-size: 1.25rem; }
 .invoice-summary .isum-balance.is-paid { background: #eaf5ea; border-color: #cfe6cf; }
 .invoice-summary .isum-balance.is-paid span { color: #2e7d32; }
 .invoice-summary .isum-balance.is-paid strong { color: #2e7d32; }
@@ -3694,7 +3697,8 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-dark .invoice-summary .isum-row strong,
 .theme-dark .invoice-summary .isum-total span { color: #f0e2c4; }
 .theme-dark .invoice-summary .isum-divide { background: #3a342a; }
-.theme-dark .invoice-summary .isum-balance { background: #2c2318; border-color: #4a3d29; }
+.theme-dark .invoice-summary .isum-balance,
+.theme-dark .estimate-summary-card .isum-total { background: #2c2318; border-color: #4a3d29; }
 
 @media (max-width: 900px) {
   .doc-cards-3 { grid-template-columns: 1fr; }
