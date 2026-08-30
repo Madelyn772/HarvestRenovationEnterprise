@@ -150,6 +150,7 @@ function computeEstimateRowAmount(row) {
 }
 
 export function setEstimateCommercialMode(enabled, { recompute = true } = {}) {
+  if (enabled && !isEstimateItemizedMode()) setEstimateItemizedMode(true, { recompute: false });
   const toggle = document.getElementById('estimateCommercialToggle');
   const shell = getEstimateItemsEl()?.closest('.estimate-items-shell');
   if (toggle) toggle.checked = !!enabled;
@@ -164,6 +165,7 @@ export function setEstimateCommercialMode(enabled, { recompute = true } = {}) {
 }
 
 export function setEstimateItemizedMode(enabled, { recompute = true, prefill = true } = {}) {
+  if (!enabled && isEstimateCommercialMode()) setEstimateCommercialMode(false, { recompute: false });
   const toggle = document.getElementById('estimateItemizedToggle');
   const shell = getEstimateItemsEl()?.closest('.estimate-items-shell');
   const lumpSumInput = document.getElementById('estimateLumpSumTotal');
@@ -178,7 +180,6 @@ export function setEstimateItemizedMode(enabled, { recompute = true, prefill = t
   if (toggle) toggle.checked = !!enabled;
   if (shell) shell.classList.toggle('lump-sum-mode', !enabled);
   if (lumpSumRow) lumpSumRow.hidden = !!enabled;
-  if (enabled && isEstimateCommercialMode()) setEstimateCommercialMode(true, { recompute: false });
   if (recompute) recomputeEstimateTotals();
 }
 

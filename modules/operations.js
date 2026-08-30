@@ -181,6 +181,7 @@ function computeInvoiceRowAmount(row) {
 }
 
 export function setInvoiceCommercialMode(enabled, { recompute = true } = {}) {
+  if (enabled && !isInvoiceItemizedMode()) setInvoiceItemizedMode(true, { recompute: false });
   const toggle = document.getElementById('invoiceCommercialToggle');
   const shell = el.invoiceItems?.closest('.invoice-items-shell');
   if (toggle) toggle.checked = !!enabled;
@@ -195,6 +196,7 @@ export function setInvoiceCommercialMode(enabled, { recompute = true } = {}) {
 }
 
 export function setInvoiceItemizedMode(enabled, { recompute = true, prefill = true } = {}) {
+  if (!enabled && isInvoiceCommercialMode()) setInvoiceCommercialMode(false, { recompute: false });
   const toggle = document.getElementById('invoiceItemizedToggle');
   const shell = el.invoiceItems?.closest('.invoice-items-shell');
   const lumpSumInput = document.getElementById('invoiceLumpSumTotal');
@@ -209,7 +211,6 @@ export function setInvoiceItemizedMode(enabled, { recompute = true, prefill = tr
   if (toggle) toggle.checked = !!enabled;
   if (shell) shell.classList.toggle('lump-sum-mode', !enabled);
   if (lumpSumRow) lumpSumRow.hidden = !!enabled;
-  if (enabled && isInvoiceCommercialMode()) setInvoiceCommercialMode(true, { recompute: false });
   if (recompute) renderInvoiceBalanceCallout();
 }
 

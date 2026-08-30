@@ -99,7 +99,8 @@ export function buildBrandedDocHtml(opts) {
     <div class="sig"><div class="sigline"></div><div class="siglabel">Date</div></div>
   </div>` : '';
   const hasComments = (comments || '').trim().length > 0;
-  const isPaidInvoice = kind === 'INVOICE' && num(balance) <= 0.01;
+  const hasBalance = balanceLabel != null && balance != null;
+  const isPaidInvoice = hasBalance && kind === 'INVOICE' && num(balance) <= 0.01;
   const effBalanceLabel = isPaidInvoice ? 'PAID IN FULL' : balanceLabel;
   const effBalanceColor = isPaidInvoice ? '#2e7d32' : balanceColor;
   const paymentInstructions = (kind === 'INVOICE' && num(balance) > 0.01)
@@ -227,7 +228,7 @@ export function buildBrandedDocHtml(opts) {
         </div>
         <div class="foot-right summary">
           ${summaryHtml}
-          <div class="balance"><span>${escapeHtml(effBalanceLabel)}</span><strong${effBalanceColor ? ` style="color:${effBalanceColor}"` : ''}>${money.format(num(balance))}</strong></div>
+          ${hasBalance ? `<div class="balance"><span>${escapeHtml(effBalanceLabel)}</span><strong${effBalanceColor ? ` style="color:${effBalanceColor}"` : ''}>${money.format(num(balance))}</strong></div>` : ''}
           ${hasComments ? `<div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments)}</div></div>` : ''}
         </div>
       </div>
@@ -283,17 +284,15 @@ export function buildEstimateDocHtml(estimate) {
     rows,
     commercialJob: estimate.commercialJob === true,
     itemizedMode,
-    balanceLabel: 'BALANCE DUE',
-    balance: taxFreeTotal,
+    balanceLabel: null,
+    balance: null,
     depositPercent: num(estimate.depositPercent),
     depositAmount: num(estimate.depositAmount),
     validUntil: estimate.validUntil || '',
     preparedBy: estimate.user || currentUserName(),
-    subtotal,
+    subtotal: taxFreeTotal,
     taxPercent: num(estimate.taxPercent),
     taxAmount: num(estimate.taxAmount),
-    permitsFees: num(estimate.permitsFees),
-    finalPay: num(estimate.finalPay),
     terms: estimate.termsAndConditions || DEFAULT_ESTIMATE_TERMS,
     signatureBlockEnabled: estimate.signatureBlockEnabled === true
   });
