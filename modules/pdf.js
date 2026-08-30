@@ -60,6 +60,9 @@ export function buildBrandedDocHtml(opts) {
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
   const pdfFilename = `${String(kind || 'document').toLowerCase()}-${String(number || 'document')}`
     .replace(/[^a-z0-9._-]+/gi, '-') + '.pdf';
+  const mobileShareText = kind === 'ESTIMATE'
+    ? `Hi ${String(bill.name || 'there').trim() || 'there'},\n\nYour estimate is ready. Please see the attached.\n\nIf you have any questions or would like to make any adjustments, please don't hesitate to reach out — we're happy to help.\n\nBest regards,\nJuan\nHarvest Renovation`
+    : '';
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
   const scopeText = String(scope || '').trim();
@@ -325,7 +328,11 @@ export function buildBrandedDocHtml(opts) {
         var prepared = preparedMobilePdf || await prepareContinuousPdf();
         if (!prepared) return;
         if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [prepared.file] }))) {
-          await navigator.share({ files: [prepared.file], title: prepared.filename });
+          await navigator.share({
+            files: [prepared.file],
+            title: prepared.filename,
+            text: ${JSON.stringify(mobileShareText)}
+          });
           return;
         }
         window.location.href = prepared.url;
