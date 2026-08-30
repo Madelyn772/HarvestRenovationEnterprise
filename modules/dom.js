@@ -58,7 +58,8 @@ export function openPrintWindow(html, { autoPrint = false } = {}) {
   if (autoPrint) {
     win.addEventListener('load', () => {
       win.focus();
-      win.print();
+      if (typeof win.printContinuousPdf === 'function') win.printContinuousPdf();
+      else win.print();
     }, { once: true });
   }
   win.document.open();

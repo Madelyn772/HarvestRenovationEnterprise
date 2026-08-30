@@ -28,7 +28,7 @@ function scopeToHtml(scope) {
     const lis = lines.map(l => `<li>${escapeHtml(l.replace(/^[-*]\s+/, ''))}</li>`).join('');
     return `<ul class="scope-list">${lis}</ul>`;
   }
-  return escapeHtml(scope);
+  return lines.map(line => `<div class="scope-line">${escapeHtml(line)}</div>`).join('');
 }
 
 function termsToHtml(terms) {
@@ -63,10 +63,10 @@ export function buildBrandedDocHtml(opts) {
   const scopeText = String(scope || '').trim();
   const scopeRow = (kind === 'ESTIMATE' || kind === 'INVOICE') && scopeText
     ? !itemizedMode
-      ? `<div class="item-row lump-sum"><div class="desc">${scopeToHtml(scopeText)}</div></div>`
+      ? `<div class="item-row lump-sum scope"><div class="desc">${scopeToHtml(scopeText)}</div></div>`
       : commercialJob
-      ? `<div class="item-row commercial"><div class="desc">${scopeToHtml(scopeText)}</div><div class="qty"></div><div class="unit"></div><div class="price"></div><div class="amt"></div></div>`
-      : `<div class="item-row"><div class="desc">${scopeToHtml(scopeText)}</div><div class="amt"></div></div>`
+      ? `<div class="item-row commercial scope"><div class="desc">${scopeToHtml(scopeText)}</div><div class="qty"></div><div class="unit"></div><div class="price"></div><div class="amt"></div></div>`
+      : `<div class="item-row scope"><div class="desc">${scopeToHtml(scopeText)}</div><div class="amt"></div></div>`
     : '';
   const itemRows = rows.map(r => {
     const descHtml = r.descHtml != null ? r.descHtml : escapeHtml(r.desc || '');
@@ -155,6 +155,8 @@ export function buildBrandedDocHtml(opts) {
     .items .ihead span:last-child{text-align:right}
     .items .ihead span:first-child{text-align:left}
     .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
+    .items .line-items-body{display:flex;flex-direction:column}
+    .items .line-items-body .item-row.scope{margin-top:auto}
     .items.paytable{margin-top:14px}
     .items.paytable .ibody{min-height:0}
     .items.schedule-table .ibody{min-height:0}
@@ -179,7 +181,9 @@ export function buildBrandedDocHtml(opts) {
     .item-row .price{text-align:right}
     .line-sub{font-size:11px;color:#8a7a5e;margin-top:2px}
     .scope-list{margin:0;padding-left:18px}
-    .scope-list li{font-size:13px;color:#2c2419;line-height:1.5}
+    .scope-list li{font-size:13px;color:#2c2419;line-height:1.5;margin-top:6px}
+    .scope-list li:first-child,.scope-line:first-child{margin-top:0}
+    .scope-line{margin-top:6px}
     .foot{display:grid;grid-template-columns:1fr 270px;gap:0;padding:18px 26px 4px}
     .thanks{font-size:26px;font-weight:800;color:#caa05a;letter-spacing:.04em;text-align:center;margin:8px 0 14px}
     .term{font-size:11px;color:#6b5d46;line-height:1.5;margin-bottom:8px}
@@ -203,11 +207,29 @@ export function buildBrandedDocHtml(opts) {
     .sigs .sigline{border-bottom:1px solid #b9a888;height:32px}
     .verse{background:#0f0c08;color:#caa05a;text-align:center;font-size:12px;letter-spacing:.02em;padding:12px 20px;margin-top:18px}
     .item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}
+    html.measure-print .bar{display:none}
+    html.measure-print .sheet{width:7.5in;max-width:none;margin:0;box-shadow:none}
     @media screen and (max-width:780px){body{overflow-x:hidden}.sheet{width:100%;max-width:none;margin:8px 0;box-shadow:none}.top{align-items:flex-start;flex-wrap:wrap;padding:18px 14px}.brand-logo{max-width:190px;height:auto}.title strong{font-size:28px}.contact{flex-direction:column;padding:12px 14px}.meta{width:100%;min-width:0}.billto,.items,.terms{padding-left:12px;padding-right:12px}.foot{grid-template-columns:1fr;padding:16px 14px 4px}.sigs{grid-template-columns:minmax(0,1fr) 86px;gap:16px;padding:20px 14px 8px}.item-row{grid-template-columns:minmax(0,1fr) 112px}.items .ihead{grid-template-columns:minmax(0,1fr) 112px}}
     @media print{@page{margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar{display:none}.sheet{width:calc(100% - 1in);max-width:none;margin:.5in;padding:0;box-shadow:none}.item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}}
-  </style></head>
+  </style>
+  <script>
+    function printContinuousPdf() {
+      var sheet = document.querySelector('.sheet');
+      if (!sheet) return window.print();
+      document.documentElement.classList.add('measure-print');
+      requestAnimationFrame(function () {
+        var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
+        var pageStyle = document.createElement('style');
+        pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
+        document.head.appendChild(pageStyle);
+        document.documentElement.classList.remove('measure-print');
+        window.addEventListener('afterprint', function () { pageStyle.remove(); }, { once: true });
+        window.print();
+      });
+    }
+  </script></head>
   <body>
-    <div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
+    <div class="bar"><button onclick="printContinuousPdf()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
     <div class="sheet">
       <div class="top">
         <div class="brand"><span class="brand-fallback" style="display:flex">${brandWheatSvg()}<span class="bname">${escapeHtml(BRAND.name)}</span></span><img class="brand-logo" src="${BRAND_LOGO_PATH}" alt="${escapeHtml(BRAND.name)}" style="display:none" onload="this.style.display='block';this.previousElementSibling.style.display='none';" onerror="this.style.display='none';" /></div>
@@ -232,7 +254,7 @@ export function buildBrandedDocHtml(opts) {
           : commercialJob
           ? '<div class="ihead commercial"><span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span></div>'
           : '<div class="ihead"><span>Description</span><span>Amount</span></div>'}
-        <div class="ibody">${itemRows}${scopeRow}</div>
+        <div class="ibody line-items-body">${itemRows}${scopeRow}</div>
       </div>
       ${payTable}
       ${paymentScheduleTable}
