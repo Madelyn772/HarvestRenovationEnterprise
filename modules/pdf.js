@@ -254,21 +254,27 @@ export function buildBrandedDocHtml(opts) {
         var html2canvas = modules[0].default;
         var Pdf = modules[1].jsPDF;
         document.documentElement.classList.add('measure-print', 'desktop-print');
-        if (document.fonts && document.fonts.ready) await document.fonts.ready;
         await Promise.all(Array.from(sheet.querySelectorAll('img')).map(function (image) {
           return image.complete ? Promise.resolve() : new Promise(function (resolve) {
-            image.addEventListener('load', resolve, { once: true });
-            image.addEventListener('error', resolve, { once: true });
+            var timeout = setTimeout(resolve, 3000);
+            function finish() { clearTimeout(timeout); resolve(); }
+            image.addEventListener('load', finish, { once: true });
+            image.addEventListener('error', finish, { once: true });
           });
         }));
         await new Promise(function (resolve) { requestAnimationFrame(function () { requestAnimationFrame(resolve); }); });
-        var canvas = await html2canvas(sheet, {
-          backgroundColor: '#ffffff',
-          logging: false,
-          scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
-          useCORS: true,
-          windowWidth: 816
-        });
+        var canvas = await Promise.race([
+          html2canvas(sheet, {
+            backgroundColor: '#ffffff',
+            logging: false,
+            scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
+            useCORS: false,
+            windowWidth: 816
+          }),
+          new Promise(function (_, reject) {
+            setTimeout(function () { reject(new Error('PDF rendering timed out')); }, 20000);
+          })
+        ]);
         var pageWidth = 612;
         var contentWidth = 540;
         var contentHeight = canvas.height * contentWidth / canvas.width;
@@ -278,14 +284,8 @@ export function buildBrandedDocHtml(opts) {
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 36, 36, contentWidth, fittedHeight, undefined, 'FAST');
         var blob = pdf.output('blob');
         var url = URL.createObjectURL(blob);
-        var link = document.createElement('a');
-        link.href = url;
-        link.download = ${JSON.stringify(pdfFilename)};
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-        return { filename: ${JSON.stringify(pdfFilename)}, size: blob.size, pages: pdf.getNumberOfPages() };
+        window.location.href = url;
+        return { filename: ${JSON.stringify(pdfFilename)}, size: blob.size, pages: pdf.getNumberOfPages(), opened: true };
       } catch (error) {
         console.error('Mobile PDF generation failed', error);
         alert('Unable to create the PDF file. Check your connection and try again.');
