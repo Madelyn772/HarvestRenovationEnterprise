@@ -2910,10 +2910,11 @@ html:not(.theme-light) .sidebar {
 /* ============================================================
    CRM: HubSpot-style pipeline, stat strip, contacts, dialogs.
    ============================================================ */
-.crm-head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
-.crm-head-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-.crm-search-wrap { position: relative; display: flex; align-items: center; }
-.crm-search-wrap .search-input { padding-right: 2rem; }
+.crm-head-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: nowrap; }
+.crm-head-actions { display: flex; gap: .6rem; flex: 0 0 auto; align-items: center; }
+.crm-search-area { display: flex; min-width: 0; flex: 1 1 560px; align-items: center; gap: .65rem; }
+.crm-search-wrap { position: relative; display: flex; flex: 1 1 auto; align-items: center; }
+.crm-search-wrap .search-input { width: 100%; max-width: 640px; min-width: 280px; padding-right: 2rem; }
 .crm-search-clear { position: absolute; right: .4rem; top: 50%; transform: translateY(-50%); background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: .9rem; line-height: 1; padding: .2rem; min-height: 0; }
 .crm-search-clear:hover { color: var(--text); }
 .search-result-count { font-size: .72rem; color: var(--muted); white-space: nowrap; }
@@ -2923,6 +2924,14 @@ html:not(.theme-light) .sidebar {
 .crm-stat { padding: 1rem 1.15rem; }
 .crm-stat span { display: block; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .crm-stat strong { display: block; font-size: 1.6rem; margin-top: .3rem; }
+
+.crm-tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--line); }
+.crm-tab { min-width: 110px; padding: .7rem 1rem; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-weight: 700; }
+.crm-tab:hover { color: var(--text); }
+.crm-tab.active { border-bottom-color: var(--gold, #caa05a); color: var(--text); }
+.crm-tab-panel[hidden] { display: none; }
+.crm-contacts-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 1rem; }
+.theme-light .main .crm-tab.active, .theme-light .main .crm-tab:hover { color: #1f1a14; }
 
 /* Trade-category filter chips above the pipeline board. */
 .trade-filters { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
@@ -2988,18 +2997,20 @@ html:not(.theme-light) .sidebar {
 .deal-card-top strong { font-size: .82rem; }
 .deal-move-btn { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 .2rem; min-height: 0; }
 .deal-service { margin: .15rem 0 0; font-size: .72rem; }
-.deal-card-foot { display: flex; justify-content: space-between; align-items: center; margin-top: .35rem; gap: .4rem; flex-wrap: wrap; }
+.deal-card-foot { display: flex; flex-direction: column; align-items: flex-start; margin-top: .35rem; gap: .2rem; }
+.deal-card-foot.deal-card-no-value { flex-direction: row; align-items: center; gap: .4rem; }
 .deal-value { font-weight: 700; font-size: .82rem; }
 .deal-days { margin: .25rem 0 0; font-size: .72rem; }
 .theme-light .main .pipeline-col,
 .theme-light .main .deal-card { background: #faf7f1; border-color: rgba(31,26,20,.10); }
 
-.source-pill { display: inline-block; flex: 0 0 84px; width: 84px; max-width: 84px; box-sizing: border-box; font-size: .54rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: .14rem .4rem; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; vertical-align: middle; }
+.source-pill { display: inline-block; flex: 0 1 auto; max-width: 88px; box-sizing: border-box; font-size: .52rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: .1rem .35rem; border-radius: 999px; border: 1px solid rgba(84,110,122,.35); color: #78909c; background: rgba(84,110,122,.1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; vertical-align: middle; }
 .source-yelp { color: #c62828; border-color: rgba(198,40,40,.4); background: rgba(198,40,40,.1); }
 .source-google, .source-google-business-profile { color: #1a73e8; border-color: rgba(26,115,232,.4); background: rgba(26,115,232,.1); }
-.source-referral { color: #2e7d32; border-color: rgba(46,125,50,.4); background: rgba(46,125,50,.1); }
+.source-repeat-client, .source-repeat-customer { color: #2e7d32; border-color: rgba(46,125,50,.4); background: rgba(46,125,50,.1); }
+.source-direct-estimate { color: #b8860b; border-color: rgba(184,134,11,.4); background: rgba(184,134,11,.12); }
+.source-referral { color: #7b3fa0; border-color: rgba(123,63,160,.4); background: rgba(123,63,160,.1); }
 .source-website-form { color: #b8860b; border-color: rgba(184,134,11,.4); background: rgba(184,134,11,.12); }
-.source-repeat-customer { color: #7b3fa0; border-color: rgba(123,63,160,.4); background: rgba(123,63,160,.1); }
 .source-facebook { color: #1877f2; border-color: rgba(24,119,242,.4); background: rgba(24,119,242,.1); }
 .source-phone-call { color: #546e7a; border-color: rgba(84,110,122,.4); background: rgba(84,110,122,.1); }
 
@@ -3066,12 +3077,17 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .pipeline-scroll { scroll-snap-type: x mandatory; }
   .pipeline-col { flex: 0 0 85vw; min-width: 85vw; max-width: 85vw; }
   .crm-head-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
-  .crm-head-actions { width: 100%; position: sticky; top: 0; z-index: 5; background: var(--bg, #0f0c08); padding: .4rem 0; }
+  .crm-search-area { width: 100%; flex: 0 0 auto; flex-wrap: wrap; }
+  .crm-head-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; position: sticky; top: 0; z-index: 5; background: var(--bg, #0f0c08); padding: .4rem 0; }
   .theme-light .main .crm-head-actions { background: #fbf8f2; }
   .crm-search-wrap { flex: 1 1 100%; width: 100%; }
-  .crm-search-wrap .search-input { width: 100%; max-width: none; }
+  .crm-search-wrap .search-input { width: 100%; min-width: 0; max-width: none; }
   .search-result-count { flex: 1 1 100%; }
-  .crm-head-actions .ghost-btn, .crm-head-actions .primary-btn { flex: 1 1 calc(50% - .25rem); min-height: 44px; }
+  .crm-head-actions .ghost-btn, .crm-head-actions .primary-btn { min-height: 44px; }
+  .crm-head-actions .primary-btn { grid-column: 1 / -1; }
+  .crm-tabs { width: 100%; }
+  .crm-tab { flex: 1 1 50%; }
+  .crm-contacts-layout { grid-template-columns: 1fr; }
   .deal-card { width: 100%; }
   .deal-move-btn { min-width: 44px; min-height: 44px; }
   /* Contacts table → stacked cards */

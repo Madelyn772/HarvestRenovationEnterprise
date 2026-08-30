@@ -74,7 +74,8 @@ export function createProposalLeadForEstimate(estimate) {
     stageChangedAt: now,
     createdAt: now,
     lastContactedAt: '',
-    owner: state.profile?.full_name || ''
+    owner: state.profile?.full_name || '',
+    revisions: []
   };
   state.store.leads.unshift(lead);
   if (contact && !contact.leadId) contact.leadId = lead.id;

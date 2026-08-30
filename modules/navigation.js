@@ -2,7 +2,7 @@ import { state, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, today
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup, saveStore } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
-import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit, syncQuickAddCustomSource } from './crm.js';
+import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, renderCrmTabs, handleLogContactSubmit, syncQuickAddCustomSource } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, handleEstimateSave, saveEstimateFromForm, addEstimateRow, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle, applyEstimateLock, unlockEstimate } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, collectInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode, setInvoiceDeposit, applyInvoiceLock, unlockInvoice } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
@@ -58,6 +58,12 @@ export function bindAppUi() {
     if (!button) return;
     state.filters.pipelineActiveOnly = button.dataset.pipelineActiveOnly === 'true';
     renderPipelineBoard();
+  });
+  if (el.crmTabs) el.crmTabs.addEventListener('click', e => {
+    const button = e.target.closest('[data-crm-tab]');
+    if (!button) return;
+    state.filters.crmTab = button.dataset.crmTab;
+    renderCrmTabs();
   });
   if (tradeFilters) tradeFilters.addEventListener('click', e => {
     const chip = e.target.closest('.trade-chip');

@@ -4,7 +4,7 @@ export function cacheDom() {
   const ids = [
     'authShell','pendingShell','appShell','authMessage','loginForm','signupForm','pendingTitle','pendingBody','refreshProfileBtn','logoutPendingBtn',
     'sidebarUserName','sidebarUserMeta','sidebarRole','sidebarInitials','pageTitle','pageSubtitle','toastStack','openSettingsPanelBtn','logoutBtn',
-    'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','checklistAddForm','clientForm','leadForm','clientList','leadTable',
+    'dashboardKpis','pipelineSummary','analyticsSummary','activityFeed','priorityChecklist','checklistAddForm','clientForm','leadForm','clientList',
     'actionItemsList','actionItemsDate','receivablesBody','avgResponseTime','avgResponseTrend','sameDayRate','sameDayTrend','leadFunnelChart','revenueFunnelChart',
     'clientDetailTitle','clientDetailBody','clientSearch','estimateForm','estimateClientSelect','estimateNumber','estimateDate',
     'estimateSummary','estimateList','printEstimate','jobForm','leadClientSelect','jobClientSelect','calendarForm','calendarClientSelect','invoiceForm',
@@ -16,7 +16,7 @@ export function cacheDom() {
     'topbarActions','toggleUploadBtn','uploadPanel',
     'sendEstimate','estimateClientPhone','sendInvoice','useClientPhone',
     'dealPipelineBoard','contactsTable','crmStatContacts','crmStatActiveDeals','crmStatWonMonth','crmStatPipelineValue',
-    'clearCrmSearch','crmSearchCount','quickAddCustomSourceWrap','pipelineRange','pipelineVisibility',
+    'clearCrmSearch','crmSearchCount','quickAddCustomSourceWrap','pipelineRange','pipelineVisibility','crmTabs','crmPipelinePanel','crmContactsPanel',
     'contactDialog','dealDialog','quickYelpDialog','quickYelpForm','newContactBtn','newDealBtn','quickYelpBtn',
     'yelpThisWeek','yelpThisMonth','pipelineSnapshotBoard','recordDepositDialog','recordDepositForm',
     'changeOrderForm','changeOrderList','changeOrderItems','changeOrderTotals','changeOrderCard','relatedChangeOrder',

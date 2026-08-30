@@ -54,6 +54,7 @@ export function renderClients() {
 }
 
 export function renderLeads() {
+  renderCrmTabs();
   const query = state.filters.clientSearch;
   if (el.leadTable) {
     const leads = [...state.store.leads].filter(item => [item.clientName,item.phone,item.email,item.service,item.status,item.area].join(' ').toLowerCase().includes(query)).sort((a,b) => sortDateDesc(a.preferredDate, b.preferredDate));
@@ -132,7 +133,7 @@ export async function handleClientSave(event) {
       return;
     }
   }
-  const payload = { ...existing, id, name: data.name, phone: data.phone, email: data.email, serviceArea: data.serviceArea, address: data.address, source: data.source, tags: data.tags, notes: data.notes };
+  const payload = { ...existing, id, name: data.name, phone: data.phone, email: data.email, serviceArea: data.serviceArea, address: data.address, source: data.source, tags: data.tags, notes: data.notes, revisions: Array.isArray(existing?.revisions) ? existing.revisions : [] };
   upsertArray('clients', payload, 'id');
   if (existing) syncContactToLinkedLeads(payload);
   state.selectedClientId = id;
@@ -165,7 +166,8 @@ export function resolveFormClient(data, fields) {
       address: fields.address || '',
       source: 'Created from estimate/invoice',
       tags: '',
-      notes: ''
+      notes: '',
+      revisions: []
     }, 'id');
     addActivity(`Saved client ${name}.`, 'CRM');
     return { clientId: id, clientName: name };
@@ -262,7 +264,8 @@ function promoteLeadToContact(lead) {
     tags: '',
     notes: lead.notes || '',
     leadId: lead.id,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    revisions: []
   };
   state.store.clients.push(contact);
   lead.clientId = contact.id;
@@ -289,7 +292,8 @@ export function findOrCreateContact({ name, phone, email, source }) {
     address: '',
     source: source || '',
     tags: '',
-    notes: ''
+    notes: '',
+    revisions: []
   });
   return id;
 }
@@ -342,7 +346,8 @@ export async function handleLeadSave(event) {
     stageChangedAt: existing ? (stageChanged ? new Date().toISOString() : (existing.stageChangedAt || leadIso)) : leadIso,
     createdAt: existing?.createdAt || leadIso,
     lastContactedAt: existing ? (existing.lastContactedAt || '') : '',
-    owner: existing?.owner || state.profile?.full_name || ''
+    owner: existing?.owner || state.profile?.full_name || '',
+    revisions: Array.isArray(existing?.revisions) ? existing.revisions : []
   };
   if (existing || payload.contactId || payload.clientId) syncLeadToLinkedContact(payload);
   promoteLeadToContact(payload);
@@ -452,6 +457,20 @@ export function renderCrmStats() {
   snap('snapActiveDeals', integer.format(active.length));
   snap('snapWonMonth', integer.format(wonThisMonth));
   snap('snapPipelineValue', money.format(pipelineValue));
+}
+
+export function renderCrmTabs() {
+  const activeTab = state.filters.crmTab === 'contacts' ? 'contacts' : 'pipeline';
+  if (el.crmTabs) {
+    el.crmTabs.querySelectorAll('[data-crm-tab]').forEach(button => {
+      const selected = button.dataset.crmTab === activeTab;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+  }
+  if (el.crmPipelinePanel) el.crmPipelinePanel.hidden = activeTab !== 'pipeline';
+  if (el.crmContactsPanel) el.crmContactsPanel.hidden = activeTab !== 'contacts';
 }
 
 // Follow-up cadence (days) per pipeline stage. Null = no follow-up needed.
@@ -576,10 +595,12 @@ function dealCardHtml(lead) {
   const name = leadDisplayName(lead);
   const days = daysInStage(lead.stageChangedAt);
   const fu = getFollowUpStatus(lead);
+  const estimatedValue = num(lead.estimatedValue);
+  const source = lead.source || 'Other';
   const overdueClass = fu.level === 'overdue' ? ' deal-card-overdue' : '';
   return `<div class="deal-card${overdueClass}" draggable="true" data-lead-id="${lead.id}">
     <div class="deal-card-top"><strong>${escapeHtml(name)}</strong><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
-    <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span></div>
+    <div class="deal-card-foot${estimatedValue > 0 ? '' : ' deal-card-no-value'}"><span class="deal-value">${estimatedValue > 0 ? money.format(estimatedValue) : '—'}</span><span class="source-pill source-${sourceKey(source)}" title="${escapeHtml(source)}">${escapeHtml(source)}</span></div>
     <p class="deal-days muted tiny">${days} day${days === 1 ? '' : 's'} in stage</p>
   </div>`;
 }
@@ -806,7 +827,8 @@ export function addContactAsNewLead(contactId) {
     stageChangedAt: now,
     createdAt: now,
     lastContactedAt: '',
-    owner: state.profile?.full_name || ''
+    owner: state.profile?.full_name || '',
+    revisions: []
   };
   state.store.leads.unshift(lead);
   if (!contact.leadId) contact.leadId = lead.id;
@@ -967,7 +989,8 @@ export async function handleQuickAddSave(event) {
     stageChangedAt: now,
     createdAt: now,
     lastContactedAt: '',
-    owner: state.profile?.full_name || ''
+    owner: state.profile?.full_name || '',
+    revisions: []
   });
   addActivity(`Lead added: ${data.clientName} (${source}).`, 'Leads');
   saveStore('Lead added');

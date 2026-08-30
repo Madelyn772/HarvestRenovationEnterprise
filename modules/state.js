@@ -210,8 +210,9 @@ export const state = {
     clientSearch: '',
     employeeSearch: '',
     documentType: 'all',
+    crmTab: 'pipeline',
     pipelineRange: 'month',
-    pipelineActiveOnly: true,
+    pipelineActiveOnly: false,
     tradeCategory: 'all',
     leadSource: 'all',
     docSearch: '',
@@ -500,6 +501,7 @@ export function migrateContact(record) {
   if (!record || typeof record !== 'object') return record;
   const r = { ...record };
   if (r.leadId == null) r.leadId = '';
+  if (!Array.isArray(r.revisions)) r.revisions = [];
   return r;
 }
 
