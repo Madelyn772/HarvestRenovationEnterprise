@@ -3003,12 +3003,18 @@ html:not(.theme-light) .sidebar {
 .pipeline-col-body { display: flex; flex-direction: column; gap: .4rem; padding: .45rem; min-height: 60px; }
 .pipeline-col.drag-over { outline: 2px dashed var(--gold, #caa05a); outline-offset: -2px; }
 .pipeline-empty { text-align: center; padding: .5rem 0; }
-.deal-card { padding: .5rem; font-size: .82rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.04); cursor: grab; }
+.deal-card { position: relative; padding: .5rem; font-size: .82rem; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.04); cursor: grab; }
 .deal-card:active { cursor: grabbing; }
 .deal-card.dragging { opacity: .4; }
 .deal-card-top { display: flex; justify-content: space-between; align-items: center; gap: .4rem; }
 .deal-card-top strong { font-size: .82rem; }
+.deal-card-name { display: inline-flex; min-width: 0; align-items: center; gap: .3rem; }
 .deal-move-btn { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 .2rem; min-height: 0; }
+.deal-followup-alert { position: relative; top: -3px; z-index: 2; display: inline-flex; flex: 0 0 14px; width: 14px; height: 14px; min-height: 0; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; align-self: center; align-items: center; justify-content: center; }
+.deal-followup-alert::after { content: attr(data-tooltip); position: absolute; top: 50%; left: calc(100% + 4px); width: max-content; max-width: 120px; padding: .28rem .4rem; border: 1px solid rgba(220,38,38,.2); border-radius: 4px; background: #fee2e2; color: #b91c1c; box-shadow: 0 4px 12px rgba(127,29,29,.12); font-size: .62rem; font-weight: 700; line-height: 1.2; opacity: 0; pointer-events: none; transform: translate(-2px, -50%); transition: opacity .12s ease, transform .12s ease; white-space: nowrap; }
+.deal-followup-alert:hover::after, .deal-followup-alert:focus-visible::after { opacity: 1; transform: translate(0, -50%); }
+.deal-followup-alert:focus-visible { outline: 1px solid #dc2626; outline-offset: 1px; border-radius: 50%; }
+.deal-followup-dot { display: block; width: 8px; height: 8px; border-radius: 50%; background: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,.12); }
 .deal-service { margin: .15rem 0 0; font-size: .72rem; }
 .deal-card-foot { display: flex; flex-direction: column; align-items: flex-start; margin-top: .35rem; gap: .2rem; }
 .deal-card-foot.deal-card-no-value { flex-direction: row; align-items: center; gap: .4rem; }

@@ -569,6 +569,7 @@ export function handleLogContactSubmit(event) {
   const now = new Date();
   const stage = normalizeLeadStatus(lead.status);
   lead.lastContactedAt = now.toISOString();
+  delete lead.followUpBeforeContacted;
   lead.contactLog = lead.contactLog || [];
   lead.contactLog.unshift({ date: now.toISOString(), method: data.method || 'call', notes: (data.notes || '').trim(), stage });
 
@@ -599,9 +600,17 @@ function dealCardHtml(lead) {
   const fu = getFollowUpStatus(lead);
   const estimatedValue = num(lead.estimatedValue);
   const source = lead.source || 'Other';
+  const needsFollowUp = fu.level === 'overdue' || fu.level === 'due';
+  const overdueDays = Math.abs(fu.daysUntilDue || 0);
+  const followUpLabel = fu.level === 'due'
+    ? 'Follow up today'
+    : `${overdueDays} day${overdueDays === 1 ? '' : 's'} overdue`;
+  const followUpAlert = needsFollowUp
+    ? `<button type="button" class="deal-followup-alert log-contact-btn" data-lead-id="${lead.id}" data-tooltip="${escapeHtml(followUpLabel)}" aria-label="${escapeHtml(followUpLabel)}. Log contact."><span class="deal-followup-dot" aria-hidden="true"></span></button>`
+    : '';
   const overdueClass = fu.level === 'overdue' ? ' deal-card-overdue' : '';
-  return `<div class="deal-card${overdueClass}" draggable="true" data-lead-id="${lead.id}">
-    <div class="deal-card-top"><strong>${escapeHtml(name)}</strong><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
+  return `<div class="deal-card${overdueClass}${needsFollowUp ? ' has-followup' : ''}" draggable="true" data-lead-id="${lead.id}">
+    <div class="deal-card-top"><span class="deal-card-name"><strong>${escapeHtml(name)}</strong>${followUpAlert}</span><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
     <div class="deal-card-foot${estimatedValue > 0 ? '' : ' deal-card-no-value'}"><span class="deal-value">${estimatedValue > 0 ? money.format(estimatedValue) : '—'}</span><span class="source-pill source-${sourceKey(source)}" title="${escapeHtml(source)}">${escapeHtml(source)}</span></div>
     <p class="deal-days muted tiny">${days} day${days === 1 ? '' : 's'} in stage</p>
   </div>`;
@@ -796,6 +805,19 @@ function openMoveMenu(leadId, anchor) {
 export function moveDealToStage(id, stage) {
   const lead = state.store.leads.find(l => l.id === id);
   if (!lead || !PIPELINE_STAGES.includes(stage) || normalizeLeadStatus(lead.status) === stage) return;
+  const previousStage = normalizeLeadStatus(lead.status);
+  const followUpStatus = getFollowUpStatus(lead);
+  const needsFollowUp = ['overdue', 'due'].includes(followUpStatus.level);
+  if (stage === 'Contacted' && needsFollowUp) {
+    lead.followUpBeforeContacted = lead.followUpDate || followUpStatus.recommendedDate || '';
+    lead.followUpDate = '';
+  } else if (previousStage === 'Contacted' && stage === 'New Lead' && lead.followUpBeforeContacted) {
+    lead.followUpDate = lead.followUpBeforeContacted;
+    delete lead.followUpBeforeContacted;
+  } else if (!lead.followUpDate && needsFollowUp && followUpStatus.recommendedDate) {
+    lead.followUpDate = followUpStatus.recommendedDate;
+  }
+  if (previousStage === 'Contacted' && stage !== 'New Lead') delete lead.followUpBeforeContacted;
   lead.status = stage;
   lead.stageChangedAt = new Date().toISOString();
   const promotion = isQualifiedStage(stage) ? promoteLeadToContact(lead) : { created: false };

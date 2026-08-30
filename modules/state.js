@@ -486,6 +486,7 @@ export function migrateLead(record) {
   if (r.source == null) r.source = '';
   if (r.estimatedValue == null) r.estimatedValue = 0;
   if (r.followUpDate == null) r.followUpDate = '';
+  if (r.followUpBeforeContacted == null) r.followUpBeforeContacted = '';
   if (r.lastContactedAt == null) r.lastContactedAt = '';
   if (!r.stageChangedAt) r.stageChangedAt = r.preferredDate || '';
   if (r.owner == null) r.owner = '';

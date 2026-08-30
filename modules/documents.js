@@ -3,9 +3,22 @@ import { el, escapeHtml, emptyHtml, openPrintWindow, showToast } from './dom.js'
 import { upsertArray, saveStore, addActivity } from './store.js';
 import { softDelete } from './trash.js';
 
-export function saveDocument(type, number, clientName, total, html, preparedBy) {
+function generatedDocumentPdfName(type, number, clientName) {
   const kindLabel = type === 'invoice' ? 'Invoice' : type === 'contract' ? 'Contract' : 'Estimate';
-  const title = `${kindLabel} ${number || ''}`.trim();
+  const safeClientName = String(clientName || 'Client').trim() || 'Client';
+  const safeNumber = String(number || kindLabel).trim() || kindLabel;
+  return `Harvest Renovation - ${kindLabel} - ${safeClientName}- ${safeNumber}`
+    .replace(/[\\/:*?"<>|]+/g, '-') + '.pdf';
+}
+
+function documentDisplayTitle(doc) {
+  return doc.uploaded
+    ? (doc.title || doc.fileName || 'Document')
+    : generatedDocumentPdfName(doc.type, doc.number, doc.clientName);
+}
+
+export function saveDocument(type, number, clientName, total, html, preparedBy) {
+  const title = generatedDocumentPdfName(type, number, clientName);
   const existing = state.store.documents.find(doc => doc.type === type && doc.number === number);
   const payload = {
     id: existing?.id || uid('DOC'),
@@ -32,7 +45,7 @@ export function renderDocuments() {
     .filter(doc => filter === 'all' || doc.type === filter)
     .filter(doc => {
       if (!search) return true;
-      return [doc.clientName, doc.number, doc.title].some(v => String(v || '').toLowerCase().includes(search));
+      return [doc.clientName, doc.number, documentDisplayTitle(doc)].some(v => String(v || '').toLowerCase().includes(search));
     })
     .filter(doc => {
       if (!cutoff) return true;
@@ -73,7 +86,7 @@ function docItemHtml(doc) {
   const stamp = formatDateTime(doc.createdAt || doc.updatedAt);
   const info = escapeHtml(`${preparedBy}${stamp ? ` • ${stamp}` : ''}${doc.uploaded && doc.fileName ? ` • ${doc.fileName}` : ''}`);
   const openLabel = doc.uploaded ? 'Open' : 'Open / Print';
-  return `<div class="stack-item doc-item doc-type-${type}"><div class="split-head"><div><h4><span class="doc-type-badge doc-type-badge-${type}">${badgeShort}</span>${escapeHtml(doc.title || badge)} ${sourceTag}</h4><p class="muted">${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.date || doc.updatedAt || doc.createdAt))}</p></div><div class="doc-head-right"><span class="doc-info" tabindex="0" role="img" aria-label="${info}" title="${info}">i</span><strong>${money.format(num(doc.total))}</strong></div></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">${openLabel}</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
+  return `<div class="stack-item doc-item doc-type-${type}"><div class="split-head"><div><h4><span class="doc-type-badge doc-type-badge-${type}">${badgeShort}</span>${escapeHtml(documentDisplayTitle(doc) || badge)} ${sourceTag}</h4><p class="muted">${escapeHtml(doc.clientName || 'Client')} • ${escapeHtml(formatDate(doc.date || doc.updatedAt || doc.createdAt))}</p></div><div class="doc-head-right"><span class="doc-info" tabindex="0" role="img" aria-label="${info}" title="${info}">i</span><strong>${money.format(num(doc.total))}</strong></div></div><div class="form-actions"><button class="primary-btn doc-open" data-doc-id="${doc.id}">${openLabel}</button><button class="ghost-btn doc-download" data-doc-id="${doc.id}">Download</button><button class="danger-btn doc-delete" data-doc-id="${doc.id}">Delete</button></div></div>`;
 }
 
 function bindDocumentActions() {
