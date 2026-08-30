@@ -18,6 +18,14 @@ function emailLink(email) {
   return `<a class="contact-link" href="mailto:${escapeHtml(e)}">${escapeHtml(e)}</a>`;
 }
 
+function localDateInputValue(value) {
+  if (!value) return todayInputValue();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return todayInputValue();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 // Ask for (and store) the reason a deal was lost — reuses the estimate
 // decline-reason modal so CRM losses feed the same "why we lost" data.
 function captureLostReason(lead) {
@@ -329,7 +337,7 @@ export function loadLeadIntoForm(id) {
   el.leadForm.notes.value = lead.notes || '';
   if (el.leadForm.leadDate) {
     el.leadForm.leadDate.max = todayInputValue();
-    el.leadForm.leadDate.value = (lead.createdAt || '').slice(0, 10) || todayInputValue();
+    el.leadForm.leadDate.value = localDateInputValue(lead.createdAt);
   }
 }
 
