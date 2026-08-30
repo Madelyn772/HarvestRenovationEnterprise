@@ -156,7 +156,7 @@ export function buildBrandedDocHtml(opts) {
     .items .ihead span:first-child{text-align:left}
     .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
     .items .line-items-body{display:flex;flex-direction:column}
-    .items .line-items-body .item-row.scope{margin-top:auto}
+    .items .line-items-body .item-row.scope{align-items:end;min-height:96px;margin-top:auto}
     .items.paytable{margin-top:14px}
     .items.paytable .ibody{min-height:0}
     .items.schedule-table .ibody{min-height:0}
@@ -174,7 +174,8 @@ export function buildBrandedDocHtml(opts) {
     .item-row.schedule div{padding:9px 12px;font-size:12px;color:#2c2419}
     .item-row.schedule div:nth-child(2){text-align:center}
     .item-row.schedule div:last-child{text-align:right;font-weight:600}
-    .item-row .desc{padding:11px 12px;font-size:13px;color:#2c2419;white-space:pre-wrap}
+    .item-row .desc{padding:11px 12px;font-size:13px;font-weight:700;color:#2c2419;white-space:pre-wrap}
+    .item-row.scope .desc{font-weight:400}
     .item-row .amt{padding:11px 12px;font-size:13px;font-weight:600;text-align:right;color:#2c2419}
     .item-row .qty,.item-row .unit,.item-row .price{padding:11px 8px;font-size:12px;color:#2c2419}
     .item-row .qty,.item-row .unit{text-align:center}
