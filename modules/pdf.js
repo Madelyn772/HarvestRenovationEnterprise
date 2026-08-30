@@ -60,12 +60,9 @@ export function buildBrandedDocHtml(opts) {
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
-  const scopeBlock = scope
-    ? !itemizedMode
-      ? `<div class="item-row lump-sum scope"><div class="desc">${scopeToHtml(scope)}</div></div>`
-      : commercialJob
-      ? `<div class="item-row commercial scope"><div class="desc">${scopeToHtml(scope)}</div></div>`
-      : `<div class="item-row scope"><div class="desc">${scopeToHtml(scope)}</div><div class="amt"></div></div>`
+  const scopeText = String(scope || '').trim();
+  const scopeBlock = (kind === 'ESTIMATE' || kind === 'INVOICE') && scopeText
+    ? `<div class="terms scope"><div class="band">Scope of Work</div><div class="tbody">${scopeToHtml(scopeText)}</div></div>`
     : '';
   const itemRows = rows.map(r => {
     const descHtml = r.descHtml != null ? r.descHtml : escapeHtml(r.desc || '');
@@ -176,8 +173,6 @@ export function buildBrandedDocHtml(opts) {
     .item-row .qty,.item-row .unit,.item-row .price{padding:11px 8px;font-size:12px;color:#2c2419}
     .item-row .qty,.item-row .unit{text-align:center}
     .item-row .price{text-align:right}
-    .item-row.commercial.scope .desc{grid-column:1/-1}
-    .item-row.scope .desc{color:#181410}
     .line-sub{font-size:11px;color:#8a7a5e;margin-top:2px}
     .scope-list{margin:0;padding-left:18px}
     .scope-list li{font-size:13px;color:#2c2419;line-height:1.5}
@@ -233,7 +228,7 @@ export function buildBrandedDocHtml(opts) {
           : commercialJob
           ? '<div class="ihead commercial"><span>Description</span><span>Qty</span><span>Unit</span><span>Unit price</span><span>Amount</span></div>'
           : '<div class="ihead"><span>Description</span><span>Amount</span></div>'}
-        <div class="ibody">${scopeBlock}${itemRows}</div>
+        <div class="ibody">${itemRows}</div>
       </div>
       ${payTable}
       ${paymentScheduleTable}
@@ -249,6 +244,7 @@ export function buildBrandedDocHtml(opts) {
           ${hasComments ? `<div class="box"><div class="lbl">Comments</div><div class="val">${escapeHtml(comments)}</div></div>` : ''}
         </div>
       </div>
+      ${scopeBlock}
       ${paymentInstructions}
       ${termsBlock}
       ${sigsBlock}
@@ -352,6 +348,7 @@ export function buildInvoiceDocHtml(invoice) {
     dueDate: invoice.dueDate || '',
     status: invoice.status,
     bill: { name: invoice.clientName, address: invoice.address, phone: invoice.phone, email: invoice.email },
+    scope: invoice.scope,
     rows,
     commercialJob: invoice.commercialJob === true,
     itemizedMode,
