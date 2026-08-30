@@ -19,16 +19,14 @@ export function applyPendingRevision(existing, payload, summarizeChanges) {
   if (!pending) return;
   payload._pendingRevision = null;
 
-  const summary = summarizeChanges(pending.baseline || {}, payload);
-  if (summary) {
-    payload.revisions.push({
-      id: uid('REV'),
-      user: pending.user || 'Unknown user',
-      role: pending.role || 'staff',
-      timestamp: pending.timestamp || new Date().toISOString(),
-      summary
-    });
-  }
+  const summary = summarizeChanges(pending.baseline || {}, payload) || 'Unlocked for editing; no document fields changed.';
+  payload.revisions.push({
+    id: uid('REV'),
+    user: pending.user || 'Unknown user',
+    role: pending.role || 'staff',
+    timestamp: pending.timestamp || new Date().toISOString(),
+    summary
+  });
 }
 
 export function renderRevisionHistory(elementId, revisions) {
@@ -47,4 +45,15 @@ export function renderRevisionHistory(elementId, revisions) {
         <p>${escapeHtml(entry.summary || 'Document updated.')}</p>
       </div>`).join('');
   }
+}
+
+export function renderDocumentLockControl(elementId, locked, { showUnlocked = false } = {}) {
+  const button = document.getElementById(elementId);
+  if (!button) return;
+  button.hidden = !locked && !showUnlocked;
+  button.disabled = !locked;
+  button.dataset.locked = String(locked);
+  button.setAttribute('aria-label', locked ? 'Unlock document' : 'Document unlocked');
+  button.title = locked ? 'Unlock document' : 'Document unlocked';
+  button.innerHTML = `<span aria-hidden="true">${locked ? '🔒' : '🔓'}</span>`;
 }

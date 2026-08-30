@@ -7,7 +7,7 @@ import { fillInvoiceFromEstimate, renderInvoices, computeInvoiceBalances } from 
 import { printEstimate } from './pdf.js';
 import { updateEstimateStatus } from './documenso.js';
 import { openChangeOrderForm } from './changeOrders.js';
-import { beginRevision, applyPendingRevision, renderRevisionHistory } from './revisions.js';
+import { beginRevision, applyPendingRevision, renderRevisionHistory, renderDocumentLockControl } from './revisions.js';
 
 export function saveEstimateFromForm() {
   const data = objectFromForm(el.estimateForm);
@@ -123,6 +123,7 @@ export function applyEstimateLock(locked) {
   if (F.status) F.status.disabled = locked;
   if (el.sendEstimate) el.sendEstimate.disabled = locked;
   F.classList.toggle('form-locked', locked);
+  renderDocumentLockControl('estimateLockToggle', locked);
   document.querySelectorAll('#estimateItems [name="amount"]').forEach(input => {
     input.readOnly = locked || !!commercialToggle?.checked;
   });
@@ -560,12 +561,11 @@ export function renderEstimates() {
     const coLine = (status === 'Approved' && coCount > 0) ? `<p class="muted tiny">Change Orders (${coCount})</p>` : '';
     const linkedInvoice = state.store.invoices.find(i => i.relatedEstimate === item.id);
     const locked = ['Sent', 'Approved'].includes(status) || (!!linkedInvoice && status !== 'Draft');
-    const lockIcon = locked ? '<span class="lock-icon" title="Sent estimate — financial fields are locked">🔒</span>' : '';
+    const lockIcon = locked ? `<button type="button" class="lock-icon lock-icon-button estimate-unlock" data-estimate-id="${item.id}" aria-label="Unlock estimate" title="Unlock estimate"><span aria-hidden="true">🔒</span></button>` : '';
     const invoiceBtn = linkedInvoice
       ? `<button class="ghost-btn estimate-view-invoice" data-invoice-id="${linkedInvoice.id}">View Invoice ${escapeHtml(linkedInvoice.invoiceNumber || '')}</button>`
       : `<button class="ghost-btn estimate-invoice" data-estimate-id="${item.id}">\u2192 Invoice</button>`;
     const duplicateBtn = locked ? `<button class="ghost-btn estimate-duplicate" data-estimate-id="${item.id}">Duplicate</button>` : '';
-    const unlockBtn = locked ? `<button class="ghost-btn estimate-unlock" data-estimate-id="${item.id}">Unlock</button>` : '';
     const changeOrderBtn = status === 'Approved' ? `<button class="ghost-btn estimate-changeorder" data-estimate-id="${item.id}">Change Order</button>` : '';
     const meta = [escapeHtml(item.user || ''), escapeHtml(item.trade || ''), formatDate(item.date)].filter(Boolean).join(' • ');
     return `<div class="invoice-row">
@@ -575,7 +575,7 @@ export function renderEstimates() {
         ${declineLine}${coLine}
       </div>
       <div class="invoice-row-amount"><strong>${money.format(num(item.estimatedCost || item.value))}</strong></div>
-      <div class="invoice-row-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${duplicateBtn}${unlockBtn}${changeOrderBtn}${recordDepositBtn}${actionButtons}${locked ? '' : deleteBtn('estimates', item.id)}</div>
+      <div class="invoice-row-actions"><button class="ghost-btn estimate-load" data-estimate-id="${item.id}">Load</button>${invoiceBtn}<button class="ghost-btn estimate-print" data-estimate-id="${item.id}">Print</button><button class="ghost-btn estimate-email" data-estimate-id="${item.id}">Email</button>${duplicateBtn}${changeOrderBtn}${recordDepositBtn}${actionButtons}${locked ? '' : deleteBtn('estimates', item.id)}</div>
     </div>`;
   }).join('') : emptyHtml('No estimates saved yet.');
   el.estimateList.querySelectorAll('.estimate-load').forEach(btn => btn.addEventListener('click', () => loadEstimateIntoForm(btn.dataset.estimateId)));
@@ -603,6 +603,7 @@ export function unlockEstimate(id) {
   addActivity(`Unlocked estimate ${estimate.estimateNumber || estimate.id}.`, 'Estimating');
   renderAll();
   loadEstimateIntoForm(estimate.id);
+  renderDocumentLockControl('estimateLockToggle', false, { showUnlocked: true });
   if (estimate._pendingRevision) estimate._pendingRevision.baseline = collectEstimateFromForm();
   saveStore('Estimate unlocked');
   showToast('Estimate unlocked for editing.', 'success');

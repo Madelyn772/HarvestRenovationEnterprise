@@ -2853,6 +2853,27 @@ html:not(.theme-light) .sidebar {
 .line-item-row.co-line { grid-template-columns: 2fr 1fr 2.2rem; }
 .co-card > summary { cursor: pointer; font-weight: 600; }
 .lock-icon { font-size: .85rem; opacity: .8; }
+.lock-icon-button,
+.document-lock-toggle {
+  display: inline-grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(138, 101, 32, .35);
+  border-radius: 6px;
+  background: rgba(202, 160, 90, .1);
+  color: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.lock-icon-button:hover,
+.document-lock-toggle:hover { background: rgba(202, 160, 90, .2); }
+.document-lock-toggle:disabled {
+  opacity: .75;
+  cursor: default;
+}
+.document-lock-toggle[hidden] { display: none; }
 .form-locked input:disabled, .form-locked select:disabled, .form-locked textarea:disabled,
 .form-locked input:read-only, .form-locked textarea:read-only { opacity: .6; background: rgba(120,120,120,.08); cursor: not-allowed; }
 

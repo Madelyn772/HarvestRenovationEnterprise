@@ -6,7 +6,7 @@ import { resolveFormClient } from './crm.js';
 import { printInvoice } from './pdf.js';
 import { updateInvoiceStatus } from './documenso.js';
 import { openPaymentDialog, markPaid, generateReceiptForInvoice } from './receipts.js';
-import { beginRevision, applyPendingRevision, renderRevisionHistory } from './revisions.js';
+import { beginRevision, applyPendingRevision, renderRevisionHistory, renderDocumentLockControl } from './revisions.js';
 
 export async function handleJobSave(event) {
   event.preventDefault();
@@ -293,6 +293,7 @@ export function applyInvoiceLock(locked) {
   if (form.status) form.status.disabled = locked;
   if (el.sendInvoice) el.sendInvoice.disabled = locked;
   form.classList.toggle('form-locked', locked);
+  renderDocumentLockControl('invoiceLockToggle', locked);
 }
 
 export function collectInvoiceFromForm() {
@@ -525,9 +526,8 @@ export function renderInvoices() {
     const locked = ['Sent', 'Signed', 'Partial', 'Paid'].includes(status);
     const statusColor = status === 'Paid' ? '#2e7d32' : (status === 'Partial' || status === 'Sent' || status === 'Signed') ? 'var(--gold, #caa05a)' : '';
     const statusBadge = status !== 'Draft' ? `<span class="status-pill" style="color:${statusColor};border-color:${statusColor}">${escapeHtml(status)}</span>` : '';
-    const lockIcon = locked ? '<span class="lock-icon" title="Sent invoice — billable amounts are locked">🔒</span>' : '';
+    const lockIcon = locked ? `<button type="button" class="lock-icon lock-icon-button invoice-unlock" data-invoice-id="${item.id}" aria-label="Unlock invoice" title="Unlock invoice"><span aria-hidden="true">🔒</span></button>` : '';
     const duplicateBtn = locked ? `<button class="ghost-btn invoice-duplicate" data-invoice-id="${item.id}">Duplicate</button>` : '';
-    const unlockBtn = locked ? `<button class="ghost-btn invoice-unlock" data-invoice-id="${item.id}">Unlock</button>` : '';
     const balanceLine = balance > 0.01 ? `<span class="invoice-bal">Balance ${money.format(balance)}</span>` : '';
     const payBtns = balance > 0.01
       ? `<button class="ghost-btn invoice-record-payment" data-invoice-id="${item.id}">Record Payment</button><button class="ghost-btn invoice-mark-paid" data-invoice-id="${item.id}" style="color:#2e7d32;border-color:#2e7d32">Mark Paid</button>`
@@ -540,7 +540,7 @@ export function renderInvoices() {
         <p class="muted tiny">${meta}</p>
       </div>
       <div class="invoice-row-amount"><strong>${money.format(total)}</strong>${balanceLine}</div>
-      <div class="invoice-row-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${duplicateBtn}${unlockBtn}${payBtns}${receiptBtn}${locked ? '' : deleteBtn('invoices', item.id)}</div>
+      <div class="invoice-row-actions"><button class="ghost-btn invoice-print" data-invoice-id="${item.id}">Print</button><button class="ghost-btn invoice-email" data-invoice-id="${item.id}">Email</button>${duplicateBtn}${payBtns}${receiptBtn}${locked ? '' : deleteBtn('invoices', item.id)}</div>
     </div>`;
   }).join('') : emptyHtml('No invoices yet.');
   el.invoiceList.querySelectorAll('.invoice-print').forEach(btn => btn.addEventListener('click', () => {
@@ -563,6 +563,7 @@ export function unlockInvoice(id) {
   addActivity(`Unlocked invoice ${invoice.invoiceNumber || invoice.id}.`, 'Billing');
   renderAll();
   loadInvoiceIntoForm(invoice);
+  renderDocumentLockControl('invoiceLockToggle', false, { showUnlocked: true });
   if (invoice._pendingRevision) invoice._pendingRevision.baseline = collectInvoiceFromForm();
   saveStore('Invoice unlocked');
   showToast('Invoice unlocked for editing.', 'success');

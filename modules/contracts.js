@@ -3,7 +3,7 @@ import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } f
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
 import { printContract } from './pdf.js';
-import { beginRevision, applyPendingRevision, renderRevisionHistory } from './revisions.js';
+import { beginRevision, applyPendingRevision, renderRevisionHistory, renderDocumentLockControl } from './revisions.js';
 
 export function getContractPaymentsEl() {
   return document.getElementById('contractPayments');
@@ -266,6 +266,7 @@ export function applyContractLock(locked) {
   const addPaymentButton = document.getElementById('addContractPayment');
   if (addPaymentButton) addPaymentButton.disabled = locked;
   form.classList.toggle('form-locked', locked);
+  renderDocumentLockControl('contractLockToggle', locked);
 }
 
 export async function handleContractSave(event) {
@@ -337,7 +338,7 @@ export function renderContracts() {
     const meta = [escapeHtml(item.clientName || 'Client'), formatDate(item.date)].filter(Boolean).join(' • ');
     return `<div class="invoice-row">
       <div class="invoice-row-info">
-        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${locked ? '<span class="lock-icon" title="Sent contract — financial fields are locked">🔒</span>' : ''}${statusBadge}</div>
+        <div class="invoice-row-top"><strong>${escapeHtml(item.contractNumber || item.id)}</strong>${locked ? `<button type="button" class="lock-icon lock-icon-button contract-unlock" data-contract-id="${item.id}" aria-label="Unlock contract" title="Unlock contract"><span aria-hidden="true">🔒</span></button>` : ''}${statusBadge}</div>
         <p class="muted tiny">${meta}</p>
         ${signedInfo}
       </div>
@@ -346,7 +347,6 @@ export function renderContracts() {
         <button class="ghost-btn contract-edit" data-contract-id="${item.id}">Edit</button>
         <button class="ghost-btn contract-print" data-contract-id="${item.id}">Print / PDF</button>
         ${locked ? `<button class="ghost-btn contract-duplicate" data-contract-id="${item.id}">Duplicate</button>` : ''}
-        ${locked ? `<button class="ghost-btn contract-unlock" data-contract-id="${item.id}">Unlock</button>` : ''}
         ${locked ? '' : deleteBtn('contracts', item.id)}
       </div>
     </div>`;
@@ -368,6 +368,7 @@ export function unlockContract(id) {
   addActivity(`Unlocked contract ${contract.contractNumber || contract.id}.`, 'Contracts');
   renderAll();
   loadContractIntoForm(contract.id);
+  renderDocumentLockControl('contractLockToggle', false, { showUnlocked: true });
   if (contract._pendingRevision) contract._pendingRevision.baseline = collectContractFromForm();
   saveStore('Contract unlocked');
   showToast('Contract unlocked for editing.', 'success');
