@@ -151,10 +151,6 @@ function contractMobilePdfScript(pdfFilename, mobileShareText) {
     function printContinuousPdf() {
       if (appleMobilePrintRequired()) return shareAppleMobilePdf();
       if (mobilePdfExportRequired()) return downloadContinuousPdf();
-      document.documentElement.classList.add('desktop-print');
-      window.addEventListener('afterprint', function () {
-        document.documentElement.classList.remove('desktop-print');
-      }, { once: true });
       window.print();
     }
     window.addEventListener('load', function () {
@@ -472,21 +468,7 @@ export function buildBrandedDocHtml(opts) {
     function printContinuousPdf() {
       if (appleMobilePrintRequired()) return shareAppleMobilePdf();
       if (mobilePdfExportRequired()) return downloadContinuousPdf();
-      var sheet = document.querySelector('.sheet');
-      if (!sheet) return window.print();
-      document.documentElement.classList.add('measure-print', 'desktop-print');
-      requestAnimationFrame(function () {
-        var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
-        var pageStyle = document.createElement('style');
-        pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
-        document.head.appendChild(pageStyle);
-        document.documentElement.classList.remove('measure-print');
-        window.addEventListener('afterprint', function () {
-          pageStyle.remove();
-          document.documentElement.classList.remove('desktop-print');
-        }, { once: true });
-        window.print();
-      });
+      window.print();
     }
     window.addEventListener('load', function () {
       if (appleMobilePrintRequired()) prepareContinuousPdf().catch(function (error) {
