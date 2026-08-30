@@ -73,6 +73,7 @@ function estimateFinancialsChanged(a, b) {
   if ((a.trade || '') !== (b.trade || '')) return true;
   if ((a.scope || '') !== (b.scope || '')) return true;
   if ((a.commercialJob === true) !== (b.commercialJob === true)) return true;
+  if ((a.signatureBlockEnabled === true) !== (b.signatureBlockEnabled === true)) return true;
   const norm = items => JSON.stringify((items || []).map(it => [it.description || '', num(it.quantity), it.unit || '', num(it.unitPrice), num(it.amount)]));
   return norm(a.items) !== norm(b.items);
 }
@@ -97,6 +98,7 @@ export function applyEstimateLock(locked) {
   if (commercialToggle) commercialToggle.disabled = locked;
   const itemizedToggle = document.getElementById('estimateItemizedToggle');
   if (itemizedToggle) itemizedToggle.disabled = locked;
+  if (F.signatureBlockEnabled) F.signatureBlockEnabled.disabled = locked;
   const lumpSumInput = document.getElementById('estimateLumpSumTotal');
   if (lumpSumInput) lumpSumInput.readOnly = locked;
   if (F.status) F.status.disabled = locked;
@@ -379,7 +381,7 @@ export function collectEstimateFromForm() {
     commercialJob: isEstimateCommercialMode(),
     validUntil: data.validUntil || '',
     termsAndConditions: (data.termsAndConditions != null ? data.termsAndConditions : ''),
-    signatureBlockEnabled: data.signatureBlockEnabled === 'on' || data.signatureBlockEnabled === true,
+    signatureBlockEnabled: el.estimateForm.signatureBlockEnabled?.checked === true,
     estimatedCost, depositAmount,
     scope: data.scope,
     comments: data.comments || '',
