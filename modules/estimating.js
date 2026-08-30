@@ -1,4 +1,4 @@
-import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate, todayISO } from './state.js';
+import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, buildMailto, DEFAULT_ESTIMATE_TERMS, currentUserName, formatDate, todayInputValue, addDaysToInputDate } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, updateNewClientFieldsVisibility, renderAll, setView } from './navigation.js';
@@ -217,19 +217,12 @@ export function updateDepositCustomVisibility() {
   wrap.classList.toggle('hidden', sel.value !== 'custom');
 }
 
-function addDaysISO(dateStr, days) {
-  const d = dateStr ? new Date(dateStr) : new Date();
-  if (Number.isNaN(d.getTime())) return '';
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 // Keep "Valid until" = estimate date + 30 days until the user edits it by hand.
 export function syncEstimateValidUntil(force = false) {
   const validInput = document.getElementById('estimateValidUntil');
   if (!validInput) return;
   if (force || !validInput.value || validInput.dataset.auto !== 'false') {
-    validInput.value = addDaysISO(el.estimateForm.date.value, 30);
+    validInput.value = addDaysToInputDate(el.estimateForm.date.value, 30);
     validInput.dataset.auto = 'true';
   }
 }
@@ -239,7 +232,7 @@ export function hydrateEstimateForm() {
   if (el.estimateForm.user && !el.estimateForm.user.value) {
     el.estimateForm.user.value = state.profile?.full_name || currentUserName() || '';
   }
-  if (el.estimateDate && !el.estimateDate.value) el.estimateDate.value = todayISO();
+  if (el.estimateDate && !el.estimateDate.value) el.estimateDate.value = todayInputValue();
   if (el.estimateNumber && !el.estimateNumber.value) el.estimateNumber.value = autoNumber('EST');
   const terms = document.getElementById('estimateTerms');
   if (terms && !terms.value) terms.value = DEFAULT_ESTIMATE_TERMS;
@@ -589,7 +582,7 @@ export function openRecordDepositDialog(estimateId) {
   const form = dlg.querySelector('form');
   form.amount.value = num(est.depositAmount).toFixed(2);
   form.method.value = 'Check';
-  form.date.value = todayISO();
+  form.date.value = todayInputValue();
   form.reference.value = '';
   dlg.showModal();
 }
@@ -605,7 +598,7 @@ export function handleRecordDepositSubmit(event) {
   const form = dlg.querySelector('form');
   const amount = num(form.amount.value);
   invoice.payments = invoice.payments || [];
-  invoice.payments.push({ id: uid('PAY'), date: form.date.value || todayISO(), amount, method: form.method.value, reference: form.reference.value || '', note: 'Deposit from ' + (est.estimateNumber || est.id) });
+  invoice.payments.push({ id: uid('PAY'), date: form.date.value || todayInputValue(), amount, method: form.method.value, reference: form.reference.value || '', note: 'Deposit from ' + (est.estimateNumber || est.id) });
   const { total, paid, balance } = computeInvoiceBalances(invoice);
   if (total > 0 && balance <= 0.01) invoice.status = 'Paid';
   else if (paid > 0 && paid < total && invoice.status !== 'Draft' && invoice.status !== 'Sent') invoice.status = 'Partial';
@@ -628,7 +621,8 @@ export function duplicateEstimate(id) {
   copy.id = uid('EST');
   copy.estimateNumber = autoNumber('EST');
   copy.status = 'Draft';
-  copy.date = todayISO();
+  copy.date = todayInputValue();
+  copy.validUntil = addDaysToInputDate(copy.date, 30);
   copy.depositReceivedAt = '';
   copy.depositReceivedBy = '';
   copy.items = (copy.items || []).map(it => ({ ...it, id: uid('ITM') }));

@@ -1,4 +1,4 @@
-import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, DEFAULT_CONTRACT_TERMS, currentUserName, formatDate, todayISO } from './state.js';
+import { state, money, num, numberInUse, autoNumber, findClient, lookupClientName, uid, objectFromForm, sortDateDesc, DEFAULT_CONTRACT_TERMS, currentUserName, formatDate, todayInputValue } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, showToast, reportFormValidity } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, renderAll, setView } from './navigation.js';
@@ -12,7 +12,7 @@ export function hydrateContractForm() {
   const form = el.contractForm;
   if (!form) return;
   if (form.user && !form.user.value) form.user.value = state.profile?.full_name || currentUserName() || '';
-  if (form.date && !form.date.value) form.date.value = todayISO();
+  if (form.date && !form.date.value) form.date.value = todayInputValue();
   if (form.contractNumber && !form.contractNumber.value) form.contractNumber.value = autoNumber('CON');
   const terms = document.getElementById('contractTerms');
   if (terms) {

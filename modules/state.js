@@ -268,6 +268,16 @@ export function todayInputValue() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+export function addDaysToInputDate(dateValue, days) {
+  const match = String(dateValue || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date();
+  if (Number.isNaN(date.getTime())) return '';
+  date.setDate(date.getDate() + Number(days || 0));
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 export function objectFromForm(form) {
   const fd = new FormData(form);
   return Object.fromEntries([...fd.entries()]);

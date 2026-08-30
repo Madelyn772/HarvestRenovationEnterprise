@@ -1,4 +1,4 @@
-import { state, money, num, sortDateAsc, sortDateDesc, uid, lookupClientName, autoNumber, numberInUse, findClient, objectFromForm, todayISO, buildMailto, formatDate, DEFAULT_INVOICE_TERMS } from './state.js';
+import { state, money, num, sortDateAsc, sortDateDesc, uid, lookupClientName, autoNumber, numberInUse, findClient, objectFromForm, todayInputValue, addDaysToInputDate, buildMailto, formatDate, DEFAULT_INVOICE_TERMS } from './state.js';
 import { el, escapeHtml, emptyHtml, deleteBtn, deletableStackItem, stackItem, showToast } from './dom.js';
 import { upsertArray, addActivity, saveStore } from './store.js';
 import { populateClientSelects, populateEstimateSelects, renderAll, setView } from './navigation.js';
@@ -481,19 +481,12 @@ export function renderInvoiceBalanceCallout() {
   }
 }
 
-function addDaysISO(dateStr, days) {
-  const d = dateStr ? new Date(dateStr) : new Date();
-  if (Number.isNaN(d.getTime())) return '';
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 // Fill blank defaults when the Invoicing view opens on a fresh form.
 export function hydrateInvoiceForm() {
   const dateInput = document.getElementById('invoiceDate');
-  if (dateInput && !dateInput.value) dateInput.value = todayISO();
+  if (dateInput && !dateInput.value) dateInput.value = todayInputValue();
   const dueInput = document.getElementById('invoiceDueDate');
-  if (dueInput && !dueInput.value) dueInput.value = addDaysISO(dateInput ? dateInput.value : todayISO(), 15);
+  if (dueInput && !dueInput.value) dueInput.value = addDaysToInputDate(dateInput ? dateInput.value : todayInputValue(), 15);
   const numInput = document.getElementById('invoiceNumber');
   if (numInput && !numInput.value) numInput.value = autoNumber('INV');
   const termsInput = document.getElementById('invoiceTerms');
@@ -587,8 +580,8 @@ export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {})
   el.invoiceForm.phone.value = client?.phone || estimate.billingPhone || '';
   el.invoiceForm.email.value = client?.email || estimate.billingEmail || '';
   el.invoiceForm.address.value = client?.address || estimate.billingAddress || '';
-  if (invDate && !invDate.value) invDate.value = todayISO();
-  if (dueInput && !dueInput.value) dueInput.value = addDaysISO(invDate ? invDate.value : todayISO(), 15);
+  if (invDate && !invDate.value) invDate.value = todayInputValue();
+  if (dueInput && !dueInput.value) dueInput.value = addDaysToInputDate(invDate ? invDate.value : todayInputValue(), 15);
   if (termsInput && !termsInput.value) termsInput.value = DEFAULT_INVOICE_TERMS;
   const feesEl = document.getElementById('invoicePermitsFees');
   const taxEl = document.getElementById('invoiceTaxPercent');
