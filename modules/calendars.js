@@ -1,5 +1,5 @@
 import { state, config, isAdmin } from './state.js';
-import { el, escapeHtml, emptyHtml, updateChip, showToast } from './dom.js';
+import { el, escapeHtml, updateChip, showToast } from './dom.js';
 import { safeRpc } from './auth.js';
 
 export function renderCalendars() {
@@ -14,11 +14,6 @@ export function renderCalendars() {
     el.companyCalendarWrap.className = 'calendar-embed-shell empty-state';
     el.companyCalendarWrap.innerHTML = 'Add the shared company calendar embed URL in settings.';
   }
-  el.teamCalendarList.innerHTML = state.teamProfiles.length ? state.teamProfiles.map(profile => {
-    const embed = profile.google_calendar_embed_url;
-    const label = profile.calendar_label || profile.full_name || profile.email;
-    return `<div class="stack-item"><h4>${escapeHtml(label)}</h4><p class="muted">${escapeHtml(profile.email || '')}</p>${embed ? `<div class="calendar-embed-shell" style="min-height:280px;margin-top:.8rem;"><iframe class="calendar-frame" style="height:280px" src="${escapeHtml(embed)}" loading="lazy"></iframe></div>` : '<p class="muted">No individual calendar embed saved yet.</p>'}</div>`;
-  }).join('') : emptyHtml('No active employees available.');
 }
 
 export async function handleCompanyCalendarSave(event) {

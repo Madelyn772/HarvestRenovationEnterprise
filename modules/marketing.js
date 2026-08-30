@@ -374,11 +374,19 @@ function renderYelpDuo() {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setHours(0, 0, 0, 0);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  const yelp = (state.store.leads || []).filter(l => (l.source || '') === 'Yelp');
-  const week = yelp.filter(l => { const iso = l.createdAt || l.stageChangedAt; return iso && new Date(iso) >= startOfWeek; }).length;
+  const daysSinceMonday = (now.getDay() + 6) % 7;
+  startOfWeek.setDate(now.getDate() - daysSinceMonday);
+  const yelp = (state.store.leads || []).filter(lead => {
+    const linkedSource = lead.clientId ? state.store.clients.find(client => client.id === lead.clientId)?.source : '';
+    return String(lead.source || linkedSource || '').trim().toLowerCase() === 'yelp';
+  });
+  const week = yelp.filter(lead => {
+    const iso = lead.createdAt || lead.stageChangedAt || lead.preferredDate;
+    const date = iso ? new Date(iso) : null;
+    return date && !Number.isNaN(date.getTime()) && date >= startOfWeek && date <= now;
+  }).length;
   const month = yelp.filter(l => {
-    const iso = l.createdAt || l.stageChangedAt;
+    const iso = l.createdAt || l.stageChangedAt || l.preferredDate;
     const d = iso ? new Date(iso) : null;
     return d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
   }).length;

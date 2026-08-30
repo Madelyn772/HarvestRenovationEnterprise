@@ -547,6 +547,8 @@ export function setView(view) {
   state.currentView = view;
   document.querySelectorAll('.nav-btn[data-view]').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
   document.querySelectorAll('.view').forEach(panel => panel.classList.toggle('active', panel.id === `${view}View`));
+  window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  document.querySelector('.main')?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   const titleMap = {
     dashboard: ['Executive Dashboard', 'Corporate CRM, estimating, operations, and analytics in one interface.'],
     crm: ['CRM', 'Contacts, deal pipeline, and relationship history.'],
@@ -566,6 +568,7 @@ export function setView(view) {
   const [title, subtitle] = titleMap[view] || ['Harvest Portal', ''];
   el.pageTitle.textContent = title;
   el.pageSubtitle.textContent = subtitle;
+  el.pageTitle.closest('.topbar')?.classList.toggle('hidden', view === 'calendars');
   const mt = document.getElementById('mobilePageTitle');
   if (mt) mt.textContent = el.pageTitle.textContent;
   // The shared top-bar actions (Open Main Website / Create Estimate) aren't

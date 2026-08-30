@@ -201,7 +201,7 @@ export function buildBrandedDocHtml(opts) {
   const mobileShareText = ['ESTIMATE', 'INVOICE'].includes(kind)
     ? `Hi ${billedFirstName},\n\nYour ${shareDocumentLabel.toLowerCase()} is ready! I’ve attached it for you to review.\n\nIf you have any questions, would like to make any adjustments, or want to go over any of the details, please feel free to reach out. We’re happy to work with you and make sure everything fits what you have in mind.\n\nWe’d love the opportunity to bring your project to life and look forward to working with you!\n\nBest regards,\n${shareSenderName}\nHarvest Renovation`
     : '';
-  const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
+  const billLines = [bill.name, bill.phone, bill.email, bill.address].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
   const scopeText = String(scope || '').trim();
   const scopeRow = (kind === 'ESTIMATE' || kind === 'INVOICE') && scopeText

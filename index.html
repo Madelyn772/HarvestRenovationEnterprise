@@ -11,7 +11,7 @@
   <meta property="og:description" content="CRM, estimating, invoicing, scheduling, and analytics in one secure workspace." />
   <meta property="og:type" content="website" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f0c08'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='40' font-weight='700' text-anchor='middle' fill='%23d8a657'%3EH%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="./styles.css?v=20260829-84" />
+  <link rel="stylesheet" href="./styles.css?v=20260829-85" />
   <script>
     try {
       var savedTheme = localStorage.getItem('harvest-portal-theme');
@@ -429,7 +429,6 @@
             </select></label>
             <label><span>Lead date *</span><input name="leadDate" id="leadDate" type="date" required /></label>
             <label><span>Estimated value ($)</span><input name="estimatedValue" type="number" min="0" step="0.01" /></label>
-            <label><span>Area</span><input name="area" /></label>
             <label><span>Preferred date</span><input name="preferredDate" type="date" /></label>
             <label><span>Follow-up date</span><input name="followUpDate" type="date" /></label>
             <label class="full"><span>Notes</span><textarea name="notes" rows="4"></textarea></label>
@@ -1227,7 +1226,7 @@
               <div class="form-actions full"><button type="submit" class="primary-btn">Save KPI Row</button></div>
             </form>
           </article>
-          <article class="card">
+          <article class="card marketing-flat-card">
             <div class="card-head"><div><p class="eyebrow">Web Tracking</p><h3>Main site and landing page analytics</h3></div></div>
             <div class="stack">
               <div class="callout success"><strong>Supported:</strong> this rewrite is ready to display main-site and landing-page visits once the optional tracking SQL and public tracking snippet are installed.</div>
@@ -1239,22 +1238,18 @@
         </div>
         <div class="grid two">
           <article class="card"><div class="card-head"><div><p class="eyebrow">Campaign Performance</p><h3>Saved KPI rows</h3></div></div><div id="campaignList" class="stack"></div></article>
-          <article class="card"><div class="card-head"><div><p class="eyebrow">Lead Source Mix</p><h3>Top sources from CRM</h3></div></div><div class="metric-duo"><div><span>Yelp leads this week</span><strong id="yelpThisWeek">0</strong></div><div><span>Yelp leads this month</span><strong id="yelpThisMonth">0</strong></div></div><div id="leadSourceSummary" class="stack"></div></article>
+          <article class="card marketing-flat-card"><div class="card-head"><div><p class="eyebrow">Lead Source Mix</p><h3>Top sources from CRM</h3></div></div><div class="metric-duo"><div><span>Yelp leads this week</span><strong id="yelpThisWeek">0</strong></div><div><span>Yelp leads this month</span><strong id="yelpThisMonth">0</strong></div></div><div id="leadSourceSummary" class="stack"></div></article>
         </div>
       </section>
 
       <section class="view" id="calendarsView">
-        <div class="grid two">
-          <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Company Calendar</p><h3>Shared schedule</h3></div><span class="badge" id="companyCalendarBadge">Loading</span></div>
-            <div id="companyCalendarWrap" class="calendar-embed-shell empty-state">Add the shared company calendar embed URL in settings.</div>
-          </article>
-          <article class="card">
-            <div class="card-head"><div><p class="eyebrow">Team Calendars</p><h3>Employee schedules</h3></div></div>
-            <div id="teamCalendarList" class="stack"></div>
-          </article>
-        </div>
-        <article class="card"><div class="card-head"><div><p class="eyebrow">Upcoming Internal Calendar Items</p><h3>Portal schedule list</h3></div></div><div id="upcomingFeed" class="stack"></div></article>
+        <article class="calendar-company-card">
+          <div class="calendar-page-head">
+            <div><p class="eyebrow">Company Calendar</p><h2>Company Calendar</h2><p class="muted">The shared Harvest Renovation schedule for appointments, projects, and team availability.</p></div>
+            <span class="badge" id="companyCalendarBadge">Loading</span>
+          </div>
+          <div id="companyCalendarWrap" class="calendar-embed-shell empty-state">Add the shared company calendar embed URL in settings.</div>
+        </article>
       </section>
 
       <section class="view" id="teamView">
@@ -1529,7 +1524,7 @@
     </div>
   </template>
 
-  <script type="module" src="./app-bootstrap.js?v=20260829-84"></script>
+  <script type="module" src="./app-bootstrap.js?v=20260829-85"></script>
 <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>

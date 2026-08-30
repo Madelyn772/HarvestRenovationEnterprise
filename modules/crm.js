@@ -341,7 +341,7 @@ export async function handleLeadSave(event) {
     status: newStatus,
     source: data.source,
     estimatedValue: num(data.estimatedValue),
-    area: data.area,
+    area: data.area || existing?.area || '',
     preferredDate: data.preferredDate,
     followUpDate: data.followUpDate || '',
     notes: data.notes,
@@ -384,7 +384,7 @@ export function loadLeadIntoForm(id) {
   el.leadForm.source.value = lead.source || '';
   el.leadForm.status.value = normalizeLeadStatus(lead.status);
   el.leadForm.estimatedValue.value = lead.estimatedValue || '';
-  el.leadForm.area.value = lead.area || '';
+  if (el.leadForm.area) el.leadForm.area.value = lead.area || '';
   el.leadForm.preferredDate.value = lead.preferredDate || '';
   el.leadForm.followUpDate.value = lead.followUpDate || '';
   el.leadForm.notes.value = lead.notes || '';
