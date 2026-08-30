@@ -3233,28 +3233,42 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   display: grid;
   grid-template-columns: 1.2fr .5fr 1.5fr 1fr 2.2rem;
   gap: .5rem;
-  padding: .35rem .1rem;
+  padding: .55rem .65rem;
   font-size: .7rem;
   letter-spacing: .08em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #caa05a;
+  background: #0f0c08;
+  border-radius: 8px 8px 0 0;
+}
+.payment-schedule-head span:nth-child(2) { text-align: center; }
+.payment-schedule-head span:nth-child(4) { text-align: right; }
+#contractPayments {
+  gap: 0;
+  border: 1px solid #eae6dc;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
 }
 .payment-schedule-row {
   display: grid;
   grid-template-columns: 1.2fr .5fr 1.5fr 1fr 2.2rem;
   gap: .5rem;
   align-items: center;
-  padding: .4rem .1rem;
+  padding: .55rem .65rem;
   border-top: 1px solid var(--line);
   position: relative;
 }
-.payment-schedule-row input { padding: .45rem .55rem; }
-.payment-schedule-row .pay-amount { font-weight: 700; text-align: right; }
+.payment-schedule-row:first-child { border-top: 0; }
+.payment-schedule-field { display: block; min-width: 0; }
+.payment-schedule-row input { width: 100%; min-width: 0; padding: .45rem .55rem; }
+.payment-field-label { display: none; }
+.payment-schedule-amount { display: flex; justify-content: flex-end; min-width: 0; }
+.payment-schedule-row .pay-amount { font-weight: 700; text-align: right; white-space: nowrap; }
 .contract-payments-shell { margin-bottom: .5rem; }
-.theme-light .main .payment-schedule-head { color: #7a6a4f; }
 
 @media (max-width: 768px) {
   .payment-schedule-head { display: none; }
+  #contractPayments { border: 0; }
   .payment-schedule-row {
     grid-template-columns: 1fr 1fr;
     padding: .75rem;
@@ -3263,8 +3277,13 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
     margin-bottom: .5rem;
     background: rgba(255,255,255,.03);
   }
-  .payment-schedule-row .pay-amount { grid-column: 2; text-align: right; }
-  .payment-schedule-row .remove-pay-row { position: absolute; top: .4rem; right: .4rem; }
+  .payment-schedule-field:first-child { grid-column: 1 / -1; grid-row: 1; }
+  .payment-schedule-field:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .payment-schedule-field:nth-child(3) { grid-column: 1 / -1; grid-row: 3; }
+  .payment-field-label { display: block; margin-bottom: .3rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .payment-schedule-amount { grid-column: 2; grid-row: 2; flex-direction: column; justify-content: flex-end; text-align: right; }
+  .payment-schedule-amount .payment-field-label { text-align: right; }
+  .payment-schedule-row .line-row-actions { position: absolute; top: .4rem; right: .4rem; }
 }
 
 /* ============================================================
@@ -3710,7 +3729,8 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .invoice-summary .isum-total span { color: #1f1a12; font-weight: 700; font-size: 1.05rem; }
 .invoice-summary .isum-total strong { font-size: 1.35rem; }
 .invoice-summary .isum-balance,
-.estimate-summary-card .isum-total {
+.estimate-summary-card .isum-total,
+.contract-summary-card .isum-total {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -3722,9 +3742,11 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   border: 1px solid #ecdcbd;
 }
 .invoice-summary .isum-balance span,
-.estimate-summary-card .isum-total span { color: #8a6520; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; }
+.estimate-summary-card .isum-total span,
+.contract-summary-card .isum-total span { color: #8a6520; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; }
 .invoice-summary .isum-balance strong,
-.estimate-summary-card .isum-total strong { color: #b07d2a; font-size: 1.25rem; }
+.estimate-summary-card .isum-total strong,
+.contract-summary-card .isum-total strong { color: #b07d2a; font-size: 1.25rem; }
 .invoice-summary .isum-balance.is-paid { background: #eaf5ea; border-color: #cfe6cf; }
 .invoice-summary .isum-balance.is-paid span { color: #2e7d32; }
 .invoice-summary .isum-balance.is-paid strong { color: #2e7d32; }
@@ -3734,7 +3756,33 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
 .theme-dark .invoice-summary .isum-total span { color: #f0e2c4; }
 .theme-dark .invoice-summary .isum-divide { background: #3a342a; }
 .theme-dark .invoice-summary .isum-balance,
-.theme-dark .estimate-summary-card .isum-total { background: #2c2318; border-color: #4a3d29; }
+.theme-dark .estimate-summary-card .isum-total,
+.theme-dark .contract-summary-card .isum-total { background: #2c2318; border-color: #4a3d29; }
+
+.contract-summary-card .contract-balance-row strong { font-size: 1.1rem; }
+.contract-schedule-summary { margin: .25rem 0 .65rem; color: #7a7060; font-size: .78rem; line-height: 1.4; }
+.contract-summary-card .contract-status-row { border-top: 1px solid #ece8de; }
+.contract-summary-card .dcv-status { color: #8a6520; background: #faf3e6; border: 1px solid #e6d3ab; border-radius: 999px; padding: .18rem .55rem; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase; }
+.theme-dark .contract-summary-card,
+html:not(.theme-light) .contract-summary-card { background: #211c15; border-color: #3a342a; }
+.theme-dark .contract-summary-card .isum-row span,
+html:not(.theme-light) .contract-summary-card .isum-row span { color: #9a8f78; }
+.theme-dark .contract-summary-card .isum-row strong,
+.theme-dark .contract-summary-card .isum-total span,
+html:not(.theme-light) .contract-summary-card .isum-row strong,
+html:not(.theme-light) .contract-summary-card .isum-total span { color: #f0e2c4; }
+.theme-dark .contract-summary-card .isum-divide,
+html:not(.theme-light) .contract-summary-card .isum-divide { background: #3a342a; }
+.theme-dark .contract-summary-card .isum-total,
+html:not(.theme-light) .contract-summary-card .isum-total { background: #2c2318; border-color: #4a3d29; }
+.theme-dark .contract-summary-card .isum-total strong,
+html:not(.theme-light) .contract-summary-card .isum-total strong { color: #d7a857; }
+.theme-dark .contract-schedule-summary,
+html:not(.theme-light) .contract-schedule-summary { color: #9a8f78; }
+.theme-dark .contract-summary-card .contract-status-row,
+html:not(.theme-light) .contract-summary-card .contract-status-row { border-top-color: #3a342a; }
+.theme-dark .contract-summary-card .dcv-status,
+html:not(.theme-light) .contract-summary-card .dcv-status { color: #e9d8b6; background: #2c2318; border-color: #4a3d29; }
 
 @media (max-width: 900px) {
   .doc-cards-3 { grid-template-columns: 1fr; }

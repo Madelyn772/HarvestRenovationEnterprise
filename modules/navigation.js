@@ -518,6 +518,7 @@ export function getStoredTheme() {
 export function applyTheme(theme) {
   const isLight = theme !== 'dark';
   document.documentElement.classList.toggle('theme-light', isLight);
+  document.documentElement.classList.toggle('theme-dark', !isLight);
   try {
     localStorage.setItem(THEME_KEY, isLight ? 'light' : 'dark');
   } catch {}

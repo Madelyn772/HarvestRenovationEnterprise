@@ -49,24 +49,20 @@ export function readPaymentScheduleFromDom() {
 }
 
 export function addPaymentScheduleRow(item = {}) {
+  const template = document.getElementById('contractPaymentRowTemplate');
   const wrap = getContractPaymentsEl();
-  if (!wrap) return;
-  const node = document.createElement('div');
-  node.className = 'payment-schedule-row';
+  if (!template || !wrap) return;
+  const node = template.content.firstElementChild.cloneNode(true);
   node.dataset.itemId = item.id || uid('PMT');
-  node.innerHTML = `
-    <input name="payLabel" placeholder="Milestone label" value="${escapeHtml(item.label || '')}" />
-    <input name="payPercent" type="number" min="0" max="100" step="1" placeholder="%" value="${item.percent != null ? item.percent : ''}" />
-    <input name="payDue" placeholder="When due" value="${escapeHtml(item.dueDescription || '')}" />
-    <span class="pay-amount" data-pay-amount>$0.00</span>
-    <button type="button" class="icon-btn remove-pay-row" aria-label="Remove">×</button>
-  `;
+  node.querySelector('[name="payLabel"]').value = item.label || '';
+  node.querySelector('[name="payPercent"]').value = item.percent != null ? item.percent : '';
+  node.querySelector('[name="payDue"]').value = item.dueDescription || '';
   const refresh = () => recomputeContractTotals();
   node.querySelectorAll('input').forEach(inp => {
     inp.addEventListener('input', refresh);
     inp.addEventListener('change', refresh);
   });
-  node.querySelector('.remove-pay-row').addEventListener('click', () => { node.remove(); recomputeContractTotals(); });
+  node.querySelector('.remove-contract-payment-row').addEventListener('click', () => { node.remove(); recomputeContractTotals(); });
   wrap.appendChild(node);
 }
 
@@ -78,7 +74,7 @@ export function collectContractFromForm() {
   const depositPercent = num(form.depositPercent?.value);
   const depositAmount = contractAmount * (depositPercent / 100);
   const paymentSchedule = readPaymentScheduleFromDom();
-  paymentSchedule.forEach(p => { p.amount = contractAmount * (p.percent / 100); });
+  paymentSchedule.forEach(p => { p.amount = Math.round(contractAmount * (p.percent / 100) * 100) / 100; });
   const linkedClient = data.clientId && data.clientId !== '__new__' ? findClient(data.clientId) : null;
   return {
     id: data.contractId || '',
@@ -123,12 +119,17 @@ export function recomputeContractTotals() {
 export function renderContractSummary(contract) {
   if (!contract || !el.contractSummary) return;
   const depPct = num(contract.depositPercent);
+  const schedule = contract.paymentSchedule || [];
+  const scheduleLabel = schedule.length
+    ? `${schedule.length} payment${schedule.length === 1 ? '' : 's'}: ${schedule.map(payment => `${num(payment.percent)}%`).join(' / ')}`
+    : 'No payment milestones';
   el.contractSummary.innerHTML = `
-    <div class="isum-row"><span>Contract Amount</span><strong>${money.format(num(contract.contractAmount))}</strong></div>
+    <div class="isum-row isum-total"><span>Total</span><strong>${money.format(num(contract.contractAmount))}</strong></div>
     <div class="isum-row isum-muted"><span>Deposit (${depPct}%)</span><strong>${money.format(num(contract.depositAmount))}</strong></div>
     <div class="isum-divide"></div>
-    <div class="isum-row isum-total"><span>Balance Due</span><strong>${money.format(num(contract.balance))}</strong></div>
-    <div class="isum-row"><span>Status</span><strong class="dcv-status">${escapeHtml(contract.status || 'Draft')}</strong></div>`;
+    <div class="isum-row contract-balance-row"><span>Balance Due</span><strong>${money.format(num(contract.balance))}</strong></div>
+    <p class="contract-schedule-summary">${escapeHtml(scheduleLabel)}</p>
+    <div class="isum-row contract-status-row"><span>Status</span><strong class="dcv-status">${escapeHtml(contract.status || 'Draft')}</strong></div>`;
   renderContractCardViews(contract);
 }
 
@@ -221,7 +222,7 @@ export function applyContractLock(locked) {
   if (form.depositPercent) form.depositPercent.disabled = locked;
   if (form.status) form.status.disabled = locked;
   document.querySelectorAll('#contractPayments input').forEach(input => { input.readOnly = locked; });
-  document.querySelectorAll('#contractPayments .remove-pay-row').forEach(button => { button.disabled = locked; });
+  document.querySelectorAll('#contractPayments .remove-contract-payment-row, #contractPayments .line-row-menu-btn').forEach(button => { button.disabled = locked; });
   const addPaymentButton = document.getElementById('addContractPayment');
   if (addPaymentButton) addPaymentButton.disabled = locked;
   form.classList.toggle('form-locked', locked);

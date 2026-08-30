@@ -50,7 +50,7 @@ export function buildBrandedDocHtml(opts) {
     validUntil = '', dueDate = '', preparedBy = '',
     subtotal = null, taxPercent = 0, taxAmount = 0, permitsFees = 0, finalPay = 0,
     paymentsReceived = 0, paymentsRows = [],
-    terms = '', signatureBlockEnabled = false, commercialJob = false, itemizedMode = true
+    paymentScheduleRows = [], terms = '', signatureBlockEnabled = false, commercialJob = false, itemizedMode = true
   } = opts;
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
@@ -90,6 +90,9 @@ export function buildBrandedDocHtml(opts) {
   const summaryHtml = summaryRows.map(([l, v]) => `<div class="sumrow"><span>${escapeHtml(l)}</span><span>${v}</span></div>`).join('');
   const payTable = (paymentsRows && paymentsRows.length)
     ? `<div class="items paytable"><div class="ihead pay"><span>Date</span><span>Amount</span><span>Method</span><span>Reference</span></div><div class="ibody">${paymentsRows.map(p => `<div class="item-row pay"><div>${escapeHtml(formatDate(p.date) || '—')}</div><div>${money.format(num(p.amount))}</div><div>${escapeHtml(p.method || '')}</div><div>${escapeHtml(p.reference || '')}</div></div>`).join('')}</div></div>`
+    : '';
+  const paymentScheduleTable = (paymentScheduleRows && paymentScheduleRows.length)
+    ? `<div class="items schedule-table"><div class="section-title">Payment Schedule</div><div class="ihead schedule"><span>Milestone</span><span>%</span><span>When Due</span><span>Amount</span></div><div class="ibody">${paymentScheduleRows.map(p => `<div class="item-row schedule"><div>${escapeHtml(p.label || '')}</div><div>${num(p.percent)}%</div><div>${escapeHtml(p.dueDescription || '')}</div><div>${money.format(num(p.amount))}</div></div>`).join('')}</div></div>`
     : '';
   const termsBlock = terms ? `<div class="terms"><div class="band">Terms &amp; Conditions</div><div class="tbody">${termsToHtml(terms)}</div></div>` : '';
   const sigsBlock = signatureBlockEnabled ? `<div class="sigs">
@@ -148,13 +151,21 @@ export function buildBrandedDocHtml(opts) {
     .items .ibody{border:1px solid #eadfce;border-top:none;min-height:240px}
     .items.paytable{margin-top:14px}
     .items.paytable .ibody{min-height:0}
+    .items.schedule-table .ibody{min-height:0}
+    .items .section-title{background:#0f0c08;color:#caa05a;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #3d3020}
     .items .ihead.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
     .items .ihead.pay span:last-child{text-align:left}
+    .items .ihead.schedule{grid-template-columns:1.2fr 54px 1.5fr 110px}
+    .items .ihead.schedule span:nth-child(2){text-align:center}
     .item-row{display:grid;grid-template-columns:1fr 150px;border-bottom:1px solid #f0e8da}
     .item-row.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
     .item-row.lump-sum{grid-template-columns:1fr}
     .item-row.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
     .item-row.pay div{padding:9px 12px;font-size:12px;color:#2c2419}
+    .item-row.schedule{grid-template-columns:1.2fr 54px 1.5fr 110px}
+    .item-row.schedule div{padding:9px 12px;font-size:12px;color:#2c2419}
+    .item-row.schedule div:nth-child(2){text-align:center}
+    .item-row.schedule div:last-child{text-align:right;font-weight:600}
     .item-row .desc{padding:11px 12px;font-size:13px;color:#2c2419;white-space:pre-wrap}
     .item-row .amt{padding:11px 12px;font-size:13px;font-weight:600;text-align:right;color:#2c2419}
     .item-row .qty,.item-row .unit,.item-row .price{padding:11px 8px;font-size:12px;color:#2c2419}
@@ -220,6 +231,7 @@ export function buildBrandedDocHtml(opts) {
         <div class="ibody">${scopeBlock}${itemRows}</div>
       </div>
       ${payTable}
+      ${paymentScheduleTable}
       <div class="foot">
         <div class="foot-left">
           <div class="thanks">${escapeHtml(BRAND.thankYou)}</div>
@@ -376,31 +388,25 @@ export function buildContractDocHtml(contract) {
     scope: contract.scope,
     comments: contract.notes || '',
     rows: [],
-    balanceLabel: 'CONTRACT TOTAL',
+    balanceLabel: 'TOTAL',
     balance: num(contract.contractAmount),
     depositPercent: num(contract.depositPercent),
     depositAmount: num(contract.depositAmount),
     preparedBy: contract.user || currentUserName(),
-    subtotal: num(contract.contractAmount),
+    subtotal: null,
     taxPercent: 0,
     taxAmount: 0,
+    paymentScheduleRows: contract.paymentSchedule || [],
     terms: contract.terms || DEFAULT_CONTRACT_TERMS,
     signatureBlockEnabled: true
   });
 }
 
 export function printContract(contract) {
-  const baseHtml = buildContractDocHtml(contract);
-  const payRows = (contract.paymentSchedule || []).map((p, i) => {
-    return `<div class="item-row"><div class="desc">${i + 1}. ${escapeHtml(p.label || '')}<div class="line-sub">${escapeHtml(p.dueDescription || '')}</div></div><div class="amt">${num(p.percent)}% — ${money.format(num(p.amount))}</div></div>`;
-  }).join('');
-  const paySection = payRows
-    ? `<div class="items" style="margin-top:18px"><div class="ihead"><span>Payment Schedule</span><span>Amount</span></div><div class="ibody" style="min-height:0">${payRows}</div></div>`
-    : '';
-  const finalHtml = baseHtml.replace('<div class="terms"><div class="band">Terms', paySection + '<div class="terms"><div class="band">Terms');
-  saveDocument('contract', contract.contractNumber || contract.id || autoNumber('CON'), contract.clientName, contract.contractAmount, finalHtml, contract.user || currentUserName());
+  const html = buildContractDocHtml(contract);
+  saveDocument('contract', contract.contractNumber || contract.id || autoNumber('CON'), contract.clientName, contract.contractAmount, html, contract.user || currentUserName());
   renderDocuments();
-  openPrintWindow(finalHtml);
+  openPrintWindow(html);
 }
 
 export function buildChangeOrderDocHtml(co) {
