@@ -3010,7 +3010,17 @@ html:not(.theme-light) .sidebar {
 .contacts-table th, .contacts-table td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--line); font-size: .9rem; vertical-align: middle; }
 .contacts-table .contacts-head th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .contacts-table .link-card { background: transparent; border: 0; color: inherit; cursor: pointer; font-weight: 600; text-align: left; padding: 0; text-decoration: underline; text-underline-offset: 2px; }
-.contacts-table td .ghost-btn { padding: .3rem .55rem; margin-right: .3rem; min-height: 0; }
+.contact-actions-cell { width: 42px; text-align: right !important; }
+.contact-menu-trigger { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; font-size: 1.35rem; line-height: 1; }
+.contact-menu-trigger:hover, .contact-menu-trigger:focus-visible { border-color: var(--line); background: rgba(202,160,90,.12); outline: none; }
+.contact-action-menu { position: absolute; z-index: 1250; display: flex; flex-direction: column; gap: .1rem; width: 180px; padding: .3rem; border: 1px solid #caa05a; border-radius: 8px; background: #17130e; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+.contact-action-item { width: 100%; padding: .55rem .65rem; border: 0; border-radius: 5px; background: transparent; color: #f4e9d4; cursor: pointer; font-size: .85rem; text-align: left; }
+.contact-action-item:hover, .contact-action-item:focus-visible { background: rgba(217,174,107,.16); outline: none; }
+.contact-action-delete { color: #e06a6a; border-top: 1px solid rgba(224,106,106,.25); border-radius: 0 0 5px 5px; }
+.theme-light .contact-action-menu { background: #fffdf8; border-color: #b98b42; box-shadow: 0 12px 30px rgba(31,26,20,.2); }
+.theme-light .contact-action-item { color: #1f1a14; }
+.theme-light .contact-action-item:hover, .theme-light .contact-action-item:focus-visible { background: rgba(176,125,42,.12); }
+.theme-light .contact-action-delete { color: #b3261e; }
 .contact-name-wrap { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
 .pipeline-contact-badge {
   display: inline-flex;
@@ -3072,6 +3082,7 @@ html:not(.theme-light) .crm-dialog { background: #17130e; color: #f4e9d4; border
   .contacts-table td::before { content: attr(data-label); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); text-align: left; }
   .contacts-table td[data-label="Name"] { text-align: left; }
   .contacts-table td[data-label="Name"] .contact-name-wrap { justify-content: flex-end; }
+  .contacts-table .contact-actions-cell { align-items: center; }
 }
 
 /* ============================================================

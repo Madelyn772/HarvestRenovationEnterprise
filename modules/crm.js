@@ -278,6 +278,7 @@ export async function handleLeadSave(event) {
     clientName: data.clientName || lookupClientName(data.clientId) || existing?.clientName || '',
     phone: data.phone,
     email: data.email,
+    address: existing?.address || '',
     service: data.service,
     status: newStatus,
     source: data.source,
@@ -725,6 +726,72 @@ export function moveDealToStage(id, stage) {
   if (stage === 'Lost') captureLostReason(lead);
 }
 
+export function addContactAsNewLead(contactId) {
+  const contact = state.store.clients.find(client => client.id === contactId);
+  if (!contact) return;
+  const now = new Date().toISOString();
+  const lead = {
+    id: uid('L'),
+    clientId: contact.id,
+    contactId: contact.id,
+    clientName: contact.name || '',
+    phone: contact.phone || '',
+    email: contact.email || '',
+    address: contact.address || '',
+    service: '',
+    status: 'New Lead',
+    source: 'Repeat Client',
+    estimatedValue: 0,
+    area: contact.serviceArea || '',
+    preferredDate: '',
+    followUpDate: '',
+    notes: '',
+    stageChangedAt: now,
+    createdAt: now,
+    lastContactedAt: '',
+    owner: state.profile?.full_name || ''
+  };
+  state.store.leads.unshift(lead);
+  if (!contact.leadId) contact.leadId = lead.id;
+  addActivity(`Added ${contact.name || 'contact'} as a new repeat-client lead.`, 'Leads');
+  saveStore('Contact added as new lead');
+  populateClientSelects();
+  renderAll();
+  showToast('New lead added to the pipeline.', 'success');
+}
+
+let activeContactMenu = null;
+function closeContactMenu() {
+  if (activeContactMenu) { activeContactMenu.remove(); activeContactMenu = null; }
+  document.removeEventListener('click', closeContactMenu);
+}
+
+function openContactMenu(contactId, anchor) {
+  closeContactMenu();
+  const menu = document.createElement('div');
+  menu.className = 'contact-action-menu';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = `
+    <button type="button" class="contact-action-item" role="menuitem" data-action="add-lead">Add as New Lead</button>
+    <button type="button" class="contact-action-item" role="menuitem" data-action="edit">Edit</button>
+    <button type="button" class="contact-action-item contact-action-delete" role="menuitem" data-action="delete">Delete</button>`;
+  document.body.appendChild(menu);
+  const rect = anchor.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + window.scrollY + 4}px`;
+  menu.style.left = `${Math.max(8, Math.min(rect.right + window.scrollX - 180, window.innerWidth - 188))}px`;
+  menu.addEventListener('click', event => {
+    const item = event.target.closest('.contact-action-item');
+    if (!item) return;
+    event.stopPropagation();
+    closeContactMenu();
+    if (item.dataset.action === 'add-lead') addContactAsNewLead(contactId);
+    if (item.dataset.action === 'edit') openContactDialog(contactId);
+    if (item.dataset.action === 'delete') softDelete('clients', contactId);
+  });
+  activeContactMenu = menu;
+  setTimeout(() => document.addEventListener('click', closeContactMenu), 0);
+}
+
 export function renderContactsTable() {
   const tbody = el.contactsTable;
   if (!tbody) return;
@@ -749,12 +816,15 @@ export function renderContactsTable() {
       <td data-label="Email">${emailLink(c.email)}</td>
       <td data-label="Deals">${linked.length}</td>
       <td data-label="Last contact">${lastIso ? escapeHtml(formatDate(lastIso)) : '—'}</td>
-      <td data-label="Actions"><button type="button" class="ghost-btn contact-edit" data-client-id="${c.id}">Edit</button>${deleteBtn('clients', c.id)}</td>
+      <td data-label="Actions" class="contact-actions-cell"><button type="button" class="contact-menu-trigger" data-client-id="${c.id}" aria-label="Actions for ${escapeHtml(c.name || 'contact')}" aria-haspopup="menu" title="Contact actions">⋮</button></td>
     </tr>`;
   }).join('');
   tbody.innerHTML = header + rows;
   tbody.querySelectorAll('.contact-select').forEach(btn => btn.addEventListener('click', () => { state.selectedClientId = btn.dataset.clientId; renderClientDetail(); }));
-  tbody.querySelectorAll('.contact-edit').forEach(btn => btn.addEventListener('click', () => openContactDialog(btn.dataset.clientId)));
+  tbody.querySelectorAll('.contact-menu-trigger').forEach(btn => btn.addEventListener('click', event => {
+    event.stopPropagation();
+    openContactMenu(btn.dataset.clientId, btn);
+  }));
 }
 
 export function openContactDialog(clientId) {
