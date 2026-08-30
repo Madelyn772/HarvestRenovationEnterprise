@@ -546,11 +546,7 @@ export async function handleNoteSave(event) {
 export function fillInvoiceFromEstimate(estimateId, { switchView = false } = {}) {
   const estimate = state.store.estimates.find(item => item.id === estimateId);
   if (!estimate) return;
-  // Chain guard: only signed (Approved) estimates can be invoiced, and only once.
-  if (estimate.status !== 'Approved') {
-    showToast('Estimate must be signed by the client before it can be invoiced.', 'error');
-    return;
-  }
+  // Prevent duplicate invoices for the same estimate regardless of its status.
   const existing = state.store.invoices.find(i => i.relatedEstimate === estimate.id);
   if (existing) {
     setView('invoicing');
