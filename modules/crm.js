@@ -134,6 +134,7 @@ export async function handleClientSave(event) {
   }
   const payload = { ...existing, id, name: data.name, phone: data.phone, email: data.email, serviceArea: data.serviceArea, address: data.address, source: data.source, tags: data.tags, notes: data.notes };
   upsertArray('clients', payload, 'id');
+  if (existing) syncContactToLinkedLeads(payload);
   state.selectedClientId = id;
   addActivity(`Saved client ${payload.name || 'record'}.`, 'CRM');
   saveStore('Client saved');
@@ -178,6 +179,48 @@ function normalizedPhone(value) {
 
 function normalizedEmail(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function linkedContactForLead(lead) {
+  if (!lead) return null;
+  const linkedId = lead.contactId || lead.clientId || '';
+  return state.store.clients.find(contact => contact.id === linkedId) ||
+    state.store.clients.find(contact => contact.leadId === lead.id) || null;
+}
+
+function copyNonemptyFields(source, target, fields) {
+  fields.forEach(([sourceKey, targetKey]) => {
+    const value = source[sourceKey];
+    if (value != null && String(value).trim()) target[targetKey] = value;
+  });
+}
+
+export function syncLeadToLinkedContact(lead) {
+  const contact = linkedContactForLead(lead);
+  if (!contact) return null;
+  copyNonemptyFields(lead, contact, [
+    ['clientName', 'name'],
+    ['phone', 'phone'],
+    ['email', 'email'],
+    ['address', 'address']
+  ]);
+  return contact;
+}
+
+export function syncContactToLinkedLeads(contact) {
+  if (!contact) return [];
+  const linkedLeads = state.store.leads.filter(lead =>
+    lead.id === contact.leadId || lead.contactId === contact.id || lead.clientId === contact.id
+  );
+  linkedLeads.forEach(lead => {
+    copyNonemptyFields(contact, lead, [
+      ['name', 'clientName'],
+      ['phone', 'phone'],
+      ['email', 'email'],
+      ['address', 'address']
+    ]);
+  });
+  return linkedLeads;
 }
 
 function findMatchingContact(lead) {
@@ -280,13 +323,14 @@ export async function handleLeadSave(event) {
   const newStatus = normalizeLeadStatus(data.status || 'New Lead');
   const stageChanged = !existing || existing.status !== newStatus;
   const payload = {
+    ...existing,
     id: editingId || uid('L'),
     clientId: data.clientId && data.clientId !== '__new__' ? data.clientId : (existing?.clientId || ''),
     contactId: existing?.contactId || '',
     clientName: data.clientName || lookupClientName(data.clientId) || existing?.clientName || '',
     phone: data.phone,
     email: data.email,
-    address: existing?.address || '',
+    address: data.address || '',
     service: data.service,
     status: newStatus,
     source: data.source,
@@ -300,6 +344,7 @@ export async function handleLeadSave(event) {
     lastContactedAt: existing ? (existing.lastContactedAt || '') : '',
     owner: existing?.owner || state.profile?.full_name || ''
   };
+  if (existing || payload.contactId || payload.clientId) syncLeadToLinkedContact(payload);
   promoteLeadToContact(payload);
   if (existing) {
     const idx = state.store.leads.findIndex(l => l.id === editingId);
@@ -327,6 +372,7 @@ export function loadLeadIntoForm(id) {
   el.leadForm.clientName.value = lead.clientName || '';
   el.leadForm.phone.value = lead.phone || '';
   el.leadForm.email.value = lead.email || '';
+  el.leadForm.address.value = lead.address || '';
   if (el.leadForm.service) el.leadForm.service.innerHTML = tradeOptionsHtml(lead.service || '');
   el.leadForm.source.value = lead.source || '';
   el.leadForm.status.value = normalizeLeadStatus(lead.status);
@@ -529,20 +575,12 @@ export function handleLogContactSubmit(event) {
 function dealCardHtml(lead) {
   const name = leadDisplayName(lead);
   const days = daysInStage(lead.stageChangedAt);
-  const src = lead.source || 'Other';
   const fu = getFollowUpStatus(lead);
-  const badge = fu.level === 'none' ? ''
-    : `<div class="followup-badge followup-${fu.level}"><span class="followup-dot"></span><span class="followup-label">${escapeHtml(fu.label)}</span></div>`;
   const overdueClass = fu.level === 'overdue' ? ' deal-card-overdue' : '';
-  const logBtn = fu.level === 'none' ? ''
-    : `<button type="button" class="ghost-btn tiny log-contact-btn" data-lead-id="${lead.id}">📞 Log contact</button>`;
   return `<div class="deal-card${overdueClass}" draggable="true" data-lead-id="${lead.id}">
-    ${badge}
     <div class="deal-card-top"><strong>${escapeHtml(name)}</strong><button type="button" class="deal-move-btn" data-lead-id="${lead.id}" aria-label="Move deal">\u25B8</button></div>
-    <p class="muted tiny deal-service">${escapeHtml(lead.service || 'General')}</p>
-    <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span><span class="source-pill source-${sourceKey(src)}" title="${escapeHtml(src)}">${escapeHtml(src)}</span></div>
+    <div class="deal-card-foot"><span class="deal-value">${money.format(num(lead.estimatedValue))}</span></div>
     <p class="deal-days muted tiny">${days} day${days === 1 ? '' : 's'} in stage</p>
-    ${logBtn}
   </div>`;
 }
 
@@ -577,15 +615,25 @@ export function renderPipelineBoard() {
   if (!board) return;
   const query = state.filters.clientSearch || '';
   const range = state.filters.pipelineRange || 'month';
+  const activeOnly = state.filters.pipelineActiveOnly !== false;
   if (el.pipelineRange && el.pipelineRange.value !== range) el.pipelineRange.value = range;
+  if (el.pipelineRange) el.pipelineRange.disabled = activeOnly;
+  if (el.pipelineVisibility) {
+    el.pipelineVisibility.querySelectorAll('[data-pipeline-active-only]').forEach(button => {
+      const selected = (button.dataset.pipelineActiveOnly === 'true') === activeOnly;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+    });
+  }
   const allLeads = state.store.leads;
   let leads = allLeads.filter(l => leadMatchesQuery(l, query));
   leads = leads.filter(leadMatchesTradeFilter);
   leads = leads.filter(leadMatchesSourceFilter);
+  if (activeOnly) leads = leads.filter(l => !['Won', 'Lost'].includes(normalizeLeadStatus(l.status)));
   // HubSpot-style close-date view: nothing is deleted. When not actively
   // searching, CLOSED deals (Won/Lost) only appear if they closed within the
   // selected range; open/active deals always stay on the board.
-  if (!query && range !== 'all') {
+  if (!activeOnly && !query && range !== 'all') {
     const start = pipelineRangeStart(range);
     leads = leads.filter(l => {
       const s = normalizeLeadStatus(l.status);
@@ -609,7 +657,8 @@ export function renderPipelineBoard() {
     board.innerHTML = `<p class="pipeline-no-match muted">No deals match “${escapeHtml(query)}”</p>`;
     return;
   }
-  board.innerHTML = PIPELINE_STAGES.map(stage => {
+  const visibleStages = activeOnly ? PIPELINE_STAGES.filter(stage => !['Won', 'Lost'].includes(stage)) : PIPELINE_STAGES;
+  board.innerHTML = visibleStages.map(stage => {
     const stageLeads = leads.filter(l => normalizeLeadStatus(l.status) === stage);
     const sum = stageLeads.reduce((s, l) => s + num(l.estimatedValue), 0);
     const cards = stageLeads.map(dealCardHtml).join('') || '<p class="pipeline-empty muted tiny">Drag a deal here</p>';

@@ -211,6 +211,7 @@ export const state = {
     employeeSearch: '',
     documentType: 'all',
     pipelineRange: 'month',
+    pipelineActiveOnly: true,
     tradeCategory: 'all',
     leadSource: 'all',
     docSearch: '',
@@ -228,7 +229,7 @@ export const BRAND = {
   phone: '(832) 944-0267',
   website: 'www.harvestrenovation.net',
   email: 'jp@harvestrenovation.net',
-  verse: '"For every house is built by someone, the builder of all things is God." Hebrews 3:4',
+  verse: '"For every house is built by someone, but the builder of all things is God." Hebrews 3:4',
   thankYou: 'THANK YOU'
 };
 
@@ -488,6 +489,17 @@ export function migrateLead(record) {
   if (!r.stageChangedAt) r.stageChangedAt = r.preferredDate || '';
   if (r.owner == null) r.owner = '';
   if (!Array.isArray(r.contactLog)) r.contactLog = [];
+  if (!Array.isArray(r.revisions)) r.revisions = [];
+  if (r.contactId == null) r.contactId = '';
+  if (r.clientId == null) r.clientId = '';
+  return r;
+}
+
+// Backwards-compatibility: add lead linkage without changing contact data.
+export function migrateContact(record) {
+  if (!record || typeof record !== 'object') return record;
+  const r = { ...record };
+  if (r.leadId == null) r.leadId = '';
   return r;
 }
 

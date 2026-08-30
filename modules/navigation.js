@@ -53,6 +53,12 @@ export function bindAppUi() {
     el.clientSearch.focus();
   });
   if (el.pipelineRange) el.pipelineRange.addEventListener('change', e => { state.filters.pipelineRange = e.target.value; renderLeads(); });
+  if (el.pipelineVisibility) el.pipelineVisibility.addEventListener('click', e => {
+    const button = e.target.closest('[data-pipeline-active-only]');
+    if (!button) return;
+    state.filters.pipelineActiveOnly = button.dataset.pipelineActiveOnly === 'true';
+    renderPipelineBoard();
+  });
   if (tradeFilters) tradeFilters.addEventListener('click', e => {
     const chip = e.target.closest('.trade-chip');
     if (!chip) return;
@@ -538,8 +544,8 @@ export function setView(view) {
   const titleMap = {
     dashboard: ['Executive Dashboard', 'Corporate CRM, estimating, operations, and analytics in one interface.'],
     crm: ['CRM', 'Contacts, deal pipeline, and relationship history.'],
-    estimating: ['Estimating', 'Create proposal-ready estimates and PDF exports.'],
-    invoicing: ['Invoicing', 'Create, send, and track invoices and payments.'],
+    estimating: ['Estimate', 'Create proposal-ready estimates and PDF exports.'],
+    invoicing: ['Invoice', 'Create, send, and track invoices and payments.'],
     contracts: ['Contracts', 'Create, send, and track signed agreements.'],
     operations: ['Operations', 'Run projects, schedule visits, and keep notes organized.'],
     documents: ['Documents', 'Saved PDF estimates and invoices, ready to reopen, print, or download.'],
