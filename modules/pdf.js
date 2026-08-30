@@ -195,6 +195,7 @@ export function buildBrandedDocHtml(opts) {
       .replace(/[\\/:*?"<>|]+/g, '-') + '.pdf'
     : `${String(kind || 'document').toLowerCase()}-${String(number || 'document')}`
       .replace(/[^a-z0-9._-]+/gi, '-') + '.pdf';
+  const pdfTitle = pdfFilename.replace(/\.pdf$/i, '');
   const billedFirstName = String(bill.name || '').trim().split(/\s+/)[0] || 'there';
   const shareSenderName = String(currentUserName() || preparedBy || BRAND.contact || 'Harvest Renovation').trim();
   const mobileShareText = ['ESTIMATE', 'INVOICE'].includes(kind)
@@ -260,7 +261,7 @@ export function buildBrandedDocHtml(opts) {
     : '';
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
   ${(typeof document !== 'undefined' && document.baseURI) ? `<base href="${escapeHtml(document.baseURI)}">` : ''}
-  <title>${kindLabel} ${escapeHtml(number)} — Harvest Renovation</title>
+  <title>${escapeHtml(pdfTitle)}</title>
   <style>
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;background:#f1ece3;color:#181410;font-family:Inter,Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -698,6 +699,7 @@ export function buildContractDocHtml(contract) {
   const senderName = String(currentUserName() || contract.user || BRAND.contact || 'Harvest Renovation').trim();
   const pdfFilename = `Harvest Renovation - Contract - ${clientName}- ${String(contract.contractNumber || 'Contract').trim() || 'Contract'}`
     .replace(/[\\/:*?"<>|]+/g, '-') + '.pdf';
+  const pdfTitle = pdfFilename.replace(/\.pdf$/i, '');
   const mobileShareText = `Hi ${clientFirstName},\n\nYour contract is ready! I’ve attached it for you to review.\n\nIf you have any questions, would like to make any adjustments, or want to go over any of the details, please feel free to reach out. We’re happy to work with you and make sure everything fits what you have in mind.\n\nWe’d love the opportunity to bring your project to life and look forward to working with you!\n\nBest regards,\n${senderName}\nHarvest Renovation`;
   const propertyAddress = contract.propertyAddress || contract.billingAddress || '';
   const estimatedStartDate = contract.estimatedStartDate ? escapeHtml(contractDate(contract.estimatedStartDate)) : '________________';
@@ -753,7 +755,7 @@ export function buildContractDocHtml(contract) {
   const acknowledgments = contractSection(21, 'ACKNOWLEDGMENTS', `<p>By signing below, both parties agree to the terms and conditions outlined in this Service Agreement &amp; Contract. This Agreement represents the entire understanding between the parties and may only be modified in writing and signed by both parties.</p>${acknowledgmentReceipt}<div class="signature-party"><h3>CONTRACTOR: HARVEST RENOVATION LLC</h3><div class="signature-grid"><div><i></i><span>Signature</span></div><div><i></i><span>Printed Name</span></div><div><i></i><span>Date</span></div></div></div><div class="signature-party owner-signature"><h3>CLIENT / PROPERTY OWNER</h3>${ownerSignatureNotice}<div class="signature-grid"><div><i></i><span>Signature</span></div><div><i></i><span>Printed Name</span></div><div><i></i><span>Date</span></div></div></div><div class="signature-party"><h3>SPOUSE (if applicable — Texas homestead law may require both spouses to sign)</h3><div class="signature-grid"><div><i></i><span>Signature</span></div><div><i></i><span>Printed Name</span></div><div><i></i><span>Date</span></div></div></div>`, 'page-break');
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
   ${(typeof document !== 'undefined' && document.baseURI) ? `<base href="${escapeHtml(document.baseURI)}">` : ''}
-  <title>Service Agreement &amp; Contract ${number} — Harvest Renovation</title>
+  <title>${escapeHtml(pdfTitle)}</title>
   <style>
     *{box-sizing:border-box}html,body{margin:0;padding:0;background:#eee9e0;color:#181410;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;justify-content:center;padding:14px;background:#181410}.bar button{font:700 14px Arial;padding:10px 18px;border-radius:8px;border:1px solid #caa05a;background:#caa05a;color:#181410;cursor:pointer}.bar .ghost{background:transparent;color:#fff}
