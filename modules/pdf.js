@@ -81,7 +81,8 @@ export function buildBrandedDocHtml(opts) {
   const depPct = num(depositPercent);
   const dep = depPct || 30;
   const depAmountText = num(depositAmount) ? ` (${money.format(num(depositAmount))})` : '';
-  const statusBadge = (status && status.toLowerCase() !== 'draft')
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+  const statusBadge = (normalizedStatus && !['draft', 'sent'].includes(normalizedStatus))
     ? `<span class="status">${escapeHtml(status)}</span>`
     : '';
   const metaRows = [[`${kindLabel} No.`, escapeHtml(number || '—')], ['Date', escapeHtml(documentDate(date) || '—')]];
