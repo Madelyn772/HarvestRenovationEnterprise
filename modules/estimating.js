@@ -146,7 +146,15 @@ function isEstimateItemizedMode() {
 function computeEstimateRowAmount(row) {
   const quantity = num(row.querySelector('[name="quantity"]')?.value);
   const unitPrice = num(row.querySelector('[name="unitPrice"]')?.value);
-  return quantity * unitPrice;
+  return Math.round(quantity * unitPrice * 100) / 100;
+}
+
+function formatLineAmount(value) {
+  return num(value).toFixed(2);
+}
+
+function formatLineAmountInput(input) {
+  if (input?.value.trim()) input.value = formatLineAmount(input.value);
 }
 
 export function setEstimateCommercialMode(enabled, { recompute = true } = {}) {
@@ -158,7 +166,7 @@ export function setEstimateCommercialMode(enabled, { recompute = true } = {}) {
   getEstimateItemsEl()?.querySelectorAll('.line-item-row').forEach(row => {
     const amountInput = row.querySelector('[name="amount"]');
     if (!amountInput) return;
-    if (enabled && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(row);
+    if (enabled && isEstimateItemizedMode()) amountInput.value = formatLineAmount(computeEstimateRowAmount(row));
     amountInput.readOnly = !!enabled || el.estimateForm.classList.contains('form-locked');
   });
   if (recompute) recomputeEstimateTotals();
@@ -298,7 +306,7 @@ export function readEstimateItemsFromDom() {
       quantity,
       unit: row.querySelector('[name="unit"]')?.value || 'LS',
       unitPrice,
-      amount: commercialJob ? quantity * unitPrice : num(row.querySelector('[name="amount"]')?.value)
+      amount: commercialJob ? Math.round(quantity * unitPrice * 100) / 100 : num(row.querySelector('[name="amount"]')?.value)
     };
   });
 }
@@ -316,11 +324,15 @@ export function addEstimateRow(item = {}) {
   if (item.unitPrice != null) node.querySelector('[name="unitPrice"]').value = item.unitPrice;
   const amountInput = node.querySelector('[name="amount"]');
   const seededAmount = item.amount != null ? num(item.amount) : computeEstimateRowAmount(node);
-  amountInput.value = seededAmount || '';
+  amountInput.value = item.amount != null || seededAmount ? formatLineAmount(seededAmount) : '';
   const refresh = () => {
-    if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(node);
+    if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = formatLineAmount(computeEstimateRowAmount(node));
     recomputeEstimateTotals();
   };
+  amountInput.addEventListener('blur', () => {
+    formatLineAmountInput(amountInput);
+    recomputeEstimateTotals();
+  });
   descriptionInput.addEventListener('input', () => autoGrowTextarea(descriptionInput));
   node.querySelectorAll('input, select, textarea').forEach(inp => {
     inp.addEventListener('input', refresh);
@@ -334,7 +346,7 @@ export function addEstimateRow(item = {}) {
   wrap.appendChild(node);
   autoGrowTextarea(descriptionInput);
   amountInput.readOnly = isEstimateCommercialMode() || el.estimateForm.classList.contains('form-locked');
-  if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = computeEstimateRowAmount(node);
+  if (isEstimateCommercialMode() && isEstimateItemizedMode()) amountInput.value = formatLineAmount(computeEstimateRowAmount(node));
 }
 
 export function recomputeEstimateTotals() {

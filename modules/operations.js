@@ -154,7 +154,7 @@ export function readInvoiceItemsFromDom() {
       quantity,
       unit: row.querySelector('[name="unit"]')?.value || 'LS',
       unitPrice,
-      amount: commercialJob ? quantity * unitPrice : num(row.querySelector('[name="amount"]')?.value)
+      amount: commercialJob ? Math.round(quantity * unitPrice * 100) / 100 : num(row.querySelector('[name="amount"]')?.value)
     };
   }).filter(it => it.description || it.amount || it.unitPrice);
 }
@@ -177,7 +177,15 @@ function isInvoiceItemizedMode() {
 function computeInvoiceRowAmount(row) {
   const qtyRaw = row.querySelector('[name="quantity"]')?.value || '';
   const quantity = qtyRaw.trim() === '' ? 1 : num(qtyRaw);
-  return quantity * num(row.querySelector('[name="unitPrice"]')?.value);
+  return Math.round(quantity * num(row.querySelector('[name="unitPrice"]')?.value) * 100) / 100;
+}
+
+function formatLineAmount(value) {
+  return num(value).toFixed(2);
+}
+
+function formatLineAmountInput(input) {
+  if (input?.value.trim()) input.value = formatLineAmount(input.value);
 }
 
 export function setInvoiceCommercialMode(enabled, { recompute = true } = {}) {
@@ -189,7 +197,7 @@ export function setInvoiceCommercialMode(enabled, { recompute = true } = {}) {
   el.invoiceItems?.querySelectorAll('.line-item-row').forEach(row => {
     const amountInput = row.querySelector('[name="amount"]');
     if (!amountInput) return;
-    if (enabled && isInvoiceItemizedMode()) amountInput.value = computeInvoiceRowAmount(row);
+    if (enabled && isInvoiceItemizedMode()) amountInput.value = formatLineAmount(computeInvoiceRowAmount(row));
     amountInput.readOnly = !!enabled;
   });
   if (recompute) renderInvoiceBalanceCallout();
@@ -330,11 +338,15 @@ export function addInvoiceRow(item = {}) {
   if (seedUnitPrice !== '' && seedUnitPrice != null) node.querySelector('[name="unitPrice"]').value = seedUnitPrice;
   const amountEl = node.querySelector('[data-line-amount]');
   const seededAmount = item.amount != null ? num(item.amount) : computeInvoiceRowAmount(node);
-  amountEl.value = seededAmount || '';
+  amountEl.value = item.amount != null || seededAmount ? formatLineAmount(seededAmount) : '';
   const refresh = () => {
-    if (isInvoiceCommercialMode() && isInvoiceItemizedMode()) amountEl.value = computeInvoiceRowAmount(node);
+    if (isInvoiceCommercialMode() && isInvoiceItemizedMode()) amountEl.value = formatLineAmount(computeInvoiceRowAmount(node));
     renderInvoiceBalanceCallout();
   };
+  amountEl.addEventListener('blur', () => {
+    formatLineAmountInput(amountEl);
+    renderInvoiceBalanceCallout();
+  });
   descriptionInput.addEventListener('input', () => autoGrowTextarea(descriptionInput));
   node.querySelectorAll('input, select, textarea').forEach(inp => {
     inp.addEventListener('input', refresh);
@@ -348,7 +360,7 @@ export function addInvoiceRow(item = {}) {
   el.invoiceItems.appendChild(node);
   autoGrowTextarea(descriptionInput);
   amountEl.readOnly = isInvoiceCommercialMode();
-  if (isInvoiceCommercialMode() && isInvoiceItemizedMode()) amountEl.value = computeInvoiceRowAmount(node);
+  if (isInvoiceCommercialMode() && isInvoiceItemizedMode()) amountEl.value = formatLineAmount(computeInvoiceRowAmount(node));
   renderInvoiceBalanceCallout();
 }
 
