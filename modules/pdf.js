@@ -39,6 +39,11 @@ function termsToHtml(terms) {
   return `<ul class="terms-list">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`;
 }
 
+function documentDate(value) {
+  const text = String(value || '').trim();
+  return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T00:00:00` : text);
+}
+
 // Shared, branded estimate/invoice document modeled on the Harvest Renovation
 // letterhead (black + gold, wheat mark, bill-to, line items, terms, signature).
 export function buildBrandedDocHtml(opts) {
@@ -78,9 +83,9 @@ export function buildBrandedDocHtml(opts) {
   const statusBadge = (status && status.toLowerCase() !== 'draft')
     ? `<span class="status">${escapeHtml(status)}</span>`
     : '';
-  const metaRows = [[`${kindLabel} No.`, escapeHtml(number || '—')], ['Date', escapeHtml(formatDate(date) || '—')]];
-  if (validUntil) metaRows.push(['Valid until', escapeHtml(formatDate(validUntil))]);
-  if (dueDate) metaRows.push(['Due date', escapeHtml(formatDate(dueDate))]);
+  const metaRows = [[`${kindLabel} No.`, escapeHtml(number || '—')], ['Date', escapeHtml(documentDate(date) || '—')]];
+  if (validUntil) metaRows.push(['Valid until', escapeHtml(documentDate(validUntil))]);
+  if (dueDate) metaRows.push(['Due date', escapeHtml(documentDate(dueDate))]);
   const metaHtml = metaRows.map(([l, v]) => `<div class="mrow"><span class="ml">${l}</span><span class="mv">${v}</span></div>`).join('');
   const summaryRows = [];
   if (subtotal != null) summaryRows.push(['Total', money.format(num(subtotal))]);
@@ -89,7 +94,7 @@ export function buildBrandedDocHtml(opts) {
   if (num(paymentsReceived) > 0) summaryRows.push(['Payments received', '−' + money.format(num(paymentsReceived))]);
   const summaryHtml = summaryRows.map(([l, v]) => `<div class="sumrow"><span>${escapeHtml(l)}</span><span>${v}</span></div>`).join('');
   const payTable = (paymentsRows && paymentsRows.length)
-    ? `<div class="items paytable"><div class="ihead pay"><span>Date</span><span>Amount</span><span>Method</span><span>Reference</span></div><div class="ibody">${paymentsRows.map(p => `<div class="item-row pay"><div>${escapeHtml(formatDate(p.date) || '—')}</div><div>${money.format(num(p.amount))}</div><div>${escapeHtml(p.method || '')}</div><div>${escapeHtml(p.reference || '')}</div></div>`).join('')}</div></div>`
+    ? `<div class="items paytable"><div class="ihead pay"><span>Date</span><span>Amount</span><span>Method</span><span>Reference</span></div><div class="ibody">${paymentsRows.map(p => `<div class="item-row pay"><div>${escapeHtml(documentDate(p.date) || '—')}</div><div>${money.format(num(p.amount))}</div><div>${escapeHtml(p.method || '')}</div><div>${escapeHtml(p.reference || '')}</div></div>`).join('')}</div></div>`
     : '';
   const paymentScheduleTable = (paymentScheduleRows && paymentScheduleRows.length)
     ? `<div class="items schedule-table"><div class="section-title">Payment Schedule</div><div class="ihead schedule"><span>Milestone</span><span>%</span><span>When Due</span><span>Amount</span></div><div class="ibody">${paymentScheduleRows.map(p => `<div class="item-row schedule"><div>${escapeHtml(p.label || '')}</div><div>${num(p.percent)}%</div><div>${escapeHtml(p.dueDescription || '')}</div><div>${money.format(num(p.amount))}</div></div>`).join('')}</div></div>`
@@ -379,8 +384,7 @@ function contractLines(value, fallback = '—') {
 }
 
 function contractDate(value) {
-  const text = String(value || '').trim();
-  return formatDate(/^\d{4}-\d{2}-\d{2}$/.test(text) ? `${text}T00:00:00` : text);
+  return documentDate(value);
 }
 
 function contractSection(number, title, body, className = '') {
