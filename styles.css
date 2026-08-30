@@ -1934,17 +1934,21 @@ textarea:focus-visible,
 .new-client-fields .new-client-note { margin: 0; }
 
 /* 3. Client record detail view. */
-.client-detail { display: grid; gap: 1rem; }
+.client-detail-card { padding: .75rem; }
+.client-detail-card-head { padding: 0 .1rem .55rem; }
+.client-detail-card-head .eyebrow { margin: 0; }
+.client-detail-card .detail-body { min-height: 0; padding: 0; border: 0; background: transparent; }
+.client-detail { display: grid; gap: .8rem; padding: .75rem; border-radius: 8px; background: #ffffff; }
 .client-detail-head {
   display: flex;
   align-items: center;
-  gap: .9rem;
+  gap: .75rem;
 }
 .client-avatar {
   flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   font-weight: 800;
@@ -1957,30 +1961,39 @@ textarea:focus-visible,
 .client-stat-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .7rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 .client-stat {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: .7rem .8rem;
-  background: rgba(255, 255, 255, .03);
+  padding: .55rem .45rem;
   text-align: center;
 }
+.client-stat + .client-stat { border-left: 1px solid var(--line); }
 .client-stat span { display: block; color: var(--muted); font-size: .8rem; }
-.client-stat strong { display: block; margin-top: .25rem; font-size: 1.35rem; }
-.client-detail-rows { display: grid; gap: .5rem; }
-.client-notes {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 1rem;
-  background: rgba(255, 255, 255, .03);
-}
-.client-notes h4 { margin: 0 0 .35rem; }
-.client-notes p { margin: 0; white-space: pre-wrap; }
-.theme-light .main .client-stat,
-.theme-light .main .client-notes { background: #f6f3ec; border-color: rgba(31, 26, 20, 0.08); }
+.client-stat strong { display: block; margin-top: .15rem; font-size: 1.2rem; }
+.client-detail-rows { display: grid; }
+.client-field-row { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px solid var(--line); }
+.client-field-row > span { color: var(--muted); }
+.client-field-value { color: var(--text); font-size: .9rem; text-align: right; }
+.client-detail-sections { display: grid; gap: .65rem; }
+.client-detail-section { padding: 0; }
+.client-detail-section + .client-detail-section { padding-top: .65rem; border-top: 1px solid var(--line); }
+.client-detail-section h5 { margin: 0 0 .15rem; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; }
+.client-detail-section p { margin: 0; line-height: 1.4; }
+.client-notes p { white-space: pre-wrap; }
+.theme-light .main .client-detail-card { background: #ffffff; border: 1px solid rgba(31, 26, 20, .08); border-radius: 12px; box-shadow: 0 4px 14px rgba(31, 26, 20, .08); }
+.theme-light .main .client-detail { background: #ffffff; }
+.theme-light .main .client-stat-grid,
+.theme-light .main .client-stat + .client-stat,
+.theme-light .main .client-field-row,
+.theme-light .main .client-detail-section + .client-detail-section { border-color: #eee; }
+.theme-light .main .client-field-value { color: #1f1a14; }
+.theme-light .main .client-field-value.muted,
+.theme-light .main .client-detail-section .muted { color: #7a7267; }
 @media (max-width: 560px) {
-  .client-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .client-stat { padding-inline: .2rem; }
+  .client-stat span { font-size: .68rem; }
+  .client-stat strong { font-size: 1.05rem; }
 }
 
 /* 4. Interactive / admin-editable priority checklist. */

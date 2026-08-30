@@ -74,10 +74,12 @@ export function renderClientDetail() {
   const client = state.store.clients.find(item => item.id === state.selectedClientId) || state.store.clients[0] || null;
   state.selectedClientId = client?.id || '';
   if (!client) {
+    el.clientDetailBody.classList.add('empty-state');
     el.clientDetailTitle.textContent = 'Select a client';
     el.clientDetailBody.innerHTML = emptyHtml('Choose a client to see linked leads, estimates, jobs, invoices, and notes.');
     return;
   }
+  el.clientDetailBody.classList.remove('empty-state');
   const leads = state.store.leads.filter(item => item.clientId === client.id);
   const estimates = state.store.estimates.filter(item => item.clientId === client.id);
   const jobs = state.store.jobs.filter(item => item.clientId === client.id);
@@ -91,6 +93,7 @@ export function renderClientDetail() {
     ['Jobs', jobs.length],
     ['Invoices', invoices.length]
   ];
+  const valueClass = value => value ? 'client-field-value' : 'client-field-value muted';
   el.clientDetailBody.innerHTML = `
     <div class="client-detail">
       <div class="client-detail-head">
@@ -104,15 +107,14 @@ export function renderClientDetail() {
         ${stats.map(([label, value]) => `<div class="client-stat"><span>${escapeHtml(label)}</span><strong>${integer.format(value)}</strong></div>`).join('')}
       </div>
       <div class="client-detail-rows">
-        <div class="summary-row"><span>Phone</span><strong>${phoneLink(client.phone)}</strong></div>
-        <div class="summary-row"><span>Email</span><strong>${emailLink(client.email)}</strong></div>
-        <div class="summary-row"><span>Location</span><strong>${escapeHtml(location)}</strong></div>
-        <div class="summary-row"><span>Source</span><strong>${escapeHtml(client.source || '—')}</strong></div>
-        <div class="summary-row"><span>Tags</span><strong>${escapeHtml(client.tags || '—')}</strong></div>
+        <div class="client-field-row"><span>Phone</span><strong class="${valueClass(client.phone)}">${phoneLink(client.phone)}</strong></div>
+        <div class="client-field-row"><span>Email</span><strong class="${valueClass(client.email)}">${emailLink(client.email)}</strong></div>
+        <div class="client-field-row"><span>Location</span><strong class="${valueClass(client.serviceArea || client.address)}">${escapeHtml(location)}</strong></div>
       </div>
-      <div class="client-notes">
-        <h4>Notes</h4>
-        <p>${escapeHtml(client.notes || 'No client notes yet.')}</p>
+      <div class="client-detail-sections">
+        <section class="client-detail-section"><h5>Source</h5><p class="${client.source ? '' : 'muted'}">${escapeHtml(client.source || '—')}</p></section>
+        <section class="client-detail-section"><h5>Tags</h5><p class="${client.tags ? '' : 'muted'}">${escapeHtml(client.tags || '—')}</p></section>
+        <section class="client-detail-section client-notes"><h5>Notes</h5><p class="${client.notes ? '' : 'muted'}">${escapeHtml(client.notes || '—')}</p></section>
       </div>
     </div>
   `;
