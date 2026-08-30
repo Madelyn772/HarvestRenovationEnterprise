@@ -244,27 +244,16 @@ export function buildBrandedDocHtml(opts) {
       return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
-    function printAppleMobilePdf() {
-      var sheet = document.querySelector('.sheet');
-      if (!sheet) return window.print();
-      document.documentElement.classList.add('measure-print', 'desktop-print');
-      var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
-      var pageStyle = document.createElement('style');
-      pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
-      document.head.appendChild(pageStyle);
-      document.documentElement.classList.remove('measure-print');
-      window.addEventListener('afterprint', function () {
-        pageStyle.remove();
-        document.documentElement.classList.remove('desktop-print');
-      }, { once: true });
-      window.print();
-    }
-    async function downloadContinuousPdf() {
+    var preparedMobilePdf = null;
+    var preparedMobilePdfPromise = null;
+    async function prepareContinuousPdf() {
+      if (preparedMobilePdf) return preparedMobilePdf;
+      if (preparedMobilePdfPromise) return preparedMobilePdfPromise;
       var sheet = document.querySelector('.sheet');
       var button = document.querySelector('.bar button');
       if (!sheet) return;
       var originalLabel = button ? button.textContent : '';
-      try {
+      preparedMobilePdfPromise = (async function () {
         if (button) { button.disabled = true; button.textContent = 'Creating PDF…'; }
         var modules = await Promise.all([
           import('https://esm.sh/html2canvas@1.4.1'),
@@ -303,18 +292,51 @@ export function buildBrandedDocHtml(opts) {
         pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 36, 36, contentWidth, fittedHeight, undefined, 'FAST');
         var blob = pdf.output('blob');
         var url = URL.createObjectURL(blob);
-        window.location.href = url;
-        return { filename: ${JSON.stringify(pdfFilename)}, size: blob.size, pages: pdf.getNumberOfPages(), opened: true };
-      } catch (error) {
-        console.error('Mobile PDF generation failed', error);
-        alert('Unable to create the PDF file. Check your connection and try again.');
+        preparedMobilePdf = {
+          file: new File([blob], ${JSON.stringify(pdfFilename)}, { type: 'application/pdf' }),
+          url: url,
+          filename: ${JSON.stringify(pdfFilename)},
+          size: blob.size,
+          pages: pdf.getNumberOfPages()
+        };
+        return preparedMobilePdf;
+      })();
+      try {
+        return await preparedMobilePdfPromise;
       } finally {
         document.documentElement.classList.remove('measure-print', 'desktop-print');
         if (button) { button.disabled = false; button.textContent = originalLabel; }
+        if (!preparedMobilePdf) preparedMobilePdfPromise = null;
+      }
+    }
+    async function downloadContinuousPdf() {
+      try {
+        var prepared = await prepareContinuousPdf();
+        if (!prepared) return;
+        window.location.href = prepared.url;
+        return { filename: prepared.filename, size: prepared.size, pages: prepared.pages, opened: true };
+      } catch (error) {
+        console.error('Mobile PDF generation failed', error);
+        alert('Unable to create the PDF file. Check your connection and try again.');
+      }
+    }
+    async function shareAppleMobilePdf() {
+      try {
+        var prepared = preparedMobilePdf || await prepareContinuousPdf();
+        if (!prepared) return;
+        if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [prepared.file] }))) {
+          await navigator.share({ files: [prepared.file], title: prepared.filename });
+          return;
+        }
+        window.location.href = prepared.url;
+      } catch (error) {
+        if (error && error.name === 'AbortError') return;
+        console.error('Apple PDF sharing failed', error);
+        alert('Unable to open the PDF. Please try again.');
       }
     }
     function printContinuousPdf() {
-      if (appleMobilePrintRequired()) return printAppleMobilePdf();
+      if (appleMobilePrintRequired()) return shareAppleMobilePdf();
       if (mobilePdfExportRequired()) return downloadContinuousPdf();
       var sheet = document.querySelector('.sheet');
       if (!sheet) return window.print();
@@ -332,6 +354,11 @@ export function buildBrandedDocHtml(opts) {
         window.print();
       });
     }
+    window.addEventListener('load', function () {
+      if (appleMobilePrintRequired()) prepareContinuousPdf().catch(function (error) {
+        console.error('Apple PDF preparation failed', error);
+      });
+    }, { once: true });
   </script></head>
   <body>
     <div class="bar"><button onclick="printContinuousPdf()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div>
