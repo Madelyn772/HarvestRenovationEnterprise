@@ -58,6 +58,8 @@ export function buildBrandedDocHtml(opts) {
     paymentScheduleRows = [], terms = '', signatureBlockEnabled = false, commercialJob = false, itemizedMode = true
   } = opts;
   const kindLabel = escapeHtml(kind.charAt(0) + kind.slice(1).toLowerCase());
+  const pdfFilename = `${String(kind || 'document').toLowerCase()}-${String(number || 'document')}`
+    .replace(/[^a-z0-9._-]+/gi, '-') + '.pdf';
   const billLines = [bill.name, bill.address, bill.phone, bill.email].filter(Boolean)
     .map(line => `<div>${escapeHtml(line)}</div>`).join('') || '<div class="muted">—</div>';
   const scopeText = String(scope || '').trim();
@@ -212,20 +214,101 @@ export function buildBrandedDocHtml(opts) {
     html.measure-print .bar{display:none}
     html.measure-print .sheet{width:7.5in;max-width:none;margin:0;box-shadow:none}
     @media screen and (max-width:780px){body{overflow-x:hidden}.sheet{width:100%;max-width:none;margin:8px 0;box-shadow:none}.top{align-items:flex-start;flex-wrap:wrap;padding:18px 14px}.brand-logo{max-width:190px;height:auto}.title strong{font-size:28px}.contact{flex-direction:column;padding:12px 14px}.meta{width:100%;min-width:0}.billto,.items,.terms{padding-left:12px;padding-right:12px}.foot{grid-template-columns:1fr;padding:16px 14px 4px}.sigs{grid-template-columns:minmax(0,1fr) 86px;gap:16px;padding:20px 14px 8px}.item-row{grid-template-columns:minmax(0,1fr) 112px}.items .ihead{grid-template-columns:minmax(0,1fr) 112px}}
+    html.desktop-print body{overflow:visible}
+    html.desktop-print .sheet{width:7.5in;max-width:none;margin:0;box-shadow:none}
+    html.desktop-print .top{align-items:center;flex-wrap:nowrap;padding:22px 26px}
+    html.desktop-print .brand-logo{max-width:none;height:84px}
+    html.desktop-print .title strong{font-size:38px}
+    html.desktop-print .contact{flex-direction:row;padding:14px 26px}
+    html.desktop-print .meta{width:auto;min-width:240px}
+    html.desktop-print .billto,html.desktop-print .items,html.desktop-print .terms{padding-left:26px;padding-right:26px}
+    html.desktop-print .foot{grid-template-columns:1fr 270px;padding:18px 26px 4px}
+    html.desktop-print .sigs{grid-template-columns:1fr 200px 1fr 200px;gap:24px;padding:22px 26px 8px}
+    html.desktop-print .item-row{grid-template-columns:1fr 150px}
+    html.desktop-print .item-row.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
+    html.desktop-print .item-row.lump-sum{grid-template-columns:1fr}
+    html.desktop-print .item-row.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
+    html.desktop-print .item-row.schedule{grid-template-columns:1.2fr 54px 1.5fr 110px}
+    html.desktop-print .items .ihead{grid-template-columns:1fr 150px}
+    html.desktop-print .items .ihead.commercial{grid-template-columns:minmax(0,1fr) 58px 62px 104px 110px}
+    html.desktop-print .items .ihead.lump-sum{grid-template-columns:1fr}
+    html.desktop-print .items .ihead.pay{grid-template-columns:1fr 1fr 1fr 1.4fr}
+    html.desktop-print .items .ihead.schedule{grid-template-columns:1.2fr 54px 1.5fr 110px}
     @media print{@page{margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar{display:none}.sheet{width:calc(100% - 1in);max-width:none;margin:.5in;padding:0;box-shadow:none}.item-row,.summary,.sigs,.terms,.billto{break-inside:avoid;page-break-inside:avoid}}
   </style>
   <script>
+    function mobilePdfExportRequired() {
+      return window.matchMedia('(max-width:780px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    }
+    async function downloadContinuousPdf() {
+      var sheet = document.querySelector('.sheet');
+      var button = document.querySelector('.bar button');
+      if (!sheet) return;
+      var originalLabel = button ? button.textContent : '';
+      try {
+        if (button) { button.disabled = true; button.textContent = 'Creating PDF…'; }
+        var modules = await Promise.all([
+          import('https://esm.sh/html2canvas@1.4.1'),
+          import('https://esm.sh/jspdf@2.5.2')
+        ]);
+        var html2canvas = modules[0].default;
+        var Pdf = modules[1].jsPDF;
+        document.documentElement.classList.add('measure-print', 'desktop-print');
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        await Promise.all(Array.from(sheet.querySelectorAll('img')).map(function (image) {
+          return image.complete ? Promise.resolve() : new Promise(function (resolve) {
+            image.addEventListener('load', resolve, { once: true });
+            image.addEventListener('error', resolve, { once: true });
+          });
+        }));
+        await new Promise(function (resolve) { requestAnimationFrame(function () { requestAnimationFrame(resolve); }); });
+        var canvas = await html2canvas(sheet, {
+          backgroundColor: '#ffffff',
+          logging: false,
+          scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
+          useCORS: true,
+          windowWidth: 816
+        });
+        var pageWidth = 612;
+        var contentWidth = 540;
+        var contentHeight = canvas.height * contentWidth / canvas.width;
+        var pageHeight = Math.min(14400, Math.ceil(contentHeight + 72));
+        var fittedHeight = Math.min(contentHeight, pageHeight - 72);
+        var pdf = new Pdf({ orientation: 'portrait', unit: 'pt', format: [pageWidth, pageHeight], compress: true });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', 36, 36, contentWidth, fittedHeight, undefined, 'FAST');
+        var blob = pdf.output('blob');
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = ${JSON.stringify(pdfFilename)};
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        return { filename: ${JSON.stringify(pdfFilename)}, size: blob.size, pages: pdf.getNumberOfPages() };
+      } catch (error) {
+        console.error('Mobile PDF generation failed', error);
+        alert('Unable to create the PDF file. Check your connection and try again.');
+      } finally {
+        document.documentElement.classList.remove('measure-print', 'desktop-print');
+        if (button) { button.disabled = false; button.textContent = originalLabel; }
+      }
+    }
     function printContinuousPdf() {
+      if (mobilePdfExportRequired()) return downloadContinuousPdf();
       var sheet = document.querySelector('.sheet');
       if (!sheet) return window.print();
-      document.documentElement.classList.add('measure-print');
+      document.documentElement.classList.add('measure-print', 'desktop-print');
       requestAnimationFrame(function () {
         var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
         var pageStyle = document.createElement('style');
         pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
         document.head.appendChild(pageStyle);
         document.documentElement.classList.remove('measure-print');
-        window.addEventListener('afterprint', function () { pageStyle.remove(); }, { once: true });
+        window.addEventListener('afterprint', function () {
+          pageStyle.remove();
+          document.documentElement.classList.remove('desktop-print');
+        }, { once: true });
         window.print();
       });
     }
@@ -482,8 +565,19 @@ export function buildContractDocHtml(contract) {
     table{width:100%;border-collapse:collapse;margin-top:8px;font-size:9pt}th{background:#181410;color:#caa05a;text-align:left;text-transform:uppercase;letter-spacing:.06em}th,td{padding:8px;border:1px solid #d8c9b2}th:nth-child(2),td:nth-child(2),th:nth-child(3),td:nth-child(3){text-align:right}.date-lines{display:grid;grid-template-columns:1fr 1fr;gap:24px}.project-terms{margin-top:16px;padding:12px;border:1px solid #d8c9b2;background:#faf7f1}.project-terms h3,.cancellation-form h3,.signature-party h3{margin:0 0 8px;font-size:10pt}.terms-list{margin:0;padding-left:20px}
     .statutory-section{break-inside:auto;page-break-inside:auto}.statutory{font-size:10pt;font-weight:700;line-height:1.48}.statutory p{font-size:10pt}.notice-box{margin-top:8px;padding:12px;border:2px solid #181410;background:#faf7f1}.cancellation-form{margin-top:14px;padding:14px;border:2px dashed #6b5d46;break-before:page;page-break-before:always;break-inside:avoid}.signature-party{margin-top:20px;break-inside:avoid}.signature-notice{margin:8px 0 12px;padding:10px;border:2px solid #181410;background:#faf7f1;font-size:10pt;line-height:1.4}.signature-grid{display:grid;grid-template-columns:1.6fr 1.2fr .7fr;gap:18px}.signature-grid div{display:flex;flex-direction:column}.signature-grid i{height:35px;border-bottom:1px solid #181410}.signature-grid span{padding-top:5px;font-size:8pt;color:#6b5d46}.verse{padding:12px 24px;background:#181410;color:#caa05a;text-align:center;font-size:9pt}.page-break{break-before:page;page-break-before:always}
     @media screen and (max-width:700px){.sheet{width:100%;max-width:none;margin:0;box-shadow:none}.masthead{align-items:flex-start;flex-direction:column;padding:18px}.document-title{text-align:left}.agreement-intro,.agreement-body{padding-left:16px;padding-right:16px}.agreement-meta,.date-lines,.signature-grid{grid-template-columns:1fr}.field-grid{grid-template-columns:100px 1fr}table{font-size:8pt}th,td{padding:6px 4px}}
+    html.desktop-print .sheet{width:7.5in;max-width:none;margin:0;box-shadow:none}
+    html.desktop-print .masthead{align-items:center;flex-direction:row;padding:24px 34px}
+    html.desktop-print .document-title{text-align:right}
+    html.desktop-print .agreement-intro{padding:20px 34px 8px}
+    html.desktop-print .agreement-body{padding:0 34px 26px}
+    html.desktop-print .agreement-meta{grid-template-columns:1fr 1fr}
+    html.desktop-print .date-lines{grid-template-columns:1fr 1fr}
+    html.desktop-print .signature-grid{grid-template-columns:1.6fr 1.2fr .7fr}
+    html.desktop-print .field-grid{grid-template-columns:120px 1fr}
+    html.desktop-print table{font-size:9pt}
+    html.desktop-print th,html.desktop-print td{padding:8px}
     @media print{@page{size:letter;margin:0}body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.bar{display:none}.sheet{width:calc(100% - 1in);max-width:none;margin:.5in;padding:0;box-shadow:none}.agreement-section{orphans:3;widows:3}.agreement-section h2{break-after:avoid;page-break-after:avoid}}
-  </style></head><body><div class="bar"><button onclick="window.print()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div><main class="sheet">
+  </style><script>function printDesktopPdf(){document.documentElement.classList.add('desktop-print');window.addEventListener('afterprint',function(){document.documentElement.classList.remove('desktop-print')},{once:true});window.print()}</script></head><body><div class="bar"><button onclick="printDesktopPdf()">Print / Save as PDF</button><button class="ghost" onclick="window.close()">Close</button></div><main class="sheet">
     <header class="masthead"><div class="brand"><span class="brand-fallback">${brandWheatSvg()}</span><img class="brand-logo" src="${BRAND_LOGO_PATH}" alt="Harvest Renovation LLC" style="display:none" onload="this.style.display='block';this.previousElementSibling.style.display='none'" onerror="this.style.display='none'" /><span class="brand-copy"><span class="brand-name">HARVEST RENOVATION LLC</span><span class="brand-contact">${escapeHtml(BRAND.contact)} | ${escapeHtml(BRAND.phone)} | ${escapeHtml(BRAND.email)}<br>${escapeHtml(BRAND.website)} | Houston, TX 77051</span></span></div><div class="document-title"><h1>SERVICE AGREEMENT<br>&amp; CONTRACT</h1><p>${escapeHtml(contract.status || 'Draft')}</p></div></header>
     <div class="agreement-intro"><p>THIS SERVICE AGREEMENT &amp; CONTRACT ("Agreement") is made and entered into on the date below by and between the parties listed herein.</p><div class="agreement-meta"><div class="meta-cell"><span>Agreement No.</span><strong>${number}</strong></div><div class="meta-cell"><span>Date</span><strong>${date}</strong></div></div></div>
     <div class="agreement-body">${sections}${projectTerms}${disclosure}${liabilityNotice}${homeownerNotice}${cancellationNotice}${acknowledgments}</div><footer class="verse">${escapeHtml(BRAND.verse)}</footer>
