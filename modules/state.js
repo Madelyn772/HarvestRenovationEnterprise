@@ -69,6 +69,7 @@ export const estimateTemplates = {
 
 export const DEFAULT_ESTIMATE_TERMS = [
   'This estimate is valid for 30 days from the date of issue unless otherwise stated.',
+  'Upon acceptance of this estimate, a contract outlining the scope of work and payment schedule must be signed prior to commencement of work.',
   'Any additional requests or changes to the agreed-upon scope will be documented as a Change Order and may result in a price adjustment.',
   "Materials or fixtures supplied by the client are at the client's risk; Harvest Renovation is not responsible for defects, delays, or breakage of client-supplied items.",
   'Balance is due upon substantial completion. Balances 30+ days past due accrue 1.5% monthly interest.',
