@@ -267,8 +267,7 @@ export function hydrateEstimateForm() {
     setEstimateItemizedMode(isEstimateItemizedMode(), { recompute: false, prefill: false });
     setEstimateCommercialMode(isEstimateCommercialMode(), { recompute: false });
   }
-  // Fresh form (no record loaded) with no rows → seed one default row. Description
-  // stays empty so the "General Scope" placeholder shows; agent types the price.
+  // Fresh form (no record loaded) with no rows → seed one blank default row.
   const wrap = getEstimateItemsEl();
   if (wrap && !el.estimateForm.estimateId.value && wrap.querySelectorAll('.line-item-row').length === 0) {
     addEstimateRow({ description: '', category: 'Other', quantity: 1, unit: 'EA', unitPrice: 0 });
@@ -316,7 +315,7 @@ export function readEstimateItemsFromDom() {
     const description = row.querySelector('[name="description"]').value.trim();
     return {
       id: row.dataset.itemId || uid('ITM'),
-      description: description || 'General Scope',
+      description,
       category: 'Other',
       quantity,
       unit: row.querySelector('[name="unit"]')?.value || 'LS',
