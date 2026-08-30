@@ -19,6 +19,7 @@ import { sendEstimate, sendInvoice } from './documenso.js';
 import { handleChangeOrderSave, renderChangeOrders, addChangeOrderRow } from './changeOrders.js';
 import { renderReceipts, handlePaymentDialogSubmit, openPaymentDialog, markPaid } from './receipts.js';
 import { saveContractFromForm, collectContractFromForm, handleContractSave, hydrateContractForm, renderContracts, addPaymentScheduleRow, recomputeContractTotals, fillContractFromEstimate, applyContractLock, unlockContract } from './contracts.js';
+import { createProposalLeadForEstimate } from './estimateLeads.js';
 
 export function bindAppUi() {
   el.logoutBtn.addEventListener('click', handleLogout);
@@ -826,6 +827,7 @@ function markEstimateStatus(status) {
   estimate.status = status;
   if (status === 'Sent') estimate.sentAt = estimate.sentAt || new Date().toISOString();
   if (status === 'Approved') estimate.signedAt = estimate.signedAt || new Date().toISOString();
+  if (status === 'Sent') createProposalLeadForEstimate(estimate);
   el.estimateForm.status.value = status;
   saveStore(`Estimate marked as ${status}`);
   applyEstimateLock(true);

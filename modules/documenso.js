@@ -6,6 +6,7 @@ import { saveDocument, renderDocuments } from './documents.js';
 import { renderEstimates } from './estimating.js';
 import { renderInvoices, fillInvoiceFromEstimate } from './operations.js';
 import { renderDashboard } from './dashboard.js';
+import { createProposalLeadForEstimate } from './estimateLeads.js';
 
 // Documenso is "configured" only when the placeholder URLs have been replaced
 // with real ones. This keeps the Send flow and webhook polling dormant (no
@@ -17,12 +18,15 @@ function isDocumensoConfigured() {
 
 // ── Send estimate via Documenso API ──
 export async function sendEstimate(estimate) {
+  const proposalLead = createProposalLeadForEstimate(estimate);
   // Auto-advance Draft → Sent
   if (!estimate.status || estimate.status === 'Draft') {
     estimate.status = 'Sent';
     const idx = state.store.estimates.findIndex(e => e.id === estimate.id);
     if (idx >= 0) state.store.estimates[idx] = estimate;
     saveStore('Estimate marked as Sent');
+  } else if (proposalLead) {
+    saveStore('Proposal lead created from sent estimate');
   }
 
   const clientPhone = el.estimateClientPhone ? el.estimateClientPhone.value : '';
@@ -250,6 +254,7 @@ export function updateEstimateStatus(estimateId, newStatus) {
     delete estimate.declineReasonOther;
     delete estimate.declinedAt;
   }
+  if (newStatus === 'Sent') createProposalLeadForEstimate(estimate);
   saveStore(`Estimate marked as ${newStatus}`);
   renderEstimates();
   renderDashboard();
