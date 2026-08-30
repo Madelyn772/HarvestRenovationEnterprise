@@ -2,7 +2,7 @@ import { state, THEME_KEY, ADMIN_VIEW_KEY, isAdmin, isRealAdmin, initials, today
 import { el, escapeHtml, showToast, autofillClientFields } from './dom.js';
 import { createBackupNow, downloadBackup, exportBackup, handleBackupFile, listBackups, migrateToCloud, restoreBackup, saveStore } from './store.js';
 import { renderDashboard, handleChecklistAdd, handleTipAdd, nextTip, prevTip, removeCurrentTip } from './dashboard.js';
-import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit } from './crm.js';
+import { renderClients, renderLeads, renderClientDetail, handleClientSave, handleLeadSave, openContactDialog, openDealDialog, openQuickYelpDialog, handleQuickAddSave, renderPipelineBoard, handleLogContactSubmit, syncQuickAddCustomSource } from './crm.js';
 import { renderEstimateSummary, collectEstimateFromForm, renderEstimates, handleEstimateSave, saveEstimateFromForm, addEstimateRow, recomputeEstimateTotals, updateDepositCustomVisibility, syncEstimateValidUntil, hydrateEstimateForm, syncEstimateClientPhone, handleUseClientPhoneToggle, handleRecordDepositSubmit, handleEstimateCommercialToggle, handleEstimateItemizedToggle, applyEstimateLock, unlockEstimate } from './estimating.js';
 import { renderJobs, renderCalendarItems, renderInvoices, renderNotes, handleJobSave, handleCalendarSave, handleInvoiceSave, saveInvoiceFromForm, collectInvoiceFromForm, handleNoteSave, addInvoiceRow, fillInvoiceFromEstimate, addPaymentRow, renderInvoiceBalanceCallout, renderInvoiceCardViews, hydrateInvoiceForm, handleInvoiceCommercialToggle, handleInvoiceItemizedToggle, setInvoiceCommercialMode, setInvoiceItemizedMode, setInvoiceDeposit, applyInvoiceLock, unlockInvoice } from './operations.js';
 import { renderCampaigns, renderLeadSourceSummary, handleCampaignSave, renderScorecard, renderDeclineReasons, renderJobsWonChart } from './marketing.js';
@@ -99,10 +99,11 @@ export function bindAppUi() {
   if (el.quickYelpBtn) el.quickYelpBtn.addEventListener('click', () => openQuickYelpDialog());
   if (el.quickYelpForm) {
     el.quickYelpForm.addEventListener('submit', handleQuickAddSave);
-    el.quickYelpForm.addEventListener('change', e => {
-      if (e.target?.name !== 'source' || !el.quickAddCustomSourceWrap) return;
-      el.quickAddCustomSourceWrap.classList.toggle('is-hidden', e.target.value !== '__custom__');
-    });
+    const handleQuickAddSourceChange = e => {
+      if (e.target?.name === 'source') syncQuickAddCustomSource(e.target);
+    };
+    el.quickYelpForm.addEventListener('input', handleQuickAddSourceChange);
+    el.quickYelpForm.addEventListener('change', handleQuickAddSourceChange);
   }
   document.querySelectorAll('[data-close-dialog]').forEach(btn => btn.addEventListener('click', () => document.getElementById(btn.dataset.closeDialog)?.close()));
   el.estimateForm.addEventListener('submit', handleEstimateSave);

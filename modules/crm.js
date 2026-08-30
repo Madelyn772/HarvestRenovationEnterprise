@@ -870,10 +870,22 @@ function leadDateToIso(dateStr) {
 export function openQuickYelpDialog() {
   el.quickYelpForm?.reset();
   if (el.quickYelpForm?.service) el.quickYelpForm.service.innerHTML = tradeOptionsHtml('');
-  if (el.quickAddCustomSourceWrap) el.quickAddCustomSourceWrap.classList.add('is-hidden');
+  syncQuickAddCustomSource(el.quickYelpForm?.source, false);
   const qd = document.getElementById('quickLeadDate');
   if (qd) { qd.max = todayInputValue(); qd.value = todayInputValue(); }
   el.quickYelpDialog?.showModal();
+}
+
+export function syncQuickAddCustomSource(sourceSelect, focus = true) {
+  if (!sourceSelect || !el.quickAddCustomSourceWrap) return;
+  const customInput = el.quickAddCustomSourceWrap.querySelector('input[name="customSource"]');
+  const customSelected = sourceSelect.value === '__custom__';
+  el.quickAddCustomSourceWrap.classList.toggle('is-hidden', !customSelected);
+  if (!customInput) return;
+  customInput.disabled = !customSelected;
+  customInput.required = customSelected;
+  if (customSelected && focus) customInput.focus();
+  if (!customSelected) customInput.value = '';
 }
 
 export async function handleQuickAddSave(event) {
