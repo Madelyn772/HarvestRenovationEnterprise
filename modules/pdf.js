@@ -240,6 +240,25 @@ export function buildBrandedDocHtml(opts) {
     function mobilePdfExportRequired() {
       return window.matchMedia('(max-width:780px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     }
+    function appleMobilePrintRequired() {
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    function printAppleMobilePdf() {
+      var sheet = document.querySelector('.sheet');
+      if (!sheet) return window.print();
+      document.documentElement.classList.add('measure-print', 'desktop-print');
+      var pageHeight = Math.min(200, Math.ceil((sheet.scrollHeight / 96 + 1) * 100) / 100);
+      var pageStyle = document.createElement('style');
+      pageStyle.textContent = '@media print{@page{size:8.5in ' + pageHeight + 'in;margin:0}}';
+      document.head.appendChild(pageStyle);
+      document.documentElement.classList.remove('measure-print');
+      window.addEventListener('afterprint', function () {
+        pageStyle.remove();
+        document.documentElement.classList.remove('desktop-print');
+      }, { once: true });
+      window.print();
+    }
     async function downloadContinuousPdf() {
       var sheet = document.querySelector('.sheet');
       var button = document.querySelector('.bar button');
@@ -295,6 +314,7 @@ export function buildBrandedDocHtml(opts) {
       }
     }
     function printContinuousPdf() {
+      if (appleMobilePrintRequired()) return printAppleMobilePdf();
       if (mobilePdfExportRequired()) return downloadContinuousPdf();
       var sheet = document.querySelector('.sheet');
       if (!sheet) return window.print();
